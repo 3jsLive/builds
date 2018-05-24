@@ -11969,7 +11969,7 @@
 
 		},
 
-		mergeVertices: function ( precision = 4 ) {
+		optimizeTriangleIndices: function ( precision = 3 ) {
 
 			// Generate an index buffer if the geometry doesn't have one, or optimize it
 			// if it's already available.
@@ -11985,7 +11985,6 @@
 			var attributeNames = Object.keys( this.attributes );
 			var attrArrays = {};
 			var newIndices = [];
-			var getters = [ 'getX', 'getY', 'getZ', 'getW' ];
 
 			var precisionMultiplier = Math.pow( 10, precision + 1 );
 			for ( var i = 0; i < vertexCount; i ++ ) {
@@ -11996,12 +11995,14 @@
 
 					var name = attributeNames[ j ];
 					var attribute = this.getAttribute( name );
-					var itemSize = attribute.itemSize;
+					var size = attribute.itemSize;
+					var array = attribute.array;
 
-					for ( var k = 0; k < itemSize; k ++ ) {
+					for ( var k = 0; k < size; k ++ ) {
 
 						// double tilde truncates the decimal value
-						hash += `${ ~ ~ ( attribute[ getters[ k ] ]( i ) * precisionMultiplier ) },`;
+						var val = array[ i * size + k ];
+						hash += `${ ~ ~ ( val * precisionMultiplier ) / precisionMultiplier },`;
 
 					}
 
@@ -12020,13 +12021,14 @@
 
 						var name = attributeNames[ j ];
 						var attribute = this.getAttribute( name );
+						var array = attribute.array;
 						var itemSize = attribute.itemSize;
 
 						attrArrays[ name ] = attrArrays[ name ] || [];
 						var newarray = attrArrays[ name ];
 						for ( var k = 0; k < itemSize; k ++ ) {
 
-							newarray.push( attribute[ getters[ k ] ]( i ) );
+							newarray.push( array[ i * itemSize + k ] );
 
 						}
 
@@ -12045,22 +12047,11 @@
 			for ( var i = 0, l = attributeNames.length; i < l; i ++ ) {
 
 				var name = attributeNames[ i ];
-				var oldAttribute = this.getAttribute( name );
-				var attribute;
-
+				var attribute = this.getAttribute( name );
 				var buffer = new attribute.array.constructor( attrArrays[ name ] );
-				if ( oldAttribute.isInterleavedBufferAttribute ) {
 
-					attribute = new THREE.BufferAttribute( buffer, oldAttribute.itemSize, oldAttribute.itemSize );
-
-				} else {
-
-					attribute = this.getAttribute( name ).clone();
-					attribute.setArray( buffer );
-
-				}
-
-				this.addAttribute( name, attribute );
+				attribute.setArray( buffer );
+				attribute.needsUpdate = true;
 
 			}
 
@@ -12070,21 +12061,32 @@
 			if ( newIndices.length >= Math.pow( 2, 16 ) ) cons = Uint32Array;
 
 			var newIndexBuffer = new cons( newIndices );
-			var newIndices = null;
 			if ( indices === null ) {
 
-				newIndices = new THREE.BufferAttribute( newIndexBuffer, 1 );
+				indices = new THREE.BufferAttribute( newIndexBuffer, 1 );
+				this.setIndex( indices );
 
 			} else {
 
-				newIndices = this.getIndex().clone();
-				newIndices.setArray( newIndexBuffer );
+				indices.setArray( newIndexBuffer );
+				indices.needsUpdate = true;
 
 			}
 
-			this.setIndex( newIndices );
+		},
 
-			return this;
+		getMemoryUsage: function () {
+
+			// Return the estimated memory used by this geometry
+			var mem = 0;
+			for ( var name in this.attributes ) {
+
+				mem += this.attributes[ name ].array.byteLength;
+
+			}
+
+			mem += this.index ? this.index.array.byteLength : 0;
+			return mem;
 
 		},
 
@@ -42353,23 +42355,6 @@
 	Object.assign( InterleavedBufferAttribute.prototype, {
 
 		isInterleavedBufferAttribute: true,
-
-		copy: function ( source ) {
-
-			this.data = source.data;
-			this.itemSize = source.itemSize;
-			this.offset = source.offset;
-			this.normalized = source.normalized;
-
-			return this;
-
-		},
-
-		clone: function () {
-
-			return new this.constructor( this.data, this.itemSize, this.offset, this.normalized ).copy( this );
-
-		},
 
 		setX: function ( index, x ) {
 
