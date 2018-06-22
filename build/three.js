@@ -11981,7 +11981,7 @@
 
 		mergeVertices: function ( tolerance = 1e-4 ) {
 
-	        tolerance = Math.max( tolerance, Number.EPSILON );
+			tolerance = Math.max( tolerance, Number.EPSILON );
 
 			// Generate an index buffer if the geometry doesn't have one, or optimize it
 			// if it's already available.
