@@ -29179,8 +29179,13 @@
 
 				t = b / bevelSegments;
 				z = bevelThickness * Math.cos( t * Math.PI / 2 );
-				var s = Math.sin( t * Math.PI / 2 );
-				bs = ( bevelSize > 0 ) ? bevelSize * s : bevelSize * ( 1 - s );
+				bs = Math.abs( bevelSize ) * Math.sin( t * Math.PI / 2 );
+
+				if ( bevelSize < 0 ) {
+
+					bs += bevelSize;
+
+				}
 
 				// contract shape
 
@@ -29211,10 +29216,7 @@
 
 			}
 
-			// Special case of
-			//   bs = ( bevelSize > 0 ) ? bevelSize * s : bevelSize * ( 1 - s );
-			// with s = 1
-			bs = ( bevelSize > 0 ? bevelSize : 0 );
+			bs = ( bevelSize < 0 ? 0 : - bevelSize );
 
 			// Back facing vertices
 
@@ -29281,8 +29283,13 @@
 
 				t = b / bevelSegments;
 				z = bevelThickness * Math.cos( t * Math.PI / 2 );
-				var s = Math.sin( t * Math.PI / 2 );
-				bs = ( bevelSize > 0 ) ? bevelSize * s : bevelSize * ( 1 - s );
+				bs = Math.abs( bevelSize ) * Math.sin( t * Math.PI / 2 );
+
+				if ( bevelSize < 0 ) {
+
+					bs += bevelSize;
+
+				}
 
 				// contract shape
 
