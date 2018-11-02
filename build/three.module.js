@@ -15280,7 +15280,6 @@ function WebGLGeometries( gl, attributes, info ) {
 	function getWireframeAttribute( geometry ) {
 
 		var geometryIndex = geometry.index;
-		var geometryPosition = geometry.attributes.position;
 
 		var currentAttribute = wireframeAttributes[ geometry.id ];
 
@@ -15291,16 +15290,6 @@ function WebGLGeometries( gl, attributes, info ) {
 				// if the attribute is obsolete, create a new one
 
 				if ( currentAttribute.version < geometryIndex.version ) {
-
-					updateWireframeAttribute( geometry );
-
-				}
-
-			} else {
-
-				// if the attribute is obsolete, create a new one
-
-				if ( currentAttribute.version < geometryPosition.version ) {
 
 					updateWireframeAttribute( geometry );
 
