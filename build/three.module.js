@@ -15279,11 +15279,11 @@ function WebGLGeometries( gl, attributes, info ) {
 
 	function getWireframeAttribute( geometry ) {
 
-		var geometryIndex = geometry.index;
-
 		var currentAttribute = wireframeAttributes[ geometry.id ];
 
 		if ( currentAttribute ) {
+
+			var geometryIndex = geometry.index;
 
 			if ( geometryIndex !== null ) {
 
