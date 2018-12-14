@@ -3861,11 +3861,17 @@
 				wrap: [ this.wrapS, this.wrapT ],
 
 				format: this.format,
+				type: this.type,
+				encoding: this.encoding,
+
 				minFilter: this.minFilter,
 				magFilter: this.magFilter,
 				anisotropy: this.anisotropy,
 
-				flipY: this.flipY
+				flipY: this.flipY,
+
+				premultiplyAlpha: this.premultiplyAlpha,
+				unpackAlignment: this.unpackAlignment
 
 			};
 
@@ -6078,7 +6084,7 @@
 
 	var lights_physical_fragment = "PhysicalMaterial material;\nmaterial.diffuseColor = diffuseColor.rgb * ( 1.0 - metalnessFactor );\nmaterial.specularRoughness = clamp( roughnessFactor, 0.04, 1.0 );\n#ifdef STANDARD\n\tmaterial.specularColor = mix( vec3( DEFAULT_SPECULAR_COEFFICIENT ), diffuseColor.rgb, metalnessFactor );\n#else\n\tmaterial.specularColor = mix( vec3( MAXIMUM_SPECULAR_COEFFICIENT * pow2( reflectivity ) ), diffuseColor.rgb, metalnessFactor );\n\tmaterial.clearCoat = saturate( clearCoat );\tmaterial.clearCoatRoughness = clamp( clearCoatRoughness, 0.04, 1.0 );\n#endif";
 
-	var lights_physical_pars_fragment = "struct PhysicalMaterial {\n\tvec3\tdiffuseColor;\n\tfloat\tspecularRoughness;\n\tvec3\tspecularColor;\n\t#ifndef STANDARD\n\t\tfloat clearCoat;\n\t\tfloat clearCoatRoughness;\n\t#endif\n};\n#define MAXIMUM_SPECULAR_COEFFICIENT 0.16\n#define DEFAULT_SPECULAR_COEFFICIENT 0.04\nfloat clearCoatDHRApprox( const in float roughness, const in float dotNL ) {\n\treturn DEFAULT_SPECULAR_COEFFICIENT + ( 1.0 - DEFAULT_SPECULAR_COEFFICIENT ) * ( pow( 1.0 - dotNL, 5.0 ) * pow( 1.0 - roughness, 2.0 ) );\n}\n#if NUM_RECT_AREA_LIGHTS > 0\n\tvoid RE_Direct_RectArea_Physical( const in RectAreaLight rectAreaLight, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\t\tvec3 normal = geometry.normal;\n\t\tvec3 viewDir = geometry.viewDir;\n\t\tvec3 position = geometry.position;\n\t\tvec3 lightPos = rectAreaLight.position;\n\t\tvec3 halfWidth = rectAreaLight.halfWidth;\n\t\tvec3 halfHeight = rectAreaLight.halfHeight;\n\t\tvec3 lightColor = rectAreaLight.color;\n\t\tfloat roughness = material.specularRoughness;\n\t\tvec3 rectCoords[ 4 ];\n\t\trectCoords[ 0 ] = lightPos - halfWidth - halfHeight;\t\trectCoords[ 1 ] = lightPos + halfWidth - halfHeight;\n\t\trectCoords[ 2 ] = lightPos + halfWidth + halfHeight;\n\t\trectCoords[ 3 ] = lightPos - halfWidth + halfHeight;\n\t\tvec2 uv = LTC_Uv( normal, viewDir, roughness );\n\t\tvec4 t1 = texture2D( ltc_1, uv );\n\t\tvec4 t2 = texture2D( ltc_2, uv );\n\t\tmat3 mInv = mat3(\n\t\t\tvec3( t1.x, 0, t1.y ),\n\t\t\tvec3(    0, 1,    0 ),\n\t\t\tvec3( t1.z, 0, t1.w )\n\t\t);\n\t\tvec3 fresnel = ( material.specularColor * t2.x + ( vec3( 1.0 ) - material.specularColor ) * t2.y );\n\t\treflectedLight.directSpecular += lightColor * fresnel * LTC_Evaluate( normal, viewDir, position, mInv, rectCoords );\n\t\treflectedLight.directDiffuse += lightColor * material.diffuseColor * LTC_Evaluate( normal, viewDir, position, mat3( 1.0 ), rectCoords );\n\t}\n#endif\nvoid RE_Direct_Physical( const in IncidentLight directLight, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\tfloat dotNL = saturate( dot( geometry.normal, directLight.direction ) );\n\tvec3 irradiance = dotNL * directLight.color;\n\t#ifndef PHYSICALLY_CORRECT_LIGHTS\n\t\tirradiance *= PI;\n\t#endif\n\t#ifndef STANDARD\n\t\tfloat clearCoatDHR = material.clearCoat * clearCoatDHRApprox( material.clearCoatRoughness, dotNL );\n\t#else\n\t\tfloat clearCoatDHR = 0.0;\n\t#endif\n\treflectedLight.directSpecular += ( 1.0 - clearCoatDHR ) * irradiance * BRDF_Specular_GGX( directLight, geometry, material.specularColor, material.specularRoughness );\n\treflectedLight.directDiffuse += ( 1.0 - clearCoatDHR ) * irradiance * BRDF_Diffuse_Lambert( material.diffuseColor );\n\t#ifndef STANDARD\n\t\treflectedLight.directSpecular += irradiance * material.clearCoat * BRDF_Specular_GGX( directLight, geometry, vec3( DEFAULT_SPECULAR_COEFFICIENT ), material.clearCoatRoughness );\n\t#endif\n}\nvoid RE_IndirectDiffuse_Physical( const in vec3 irradiance, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\treflectedLight.indirectDiffuse += irradiance * BRDF_Diffuse_Lambert( material.diffuseColor );\n}\nvoid RE_IndirectSpecular_Physical( const in vec3 radiance, const in vec3 clearCoatRadiance, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\t#ifndef STANDARD\n\t\tfloat dotNV = saturate( dot( geometry.normal, geometry.viewDir ) );\n\t\tfloat dotNL = dotNV;\n\t\tfloat clearCoatDHR = material.clearCoat * clearCoatDHRApprox( material.clearCoatRoughness, dotNL );\n\t#else\n\t\tfloat clearCoatDHR = 0.0;\n\t#endif\n\treflectedLight.indirectSpecular += ( 1.0 - clearCoatDHR ) * radiance * BRDF_Specular_GGX_Environment( geometry, material.specularColor, material.specularRoughness );\n\t#ifndef STANDARD\n\t\treflectedLight.indirectSpecular += clearCoatRadiance * material.clearCoat * BRDF_Specular_GGX_Environment( geometry, vec3( DEFAULT_SPECULAR_COEFFICIENT ), material.clearCoatRoughness );\n\t#endif\n}\n#define RE_Direct\t\t\t\tRE_Direct_Physical\n#define RE_Direct_RectArea\t\tRE_Direct_RectArea_Physical\n#define RE_IndirectDiffuse\t\tRE_IndirectDiffuse_Physical\n#define RE_IndirectSpecular\t\tRE_IndirectSpecular_Physical\n#define Material_BlinnShininessExponent( material )   GGXRoughnessToBlinnExponent( material.specularRoughness )\n#define Material_ClearCoat_BlinnShininessExponent( material )   GGXRoughnessToBlinnExponent( material.clearCoatRoughness )\nfloat computeSpecularOcclusion( const in float dotNV, const in float ambientOcclusion, const in float roughness ) {\n\treturn saturate( pow( dotNV + ambientOcclusion, exp2( - 16.0 * roughness - 1.0 ) ) - 1.0 + ambientOcclusion );\n}";
+	var lights_physical_pars_fragment = "struct PhysicalMaterial {\n\tvec3\tdiffuseColor;\n\tfloat\tspecularRoughness;\n\tvec3\tspecularColor;\n\t#ifndef STANDARD\n\t\tfloat clearCoat;\n\t\tfloat clearCoatRoughness;\n\t#endif\n};\n#define MAXIMUM_SPECULAR_COEFFICIENT 0.16\n#define DEFAULT_SPECULAR_COEFFICIENT 0.04\nfloat clearCoatDHRApprox( const in float roughness, const in float dotNL ) {\n\treturn DEFAULT_SPECULAR_COEFFICIENT + ( 1.0 - DEFAULT_SPECULAR_COEFFICIENT ) * ( pow( 1.0 - dotNL, 5.0 ) * pow( 1.0 - roughness, 2.0 ) );\n}\n#if NUM_RECT_AREA_LIGHTS > 0\n\tvoid RE_Direct_RectArea_Physical( const in RectAreaLight rectAreaLight, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\t\tvec3 normal = geometry.normal;\n\t\tvec3 viewDir = geometry.viewDir;\n\t\tvec3 position = geometry.position;\n\t\tvec3 lightPos = rectAreaLight.position;\n\t\tvec3 halfWidth = rectAreaLight.halfWidth;\n\t\tvec3 halfHeight = rectAreaLight.halfHeight;\n\t\tvec3 lightColor = rectAreaLight.color;\n\t\tfloat roughness = material.specularRoughness;\n\t\tvec3 rectCoords[ 4 ];\n\t\trectCoords[ 0 ] = lightPos + halfWidth - halfHeight;\t\trectCoords[ 1 ] = lightPos - halfWidth - halfHeight;\n\t\trectCoords[ 2 ] = lightPos - halfWidth + halfHeight;\n\t\trectCoords[ 3 ] = lightPos + halfWidth + halfHeight;\n\t\tvec2 uv = LTC_Uv( normal, viewDir, roughness );\n\t\tvec4 t1 = texture2D( ltc_1, uv );\n\t\tvec4 t2 = texture2D( ltc_2, uv );\n\t\tmat3 mInv = mat3(\n\t\t\tvec3( t1.x, 0, t1.y ),\n\t\t\tvec3(    0, 1,    0 ),\n\t\t\tvec3( t1.z, 0, t1.w )\n\t\t);\n\t\tvec3 fresnel = ( material.specularColor * t2.x + ( vec3( 1.0 ) - material.specularColor ) * t2.y );\n\t\treflectedLight.directSpecular += lightColor * fresnel * LTC_Evaluate( normal, viewDir, position, mInv, rectCoords );\n\t\treflectedLight.directDiffuse += lightColor * material.diffuseColor * LTC_Evaluate( normal, viewDir, position, mat3( 1.0 ), rectCoords );\n\t}\n#endif\nvoid RE_Direct_Physical( const in IncidentLight directLight, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\tfloat dotNL = saturate( dot( geometry.normal, directLight.direction ) );\n\tvec3 irradiance = dotNL * directLight.color;\n\t#ifndef PHYSICALLY_CORRECT_LIGHTS\n\t\tirradiance *= PI;\n\t#endif\n\t#ifndef STANDARD\n\t\tfloat clearCoatDHR = material.clearCoat * clearCoatDHRApprox( material.clearCoatRoughness, dotNL );\n\t#else\n\t\tfloat clearCoatDHR = 0.0;\n\t#endif\n\treflectedLight.directSpecular += ( 1.0 - clearCoatDHR ) * irradiance * BRDF_Specular_GGX( directLight, geometry, material.specularColor, material.specularRoughness );\n\treflectedLight.directDiffuse += ( 1.0 - clearCoatDHR ) * irradiance * BRDF_Diffuse_Lambert( material.diffuseColor );\n\t#ifndef STANDARD\n\t\treflectedLight.directSpecular += irradiance * material.clearCoat * BRDF_Specular_GGX( directLight, geometry, vec3( DEFAULT_SPECULAR_COEFFICIENT ), material.clearCoatRoughness );\n\t#endif\n}\nvoid RE_IndirectDiffuse_Physical( const in vec3 irradiance, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\treflectedLight.indirectDiffuse += irradiance * BRDF_Diffuse_Lambert( material.diffuseColor );\n}\nvoid RE_IndirectSpecular_Physical( const in vec3 radiance, const in vec3 clearCoatRadiance, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\t#ifndef STANDARD\n\t\tfloat dotNV = saturate( dot( geometry.normal, geometry.viewDir ) );\n\t\tfloat dotNL = dotNV;\n\t\tfloat clearCoatDHR = material.clearCoat * clearCoatDHRApprox( material.clearCoatRoughness, dotNL );\n\t#else\n\t\tfloat clearCoatDHR = 0.0;\n\t#endif\n\treflectedLight.indirectSpecular += ( 1.0 - clearCoatDHR ) * radiance * BRDF_Specular_GGX_Environment( geometry, material.specularColor, material.specularRoughness );\n\t#ifndef STANDARD\n\t\treflectedLight.indirectSpecular += clearCoatRadiance * material.clearCoat * BRDF_Specular_GGX_Environment( geometry, vec3( DEFAULT_SPECULAR_COEFFICIENT ), material.clearCoatRoughness );\n\t#endif\n}\n#define RE_Direct\t\t\t\tRE_Direct_Physical\n#define RE_Direct_RectArea\t\tRE_Direct_RectArea_Physical\n#define RE_IndirectDiffuse\t\tRE_IndirectDiffuse_Physical\n#define RE_IndirectSpecular\t\tRE_IndirectSpecular_Physical\n#define Material_BlinnShininessExponent( material )   GGXRoughnessToBlinnExponent( material.specularRoughness )\n#define Material_ClearCoat_BlinnShininessExponent( material )   GGXRoughnessToBlinnExponent( material.clearCoatRoughness )\nfloat computeSpecularOcclusion( const in float dotNV, const in float ambientOcclusion, const in float roughness ) {\n\treturn saturate( pow( dotNV + ambientOcclusion, exp2( - 16.0 * roughness - 1.0 ) ) - 1.0 + ambientOcclusion );\n}";
 
 	var lights_fragment_begin = "\nGeometricContext geometry;\ngeometry.position = - vViewPosition;\ngeometry.normal = normal;\ngeometry.viewDir = normalize( vViewPosition );\nIncidentLight directLight;\n#if ( NUM_POINT_LIGHTS > 0 ) && defined( RE_Direct )\n\tPointLight pointLight;\n\t#pragma unroll_loop\n\tfor ( int i = 0; i < NUM_POINT_LIGHTS; i ++ ) {\n\t\tpointLight = pointLights[ i ];\n\t\tgetPointDirectLightIrradiance( pointLight, geometry, directLight );\n\t\t#ifdef USE_SHADOWMAP\n\t\tdirectLight.color *= all( bvec2( pointLight.shadow, directLight.visible ) ) ? getPointShadow( pointShadowMap[ i ], pointLight.shadowMapSize, pointLight.shadowBias, pointLight.shadowRadius, vPointShadowCoord[ i ], pointLight.shadowCameraNear, pointLight.shadowCameraFar ) : 1.0;\n\t\t#endif\n\t\tRE_Direct( directLight, geometry, material, reflectedLight );\n\t}\n#endif\n#if ( NUM_SPOT_LIGHTS > 0 ) && defined( RE_Direct )\n\tSpotLight spotLight;\n\t#pragma unroll_loop\n\tfor ( int i = 0; i < NUM_SPOT_LIGHTS; i ++ ) {\n\t\tspotLight = spotLights[ i ];\n\t\tgetSpotDirectLightIrradiance( spotLight, geometry, directLight );\n\t\t#ifdef USE_SHADOWMAP\n\t\tdirectLight.color *= all( bvec2( spotLight.shadow, directLight.visible ) ) ? getShadow( spotShadowMap[ i ], spotLight.shadowMapSize, spotLight.shadowBias, spotLight.shadowRadius, vSpotShadowCoord[ i ] ) : 1.0;\n\t\t#endif\n\t\tRE_Direct( directLight, geometry, material, reflectedLight );\n\t}\n#endif\n#if ( NUM_DIR_LIGHTS > 0 ) && defined( RE_Direct )\n\tDirectionalLight directionalLight;\n\t#pragma unroll_loop\n\tfor ( int i = 0; i < NUM_DIR_LIGHTS; i ++ ) {\n\t\tdirectionalLight = directionalLights[ i ];\n\t\tgetDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );\n\t\t#ifdef USE_SHADOWMAP\n\t\tdirectLight.color *= all( bvec2( directionalLight.shadow, directLight.visible ) ) ? getShadow( directionalShadowMap[ i ], directionalLight.shadowMapSize, directionalLight.shadowBias, directionalLight.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;\n\t\t#endif\n\t\tRE_Direct( directLight, geometry, material, reflectedLight );\n\t}\n#endif\n#if ( NUM_RECT_AREA_LIGHTS > 0 ) && defined( RE_Direct_RectArea )\n\tRectAreaLight rectAreaLight;\n\t#pragma unroll_loop\n\tfor ( int i = 0; i < NUM_RECT_AREA_LIGHTS; i ++ ) {\n\t\trectAreaLight = rectAreaLights[ i ];\n\t\tRE_Direct_RectArea( rectAreaLight, geometry, material, reflectedLight );\n\t}\n#endif\n#if defined( RE_IndirectDiffuse )\n\tvec3 irradiance = getAmbientLightIrradiance( ambientLightColor );\n\t#if ( NUM_HEMI_LIGHTS > 0 )\n\t\t#pragma unroll_loop\n\t\tfor ( int i = 0; i < NUM_HEMI_LIGHTS; i ++ ) {\n\t\t\tirradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometry );\n\t\t}\n\t#endif\n#endif\n#if defined( RE_IndirectSpecular )\n\tvec3 radiance = vec3( 0.0 );\n\tvec3 clearCoatRadiance = vec3( 0.0 );\n#endif";
 
@@ -8472,7 +8478,7 @@
 
 				position.setFromMatrixPosition( this.matrixWorld );
 
-				if ( this.isCamera ) {
+				if ( this.isCamera || this.isLight ) {
 
 					m1.lookAt( position, target, this.up );
 
@@ -31906,728 +31912,6 @@
 	});
 
 	/**
-	 *
-	 * A reference to a real property in the scene graph.
-	 *
-	 *
-	 * @author Ben Houston / http://clara.io/
-	 * @author David Sarno / http://lighthaus.us/
-	 * @author tschw
-	 */
-
-	// Characters [].:/ are reserved for track binding syntax.
-	var RESERVED_CHARS_RE = '\\[\\]\\.:\\/';
-
-	function Composite( targetGroup, path, optionalParsedPath ) {
-
-		var parsedPath = optionalParsedPath || PropertyBinding.parseTrackName( path );
-
-		this._targetGroup = targetGroup;
-		this._bindings = targetGroup.subscribe_( path, parsedPath );
-
-	}
-
-	Object.assign( Composite.prototype, {
-
-		getValue: function ( array, offset ) {
-
-			this.bind(); // bind all binding
-
-			var firstValidIndex = this._targetGroup.nCachedObjects_,
-				binding = this._bindings[ firstValidIndex ];
-
-			// and only call .getValue on the first
-			if ( binding !== undefined ) binding.getValue( array, offset );
-
-		},
-
-		setValue: function ( array, offset ) {
-
-			var bindings = this._bindings;
-
-			for ( var i = this._targetGroup.nCachedObjects_, n = bindings.length; i !== n; ++ i ) {
-
-				bindings[ i ].setValue( array, offset );
-
-			}
-
-		},
-
-		bind: function () {
-
-			var bindings = this._bindings;
-
-			for ( var i = this._targetGroup.nCachedObjects_, n = bindings.length; i !== n; ++ i ) {
-
-				bindings[ i ].bind();
-
-			}
-
-		},
-
-		unbind: function () {
-
-			var bindings = this._bindings;
-
-			for ( var i = this._targetGroup.nCachedObjects_, n = bindings.length; i !== n; ++ i ) {
-
-				bindings[ i ].unbind();
-
-			}
-
-		}
-
-	} );
-
-
-	function PropertyBinding( rootNode, path, parsedPath ) {
-
-		this.path = path;
-		this.parsedPath = parsedPath || PropertyBinding.parseTrackName( path );
-
-		this.node = PropertyBinding.findNode( rootNode, this.parsedPath.nodeName ) || rootNode;
-
-		this.rootNode = rootNode;
-
-	}
-
-	Object.assign( PropertyBinding, {
-
-		Composite: Composite,
-
-		create: function ( root, path, parsedPath ) {
-
-			if ( ! ( root && root.isAnimationObjectGroup ) ) {
-
-				return new PropertyBinding( root, path, parsedPath );
-
-			} else {
-
-				return new PropertyBinding.Composite( root, path, parsedPath );
-
-			}
-
-		},
-
-		/**
-		 * Replaces spaces with underscores and removes unsupported characters from
-		 * node names, to ensure compatibility with parseTrackName().
-		 *
-		 * @param  {string} name Node name to be sanitized.
-		 * @return {string}
-		 */
-		sanitizeNodeName: ( function () {
-
-			var reservedRe = new RegExp( '[' + RESERVED_CHARS_RE + ']', 'g' );
-
-			return function sanitizeNodeName( name ) {
-
-				return name.replace( /\s/g, '_' ).replace( reservedRe, '' );
-
-			};
-
-		}() ),
-
-		parseTrackName: function () {
-
-			// Attempts to allow node names from any language. ES5's `\w` regexp matches
-			// only latin characters, and the unicode \p{L} is not yet supported. So
-			// instead, we exclude reserved characters and match everything else.
-			var wordChar = '[^' + RESERVED_CHARS_RE + ']';
-			var wordCharOrDot = '[^' + RESERVED_CHARS_RE.replace( '\\.', '' ) + ']';
-
-			// Parent directories, delimited by '/' or ':'. Currently unused, but must
-			// be matched to parse the rest of the track name.
-			var directoryRe = /((?:WC+[\/:])*)/.source.replace( 'WC', wordChar );
-
-			// Target node. May contain word characters (a-zA-Z0-9_) and '.' or '-'.
-			var nodeRe = /(WCOD+)?/.source.replace( 'WCOD', wordCharOrDot );
-
-			// Object on target node, and accessor. May not contain reserved
-			// characters. Accessor may contain any character except closing bracket.
-			var objectRe = /(?:\.(WC+)(?:\[(.+)\])?)?/.source.replace( 'WC', wordChar );
-
-			// Property and accessor. May not contain reserved characters. Accessor may
-			// contain any non-bracket characters.
-			var propertyRe = /\.(WC+)(?:\[(.+)\])?/.source.replace( 'WC', wordChar );
-
-			var trackRe = new RegExp( ''
-				+ '^'
-				+ directoryRe
-				+ nodeRe
-				+ objectRe
-				+ propertyRe
-				+ '$'
-			);
-
-			var supportedObjectNames = [ 'material', 'materials', 'bones' ];
-
-			return function parseTrackName( trackName ) {
-
-				var matches = trackRe.exec( trackName );
-
-				if ( ! matches ) {
-
-					throw new Error( 'PropertyBinding: Cannot parse trackName: ' + trackName );
-
-				}
-
-				var results = {
-					// directoryName: matches[ 1 ], // (tschw) currently unused
-					nodeName: matches[ 2 ],
-					objectName: matches[ 3 ],
-					objectIndex: matches[ 4 ],
-					propertyName: matches[ 5 ], // required
-					propertyIndex: matches[ 6 ]
-				};
-
-				var lastDot = results.nodeName && results.nodeName.lastIndexOf( '.' );
-
-				if ( lastDot !== undefined && lastDot !== - 1 ) {
-
-					var objectName = results.nodeName.substring( lastDot + 1 );
-
-					// Object names must be checked against a whitelist. Otherwise, there
-					// is no way to parse 'foo.bar.baz': 'baz' must be a property, but
-					// 'bar' could be the objectName, or part of a nodeName (which can
-					// include '.' characters).
-					if ( supportedObjectNames.indexOf( objectName ) !== - 1 ) {
-
-						results.nodeName = results.nodeName.substring( 0, lastDot );
-						results.objectName = objectName;
-
-					}
-
-				}
-
-				if ( results.propertyName === null || results.propertyName.length === 0 ) {
-
-					throw new Error( 'PropertyBinding: can not parse propertyName from trackName: ' + trackName );
-
-				}
-
-				return results;
-
-			};
-
-		}(),
-
-		findNode: function ( root, nodeName ) {
-
-			if ( ! nodeName || nodeName === "" || nodeName === "root" || nodeName === "." || nodeName === - 1 || nodeName === root.name || nodeName === root.uuid ) {
-
-				return root;
-
-			}
-
-			// search into skeleton bones.
-			if ( root.skeleton ) {
-
-				var bone = root.skeleton.getBoneByName( nodeName );
-
-				if ( bone !== undefined ) {
-
-					return bone;
-
-				}
-
-			}
-
-			// search into node subtree.
-			if ( root.children ) {
-
-				var searchNodeSubtree = function ( children ) {
-
-					for ( var i = 0; i < children.length; i ++ ) {
-
-						var childNode = children[ i ];
-
-						if ( childNode.name === nodeName || childNode.uuid === nodeName ) {
-
-							return childNode;
-
-						}
-
-						var result = searchNodeSubtree( childNode.children );
-
-						if ( result ) return result;
-
-					}
-
-					return null;
-
-				};
-
-				var subTreeNode = searchNodeSubtree( root.children );
-
-				if ( subTreeNode ) {
-
-					return subTreeNode;
-
-				}
-
-			}
-
-			return null;
-
-		}
-
-	} );
-
-	Object.assign( PropertyBinding.prototype, { // prototype, continued
-
-		// these are used to "bind" a nonexistent property
-		_getValue_unavailable: function () {},
-		_setValue_unavailable: function () {},
-
-		BindingType: {
-			Direct: 0,
-			EntireArray: 1,
-			ArrayElement: 2,
-			HasFromToArray: 3
-		},
-
-		Versioning: {
-			None: 0,
-			NeedsUpdate: 1,
-			MatrixWorldNeedsUpdate: 2
-		},
-
-		GetterByBindingType: [
-
-			function getValue_direct( buffer, offset ) {
-
-				buffer[ offset ] = this.node[ this.propertyName ];
-
-			},
-
-			function getValue_array( buffer, offset ) {
-
-				var source = this.resolvedProperty;
-
-				for ( var i = 0, n = source.length; i !== n; ++ i ) {
-
-					buffer[ offset ++ ] = source[ i ];
-
-				}
-
-			},
-
-			function getValue_arrayElement( buffer, offset ) {
-
-				buffer[ offset ] = this.resolvedProperty[ this.propertyIndex ];
-
-			},
-
-			function getValue_toArray( buffer, offset ) {
-
-				this.resolvedProperty.toArray( buffer, offset );
-
-			}
-
-		],
-
-		SetterByBindingTypeAndVersioning: [
-
-			[
-				// Direct
-
-				function setValue_direct( buffer, offset ) {
-
-					this.targetObject[ this.propertyName ] = buffer[ offset ];
-
-				},
-
-				function setValue_direct_setNeedsUpdate( buffer, offset ) {
-
-					this.targetObject[ this.propertyName ] = buffer[ offset ];
-					this.targetObject.needsUpdate = true;
-
-				},
-
-				function setValue_direct_setMatrixWorldNeedsUpdate( buffer, offset ) {
-
-					this.targetObject[ this.propertyName ] = buffer[ offset ];
-					this.targetObject.matrixWorldNeedsUpdate = true;
-
-				}
-
-			], [
-
-				// EntireArray
-
-				function setValue_array( buffer, offset ) {
-
-					var dest = this.resolvedProperty;
-
-					for ( var i = 0, n = dest.length; i !== n; ++ i ) {
-
-						dest[ i ] = buffer[ offset ++ ];
-
-					}
-
-				},
-
-				function setValue_array_setNeedsUpdate( buffer, offset ) {
-
-					var dest = this.resolvedProperty;
-
-					for ( var i = 0, n = dest.length; i !== n; ++ i ) {
-
-						dest[ i ] = buffer[ offset ++ ];
-
-					}
-
-					this.targetObject.needsUpdate = true;
-
-				},
-
-				function setValue_array_setMatrixWorldNeedsUpdate( buffer, offset ) {
-
-					var dest = this.resolvedProperty;
-
-					for ( var i = 0, n = dest.length; i !== n; ++ i ) {
-
-						dest[ i ] = buffer[ offset ++ ];
-
-					}
-
-					this.targetObject.matrixWorldNeedsUpdate = true;
-
-				}
-
-			], [
-
-				// ArrayElement
-
-				function setValue_arrayElement( buffer, offset ) {
-
-					this.resolvedProperty[ this.propertyIndex ] = buffer[ offset ];
-
-				},
-
-				function setValue_arrayElement_setNeedsUpdate( buffer, offset ) {
-
-					this.resolvedProperty[ this.propertyIndex ] = buffer[ offset ];
-					this.targetObject.needsUpdate = true;
-
-				},
-
-				function setValue_arrayElement_setMatrixWorldNeedsUpdate( buffer, offset ) {
-
-					this.resolvedProperty[ this.propertyIndex ] = buffer[ offset ];
-					this.targetObject.matrixWorldNeedsUpdate = true;
-
-				}
-
-			], [
-
-				// HasToFromArray
-
-				function setValue_fromArray( buffer, offset ) {
-
-					this.resolvedProperty.fromArray( buffer, offset );
-
-				},
-
-				function setValue_fromArray_setNeedsUpdate( buffer, offset ) {
-
-					this.resolvedProperty.fromArray( buffer, offset );
-					this.targetObject.needsUpdate = true;
-
-				},
-
-				function setValue_fromArray_setMatrixWorldNeedsUpdate( buffer, offset ) {
-
-					this.resolvedProperty.fromArray( buffer, offset );
-					this.targetObject.matrixWorldNeedsUpdate = true;
-
-				}
-
-			]
-
-		],
-
-		getValue: function getValue_unbound( targetArray, offset ) {
-
-			this.bind();
-			this.getValue( targetArray, offset );
-
-			// Note: This class uses a State pattern on a per-method basis:
-			// 'bind' sets 'this.getValue' / 'setValue' and shadows the
-			// prototype version of these methods with one that represents
-			// the bound state. When the property is not found, the methods
-			// become no-ops.
-
-		},
-
-		setValue: function getValue_unbound( sourceArray, offset ) {
-
-			this.bind();
-			this.setValue( sourceArray, offset );
-
-		},
-
-		// create getter / setter pair for a property in the scene graph
-		bind: function () {
-
-			var targetObject = this.node,
-				parsedPath = this.parsedPath,
-
-				objectName = parsedPath.objectName,
-				propertyName = parsedPath.propertyName,
-				propertyIndex = parsedPath.propertyIndex;
-
-			if ( ! targetObject ) {
-
-				targetObject = PropertyBinding.findNode( this.rootNode, parsedPath.nodeName ) || this.rootNode;
-
-				this.node = targetObject;
-
-			}
-
-			// set fail state so we can just 'return' on error
-			this.getValue = this._getValue_unavailable;
-			this.setValue = this._setValue_unavailable;
-
-			// ensure there is a value node
-			if ( ! targetObject ) {
-
-				console.error( 'THREE.PropertyBinding: Trying to update node for track: ' + this.path + ' but it wasn\'t found.' );
-				return;
-
-			}
-
-			if ( objectName ) {
-
-				var objectIndex = parsedPath.objectIndex;
-
-				// special cases were we need to reach deeper into the hierarchy to get the face materials....
-				switch ( objectName ) {
-
-					case 'materials':
-
-						if ( ! targetObject.material ) {
-
-							console.error( 'THREE.PropertyBinding: Can not bind to material as node does not have a material.', this );
-							return;
-
-						}
-
-						if ( ! targetObject.material.materials ) {
-
-							console.error( 'THREE.PropertyBinding: Can not bind to material.materials as node.material does not have a materials array.', this );
-							return;
-
-						}
-
-						targetObject = targetObject.material.materials;
-
-						break;
-
-					case 'bones':
-
-						if ( ! targetObject.skeleton ) {
-
-							console.error( 'THREE.PropertyBinding: Can not bind to bones as node does not have a skeleton.', this );
-							return;
-
-						}
-
-						// potential future optimization: skip this if propertyIndex is already an integer
-						// and convert the integer string to a true integer.
-
-						targetObject = targetObject.skeleton.bones;
-
-						// support resolving morphTarget names into indices.
-						for ( var i = 0; i < targetObject.length; i ++ ) {
-
-							if ( targetObject[ i ].name === objectIndex ) {
-
-								objectIndex = i;
-								break;
-
-							}
-
-						}
-
-						break;
-
-					default:
-
-						if ( targetObject[ objectName ] === undefined ) {
-
-							console.error( 'THREE.PropertyBinding: Can not bind to objectName of node undefined.', this );
-							return;
-
-						}
-
-						targetObject = targetObject[ objectName ];
-
-				}
-
-
-				if ( objectIndex !== undefined ) {
-
-					if ( targetObject[ objectIndex ] === undefined ) {
-
-						console.error( 'THREE.PropertyBinding: Trying to bind to objectIndex of objectName, but is undefined.', this, targetObject );
-						return;
-
-					}
-
-					targetObject = targetObject[ objectIndex ];
-
-				}
-
-			}
-
-			// resolve property
-			var nodeProperty = targetObject[ propertyName ];
-
-			if ( nodeProperty === undefined ) {
-
-				var nodeName = parsedPath.nodeName;
-
-				console.error( 'THREE.PropertyBinding: Trying to update property for track: ' + nodeName +
-					'.' + propertyName + ' but it wasn\'t found.', targetObject );
-				return;
-
-			}
-
-			// determine versioning scheme
-			var versioning = this.Versioning.None;
-
-			this.targetObject = targetObject;
-
-			if ( targetObject.needsUpdate !== undefined ) { // material
-
-				versioning = this.Versioning.NeedsUpdate;
-
-			} else if ( targetObject.matrixWorldNeedsUpdate !== undefined ) { // node transform
-
-				versioning = this.Versioning.MatrixWorldNeedsUpdate;
-
-			}
-
-			// determine how the property gets bound
-			var bindingType = this.BindingType.Direct;
-
-			if ( propertyIndex !== undefined ) {
-
-				// access a sub element of the property array (only primitives are supported right now)
-
-				if ( propertyName === "morphTargetInfluences" ) {
-
-					// potential optimization, skip this if propertyIndex is already an integer, and convert the integer string to a true integer.
-
-					// support resolving morphTarget names into indices.
-					if ( ! targetObject.geometry ) {
-
-						console.error( 'THREE.PropertyBinding: Can not bind to morphTargetInfluences because node does not have a geometry.', this );
-						return;
-
-					}
-
-					if ( targetObject.geometry.isBufferGeometry ) {
-
-						if ( ! targetObject.geometry.morphAttributes ) {
-
-							console.error( 'THREE.PropertyBinding: Can not bind to morphTargetInfluences because node does not have a geometry.morphAttributes.', this );
-							return;
-
-						}
-
-						for ( var i = 0; i < this.node.geometry.morphAttributes.position.length; i ++ ) {
-
-							if ( targetObject.geometry.morphAttributes.position[ i ].name === propertyIndex ) {
-
-								propertyIndex = i;
-								break;
-
-							}
-
-						}
-
-
-					} else {
-
-						if ( ! targetObject.geometry.morphTargets ) {
-
-							console.error( 'THREE.PropertyBinding: Can not bind to morphTargetInfluences because node does not have a geometry.morphTargets.', this );
-							return;
-
-						}
-
-						for ( var i = 0; i < this.node.geometry.morphTargets.length; i ++ ) {
-
-							if ( targetObject.geometry.morphTargets[ i ].name === propertyIndex ) {
-
-								propertyIndex = i;
-								break;
-
-							}
-
-						}
-
-					}
-
-				}
-
-				bindingType = this.BindingType.ArrayElement;
-
-				this.resolvedProperty = nodeProperty;
-				this.propertyIndex = propertyIndex;
-
-			} else if ( nodeProperty.fromArray !== undefined && nodeProperty.toArray !== undefined ) {
-
-				// must use copy for Object3D.Euler/Quaternion
-
-				bindingType = this.BindingType.HasFromToArray;
-
-				this.resolvedProperty = nodeProperty;
-
-			} else if ( Array.isArray( nodeProperty ) ) {
-
-				bindingType = this.BindingType.EntireArray;
-
-				this.resolvedProperty = nodeProperty;
-
-			} else {
-
-				this.propertyName = propertyName;
-
-			}
-
-			// select getter / setter
-			this.getValue = this.GetterByBindingType[ bindingType ];
-			this.setValue = this.SetterByBindingTypeAndVersioning[ bindingType ][ versioning ];
-
-		},
-
-		unbind: function () {
-
-			this.node = null;
-
-			// back to the prototype version of getValue / setValue
-			// note: avoiding to mutate the shape of 'this' via 'delete'
-			this.getValue = this._getValue_unbound;
-			this.setValue = this._setValue_unbound;
-
-		}
-
-	} );
-
-	//!\ DECLARE ALIAS AFTER assign prototype !
-	Object.assign( PropertyBinding.prototype, {
-
-		// initial state of these methods that calls 'bind'
-		_getValue_unbound: PropertyBinding.prototype.getValue,
-		_setValue_unbound: PropertyBinding.prototype.setValue,
-
-	} );
-
-	/**
 	 * @author tschw
 	 * @author Ben Houston / http://clara.io/
 	 * @author David Sarno / http://lighthaus.us/
@@ -33703,21 +32987,6 @@
 
 			return this;
 
-		},
-
-		clone: function () {
-
-			var times = AnimationUtils.arraySlice( this.times, 0 );
-			var values = AnimationUtils.arraySlice( this.values, 0 );
-
-			var TypedKeyframeTrack = this.constructor;
-			var track = new TypedKeyframeTrack( this.name, times, values );
-
-			// Interpolant argument to constructor is not saved, so copy the factory method directly.
-			track.createInterpolant = this.createInterpolant;
-
-			return track;
-
 		}
 
 	} );
@@ -34382,21 +33651,6 @@
 			}
 
 			return this;
-
-		},
-
-
-		clone: function () {
-
-			var tracks = [];
-
-			for ( var i = 0; i < this.tracks.length; i ++ ) {
-
-				tracks.push( this.tracks[ i ].clone() );
-
-			}
-
-			return new AnimationClip( this.name, this.duration, tracks );
 
 		}
 
@@ -38932,12 +38186,17 @@
 					}
 
 					if ( data.format !== undefined ) texture.format = data.format;
+					if ( data.type !== undefined ) texture.type = data.type;
+					if ( data.encoding !== undefined ) texture.encoding = data.encoding;
 
 					if ( data.minFilter !== undefined ) texture.minFilter = parseConstant( data.minFilter, TEXTURE_FILTER );
 					if ( data.magFilter !== undefined ) texture.magFilter = parseConstant( data.magFilter, TEXTURE_FILTER );
 					if ( data.anisotropy !== undefined ) texture.anisotropy = data.anisotropy;
 
 					if ( data.flipY !== undefined ) texture.flipY = data.flipY;
+
+					if ( data.premultiplyAlpha !== undefined ) texture.premultiplyAlpha = data.premultiplyAlpha;
+					if ( data.unpackAlignment !== undefined ) texture.unpackAlignment = data.unpackAlignment;
 
 					textures[ data.uuid ] = texture;
 
@@ -41080,6 +40339,8 @@
 
 				Object3D.prototype.updateMatrixWorld.call( this, force );
 
+				if ( this.isPlaying === false ) return;
+
 				var panner = this.panner;
 				this.matrixWorld.decompose( position, quaternion, scale );
 
@@ -41355,6 +40616,728 @@
 			}
 
 		}
+
+	} );
+
+	/**
+	 *
+	 * A reference to a real property in the scene graph.
+	 *
+	 *
+	 * @author Ben Houston / http://clara.io/
+	 * @author David Sarno / http://lighthaus.us/
+	 * @author tschw
+	 */
+
+	// Characters [].:/ are reserved for track binding syntax.
+	var RESERVED_CHARS_RE = '\\[\\]\\.:\\/';
+
+	function Composite( targetGroup, path, optionalParsedPath ) {
+
+		var parsedPath = optionalParsedPath || PropertyBinding.parseTrackName( path );
+
+		this._targetGroup = targetGroup;
+		this._bindings = targetGroup.subscribe_( path, parsedPath );
+
+	}
+
+	Object.assign( Composite.prototype, {
+
+		getValue: function ( array, offset ) {
+
+			this.bind(); // bind all binding
+
+			var firstValidIndex = this._targetGroup.nCachedObjects_,
+				binding = this._bindings[ firstValidIndex ];
+
+			// and only call .getValue on the first
+			if ( binding !== undefined ) binding.getValue( array, offset );
+
+		},
+
+		setValue: function ( array, offset ) {
+
+			var bindings = this._bindings;
+
+			for ( var i = this._targetGroup.nCachedObjects_, n = bindings.length; i !== n; ++ i ) {
+
+				bindings[ i ].setValue( array, offset );
+
+			}
+
+		},
+
+		bind: function () {
+
+			var bindings = this._bindings;
+
+			for ( var i = this._targetGroup.nCachedObjects_, n = bindings.length; i !== n; ++ i ) {
+
+				bindings[ i ].bind();
+
+			}
+
+		},
+
+		unbind: function () {
+
+			var bindings = this._bindings;
+
+			for ( var i = this._targetGroup.nCachedObjects_, n = bindings.length; i !== n; ++ i ) {
+
+				bindings[ i ].unbind();
+
+			}
+
+		}
+
+	} );
+
+
+	function PropertyBinding( rootNode, path, parsedPath ) {
+
+		this.path = path;
+		this.parsedPath = parsedPath || PropertyBinding.parseTrackName( path );
+
+		this.node = PropertyBinding.findNode( rootNode, this.parsedPath.nodeName ) || rootNode;
+
+		this.rootNode = rootNode;
+
+	}
+
+	Object.assign( PropertyBinding, {
+
+		Composite: Composite,
+
+		create: function ( root, path, parsedPath ) {
+
+			if ( ! ( root && root.isAnimationObjectGroup ) ) {
+
+				return new PropertyBinding( root, path, parsedPath );
+
+			} else {
+
+				return new PropertyBinding.Composite( root, path, parsedPath );
+
+			}
+
+		},
+
+		/**
+		 * Replaces spaces with underscores and removes unsupported characters from
+		 * node names, to ensure compatibility with parseTrackName().
+		 *
+		 * @param  {string} name Node name to be sanitized.
+		 * @return {string}
+		 */
+		sanitizeNodeName: ( function () {
+
+			var reservedRe = new RegExp( '[' + RESERVED_CHARS_RE + ']', 'g' );
+
+			return function sanitizeNodeName( name ) {
+
+				return name.replace( /\s/g, '_' ).replace( reservedRe, '' );
+
+			};
+
+		}() ),
+
+		parseTrackName: function () {
+
+			// Attempts to allow node names from any language. ES5's `\w` regexp matches
+			// only latin characters, and the unicode \p{L} is not yet supported. So
+			// instead, we exclude reserved characters and match everything else.
+			var wordChar = '[^' + RESERVED_CHARS_RE + ']';
+			var wordCharOrDot = '[^' + RESERVED_CHARS_RE.replace( '\\.', '' ) + ']';
+
+			// Parent directories, delimited by '/' or ':'. Currently unused, but must
+			// be matched to parse the rest of the track name.
+			var directoryRe = /((?:WC+[\/:])*)/.source.replace( 'WC', wordChar );
+
+			// Target node. May contain word characters (a-zA-Z0-9_) and '.' or '-'.
+			var nodeRe = /(WCOD+)?/.source.replace( 'WCOD', wordCharOrDot );
+
+			// Object on target node, and accessor. May not contain reserved
+			// characters. Accessor may contain any character except closing bracket.
+			var objectRe = /(?:\.(WC+)(?:\[(.+)\])?)?/.source.replace( 'WC', wordChar );
+
+			// Property and accessor. May not contain reserved characters. Accessor may
+			// contain any non-bracket characters.
+			var propertyRe = /\.(WC+)(?:\[(.+)\])?/.source.replace( 'WC', wordChar );
+
+			var trackRe = new RegExp( ''
+				+ '^'
+				+ directoryRe
+				+ nodeRe
+				+ objectRe
+				+ propertyRe
+				+ '$'
+			);
+
+			var supportedObjectNames = [ 'material', 'materials', 'bones' ];
+
+			return function parseTrackName( trackName ) {
+
+				var matches = trackRe.exec( trackName );
+
+				if ( ! matches ) {
+
+					throw new Error( 'PropertyBinding: Cannot parse trackName: ' + trackName );
+
+				}
+
+				var results = {
+					// directoryName: matches[ 1 ], // (tschw) currently unused
+					nodeName: matches[ 2 ],
+					objectName: matches[ 3 ],
+					objectIndex: matches[ 4 ],
+					propertyName: matches[ 5 ], // required
+					propertyIndex: matches[ 6 ]
+				};
+
+				var lastDot = results.nodeName && results.nodeName.lastIndexOf( '.' );
+
+				if ( lastDot !== undefined && lastDot !== - 1 ) {
+
+					var objectName = results.nodeName.substring( lastDot + 1 );
+
+					// Object names must be checked against a whitelist. Otherwise, there
+					// is no way to parse 'foo.bar.baz': 'baz' must be a property, but
+					// 'bar' could be the objectName, or part of a nodeName (which can
+					// include '.' characters).
+					if ( supportedObjectNames.indexOf( objectName ) !== - 1 ) {
+
+						results.nodeName = results.nodeName.substring( 0, lastDot );
+						results.objectName = objectName;
+
+					}
+
+				}
+
+				if ( results.propertyName === null || results.propertyName.length === 0 ) {
+
+					throw new Error( 'PropertyBinding: can not parse propertyName from trackName: ' + trackName );
+
+				}
+
+				return results;
+
+			};
+
+		}(),
+
+		findNode: function ( root, nodeName ) {
+
+			if ( ! nodeName || nodeName === "" || nodeName === "root" || nodeName === "." || nodeName === - 1 || nodeName === root.name || nodeName === root.uuid ) {
+
+				return root;
+
+			}
+
+			// search into skeleton bones.
+			if ( root.skeleton ) {
+
+				var bone = root.skeleton.getBoneByName( nodeName );
+
+				if ( bone !== undefined ) {
+
+					return bone;
+
+				}
+
+			}
+
+			// search into node subtree.
+			if ( root.children ) {
+
+				var searchNodeSubtree = function ( children ) {
+
+					for ( var i = 0; i < children.length; i ++ ) {
+
+						var childNode = children[ i ];
+
+						if ( childNode.name === nodeName || childNode.uuid === nodeName ) {
+
+							return childNode;
+
+						}
+
+						var result = searchNodeSubtree( childNode.children );
+
+						if ( result ) return result;
+
+					}
+
+					return null;
+
+				};
+
+				var subTreeNode = searchNodeSubtree( root.children );
+
+				if ( subTreeNode ) {
+
+					return subTreeNode;
+
+				}
+
+			}
+
+			return null;
+
+		}
+
+	} );
+
+	Object.assign( PropertyBinding.prototype, { // prototype, continued
+
+		// these are used to "bind" a nonexistent property
+		_getValue_unavailable: function () {},
+		_setValue_unavailable: function () {},
+
+		BindingType: {
+			Direct: 0,
+			EntireArray: 1,
+			ArrayElement: 2,
+			HasFromToArray: 3
+		},
+
+		Versioning: {
+			None: 0,
+			NeedsUpdate: 1,
+			MatrixWorldNeedsUpdate: 2
+		},
+
+		GetterByBindingType: [
+
+			function getValue_direct( buffer, offset ) {
+
+				buffer[ offset ] = this.node[ this.propertyName ];
+
+			},
+
+			function getValue_array( buffer, offset ) {
+
+				var source = this.resolvedProperty;
+
+				for ( var i = 0, n = source.length; i !== n; ++ i ) {
+
+					buffer[ offset ++ ] = source[ i ];
+
+				}
+
+			},
+
+			function getValue_arrayElement( buffer, offset ) {
+
+				buffer[ offset ] = this.resolvedProperty[ this.propertyIndex ];
+
+			},
+
+			function getValue_toArray( buffer, offset ) {
+
+				this.resolvedProperty.toArray( buffer, offset );
+
+			}
+
+		],
+
+		SetterByBindingTypeAndVersioning: [
+
+			[
+				// Direct
+
+				function setValue_direct( buffer, offset ) {
+
+					this.targetObject[ this.propertyName ] = buffer[ offset ];
+
+				},
+
+				function setValue_direct_setNeedsUpdate( buffer, offset ) {
+
+					this.targetObject[ this.propertyName ] = buffer[ offset ];
+					this.targetObject.needsUpdate = true;
+
+				},
+
+				function setValue_direct_setMatrixWorldNeedsUpdate( buffer, offset ) {
+
+					this.targetObject[ this.propertyName ] = buffer[ offset ];
+					this.targetObject.matrixWorldNeedsUpdate = true;
+
+				}
+
+			], [
+
+				// EntireArray
+
+				function setValue_array( buffer, offset ) {
+
+					var dest = this.resolvedProperty;
+
+					for ( var i = 0, n = dest.length; i !== n; ++ i ) {
+
+						dest[ i ] = buffer[ offset ++ ];
+
+					}
+
+				},
+
+				function setValue_array_setNeedsUpdate( buffer, offset ) {
+
+					var dest = this.resolvedProperty;
+
+					for ( var i = 0, n = dest.length; i !== n; ++ i ) {
+
+						dest[ i ] = buffer[ offset ++ ];
+
+					}
+
+					this.targetObject.needsUpdate = true;
+
+				},
+
+				function setValue_array_setMatrixWorldNeedsUpdate( buffer, offset ) {
+
+					var dest = this.resolvedProperty;
+
+					for ( var i = 0, n = dest.length; i !== n; ++ i ) {
+
+						dest[ i ] = buffer[ offset ++ ];
+
+					}
+
+					this.targetObject.matrixWorldNeedsUpdate = true;
+
+				}
+
+			], [
+
+				// ArrayElement
+
+				function setValue_arrayElement( buffer, offset ) {
+
+					this.resolvedProperty[ this.propertyIndex ] = buffer[ offset ];
+
+				},
+
+				function setValue_arrayElement_setNeedsUpdate( buffer, offset ) {
+
+					this.resolvedProperty[ this.propertyIndex ] = buffer[ offset ];
+					this.targetObject.needsUpdate = true;
+
+				},
+
+				function setValue_arrayElement_setMatrixWorldNeedsUpdate( buffer, offset ) {
+
+					this.resolvedProperty[ this.propertyIndex ] = buffer[ offset ];
+					this.targetObject.matrixWorldNeedsUpdate = true;
+
+				}
+
+			], [
+
+				// HasToFromArray
+
+				function setValue_fromArray( buffer, offset ) {
+
+					this.resolvedProperty.fromArray( buffer, offset );
+
+				},
+
+				function setValue_fromArray_setNeedsUpdate( buffer, offset ) {
+
+					this.resolvedProperty.fromArray( buffer, offset );
+					this.targetObject.needsUpdate = true;
+
+				},
+
+				function setValue_fromArray_setMatrixWorldNeedsUpdate( buffer, offset ) {
+
+					this.resolvedProperty.fromArray( buffer, offset );
+					this.targetObject.matrixWorldNeedsUpdate = true;
+
+				}
+
+			]
+
+		],
+
+		getValue: function getValue_unbound( targetArray, offset ) {
+
+			this.bind();
+			this.getValue( targetArray, offset );
+
+			// Note: This class uses a State pattern on a per-method basis:
+			// 'bind' sets 'this.getValue' / 'setValue' and shadows the
+			// prototype version of these methods with one that represents
+			// the bound state. When the property is not found, the methods
+			// become no-ops.
+
+		},
+
+		setValue: function getValue_unbound( sourceArray, offset ) {
+
+			this.bind();
+			this.setValue( sourceArray, offset );
+
+		},
+
+		// create getter / setter pair for a property in the scene graph
+		bind: function () {
+
+			var targetObject = this.node,
+				parsedPath = this.parsedPath,
+
+				objectName = parsedPath.objectName,
+				propertyName = parsedPath.propertyName,
+				propertyIndex = parsedPath.propertyIndex;
+
+			if ( ! targetObject ) {
+
+				targetObject = PropertyBinding.findNode( this.rootNode, parsedPath.nodeName ) || this.rootNode;
+
+				this.node = targetObject;
+
+			}
+
+			// set fail state so we can just 'return' on error
+			this.getValue = this._getValue_unavailable;
+			this.setValue = this._setValue_unavailable;
+
+			// ensure there is a value node
+			if ( ! targetObject ) {
+
+				console.error( 'THREE.PropertyBinding: Trying to update node for track: ' + this.path + ' but it wasn\'t found.' );
+				return;
+
+			}
+
+			if ( objectName ) {
+
+				var objectIndex = parsedPath.objectIndex;
+
+				// special cases were we need to reach deeper into the hierarchy to get the face materials....
+				switch ( objectName ) {
+
+					case 'materials':
+
+						if ( ! targetObject.material ) {
+
+							console.error( 'THREE.PropertyBinding: Can not bind to material as node does not have a material.', this );
+							return;
+
+						}
+
+						if ( ! targetObject.material.materials ) {
+
+							console.error( 'THREE.PropertyBinding: Can not bind to material.materials as node.material does not have a materials array.', this );
+							return;
+
+						}
+
+						targetObject = targetObject.material.materials;
+
+						break;
+
+					case 'bones':
+
+						if ( ! targetObject.skeleton ) {
+
+							console.error( 'THREE.PropertyBinding: Can not bind to bones as node does not have a skeleton.', this );
+							return;
+
+						}
+
+						// potential future optimization: skip this if propertyIndex is already an integer
+						// and convert the integer string to a true integer.
+
+						targetObject = targetObject.skeleton.bones;
+
+						// support resolving morphTarget names into indices.
+						for ( var i = 0; i < targetObject.length; i ++ ) {
+
+							if ( targetObject[ i ].name === objectIndex ) {
+
+								objectIndex = i;
+								break;
+
+							}
+
+						}
+
+						break;
+
+					default:
+
+						if ( targetObject[ objectName ] === undefined ) {
+
+							console.error( 'THREE.PropertyBinding: Can not bind to objectName of node undefined.', this );
+							return;
+
+						}
+
+						targetObject = targetObject[ objectName ];
+
+				}
+
+
+				if ( objectIndex !== undefined ) {
+
+					if ( targetObject[ objectIndex ] === undefined ) {
+
+						console.error( 'THREE.PropertyBinding: Trying to bind to objectIndex of objectName, but is undefined.', this, targetObject );
+						return;
+
+					}
+
+					targetObject = targetObject[ objectIndex ];
+
+				}
+
+			}
+
+			// resolve property
+			var nodeProperty = targetObject[ propertyName ];
+
+			if ( nodeProperty === undefined ) {
+
+				var nodeName = parsedPath.nodeName;
+
+				console.error( 'THREE.PropertyBinding: Trying to update property for track: ' + nodeName +
+					'.' + propertyName + ' but it wasn\'t found.', targetObject );
+				return;
+
+			}
+
+			// determine versioning scheme
+			var versioning = this.Versioning.None;
+
+			this.targetObject = targetObject;
+
+			if ( targetObject.needsUpdate !== undefined ) { // material
+
+				versioning = this.Versioning.NeedsUpdate;
+
+			} else if ( targetObject.matrixWorldNeedsUpdate !== undefined ) { // node transform
+
+				versioning = this.Versioning.MatrixWorldNeedsUpdate;
+
+			}
+
+			// determine how the property gets bound
+			var bindingType = this.BindingType.Direct;
+
+			if ( propertyIndex !== undefined ) {
+
+				// access a sub element of the property array (only primitives are supported right now)
+
+				if ( propertyName === "morphTargetInfluences" ) {
+
+					// potential optimization, skip this if propertyIndex is already an integer, and convert the integer string to a true integer.
+
+					// support resolving morphTarget names into indices.
+					if ( ! targetObject.geometry ) {
+
+						console.error( 'THREE.PropertyBinding: Can not bind to morphTargetInfluences because node does not have a geometry.', this );
+						return;
+
+					}
+
+					if ( targetObject.geometry.isBufferGeometry ) {
+
+						if ( ! targetObject.geometry.morphAttributes ) {
+
+							console.error( 'THREE.PropertyBinding: Can not bind to morphTargetInfluences because node does not have a geometry.morphAttributes.', this );
+							return;
+
+						}
+
+						for ( var i = 0; i < this.node.geometry.morphAttributes.position.length; i ++ ) {
+
+							if ( targetObject.geometry.morphAttributes.position[ i ].name === propertyIndex ) {
+
+								propertyIndex = i;
+								break;
+
+							}
+
+						}
+
+
+					} else {
+
+						if ( ! targetObject.geometry.morphTargets ) {
+
+							console.error( 'THREE.PropertyBinding: Can not bind to morphTargetInfluences because node does not have a geometry.morphTargets.', this );
+							return;
+
+						}
+
+						for ( var i = 0; i < this.node.geometry.morphTargets.length; i ++ ) {
+
+							if ( targetObject.geometry.morphTargets[ i ].name === propertyIndex ) {
+
+								propertyIndex = i;
+								break;
+
+							}
+
+						}
+
+					}
+
+				}
+
+				bindingType = this.BindingType.ArrayElement;
+
+				this.resolvedProperty = nodeProperty;
+				this.propertyIndex = propertyIndex;
+
+			} else if ( nodeProperty.fromArray !== undefined && nodeProperty.toArray !== undefined ) {
+
+				// must use copy for Object3D.Euler/Quaternion
+
+				bindingType = this.BindingType.HasFromToArray;
+
+				this.resolvedProperty = nodeProperty;
+
+			} else if ( Array.isArray( nodeProperty ) ) {
+
+				bindingType = this.BindingType.EntireArray;
+
+				this.resolvedProperty = nodeProperty;
+
+			} else {
+
+				this.propertyName = propertyName;
+
+			}
+
+			// select getter / setter
+			this.getValue = this.GetterByBindingType[ bindingType ];
+			this.setValue = this.SetterByBindingTypeAndVersioning[ bindingType ][ versioning ];
+
+		},
+
+		unbind: function () {
+
+			this.node = null;
+
+			// back to the prototype version of getValue / setValue
+			// note: avoiding to mutate the shape of 'this' via 'delete'
+			this.getValue = this._getValue_unbound;
+			this.setValue = this._setValue_unbound;
+
+		}
+
+	} );
+
+	//!\ DECLARE ALIAS AFTER assign prototype !
+	Object.assign( PropertyBinding.prototype, {
+
+		// initial state of these methods that calls 'bind'
+		_getValue_unbound: PropertyBinding.prototype.getValue,
+		_setValue_unbound: PropertyBinding.prototype.setValue,
 
 	} );
 
@@ -44413,73 +44396,75 @@
 	 * @author abelnation / http://github.com/abelnation
 	 * @author Mugen87 / http://github.com/Mugen87
 	 * @author WestLangley / http://github.com/WestLangley
+	 *
+	 *  This helper must be added as a child of the light
 	 */
 
 	function RectAreaLightHelper( light, color ) {
 
-		Object3D.call( this );
+		this.type = 'RectAreaLightHelper';
 
 		this.light = light;
-		this.light.updateMatrixWorld();
 
-		this.matrix = light.matrixWorld;
-		this.matrixAutoUpdate = false;
+		this.color = color; // optional hardwired color for the helper
 
-		this.color = color;
+		var positions = [ 1, 1, 0, - 1, 1, 0, - 1, - 1, 0, 1, - 1, 0, 1, 1, 0 ];
+
+		var geometry = new BufferGeometry();
+		geometry.addAttribute( 'position', new Float32BufferAttribute( positions, 3 ) );
+		geometry.computeBoundingSphere();
 
 		var material = new LineBasicMaterial( { fog: false } );
 
-		var geometry = new BufferGeometry();
+		Line.call( this, geometry, material );
 
-		geometry.addAttribute( 'position', new BufferAttribute( new Float32Array( 5 * 3 ), 3 ) );
+		//
 
-		this.line = new Line( geometry, material );
-		this.add( this.line );
+		var positions2 = [ 1, 1, 0, - 1, 1, 0, - 1, - 1, 0, 1, 1, 0, - 1, - 1, 0, 1, - 1, 0 ];
 
+		var geometry2 = new BufferGeometry();
+		geometry2.addAttribute( 'position', new Float32BufferAttribute( positions2, 3 ) );
+		geometry2.computeBoundingSphere();
+
+		this.add( new Mesh( geometry2, new MeshBasicMaterial( { side: THREE.BackSide, fog: false } ) ) );
 
 		this.update();
 
 	}
 
-	RectAreaLightHelper.prototype = Object.create( Object3D.prototype );
+	RectAreaLightHelper.prototype = Object.create( Line.prototype );
 	RectAreaLightHelper.prototype.constructor = RectAreaLightHelper;
-
-	RectAreaLightHelper.prototype.dispose = function () {
-
-		this.children[ 0 ].geometry.dispose();
-		this.children[ 0 ].material.dispose();
-
-	};
 
 	RectAreaLightHelper.prototype.update = function () {
 
-		// calculate new dimensions of the helper
-
-		var hx = this.light.width * 0.5;
-		var hy = this.light.height * 0.5;
-
-		var position = this.line.geometry.attributes.position;
-		var array = position.array;
-
-		// update vertices
-
-		array[ 0 ] = hx; array[ 1 ] = - hy; array[ 2 ] = 0;
-		array[ 3 ] = hx; array[ 4 ] = hy; array[ 5 ] = 0;
-		array[ 6 ] = - hx; array[ 7 ] = hy; array[ 8 ] = 0;
-		array[ 9 ] = - hx; array[ 10 ] = - hy; array[ 11 ] = 0;
-		array[ 12 ] = hx; array[ 13 ] = - hy; array[ 14 ] = 0;
-
-		position.needsUpdate = true;
+		this.scale.set( 0.5 * this.light.width, 0.5 * this.light.height, 1 );
 
 		if ( this.color !== undefined ) {
 
-			this.line.material.color.set( this.color );
+			this.material.color.set( this.color );
+			this.children[ 0 ].material.color.set( this.color );
 
 		} else {
 
-			this.line.material.color.copy( this.light.color );
+			this.material.color.copy( this.light.color ).multiplyScalar( this.light.intensity );
+
+			// prevent hue shift
+			var c = this.material.color;
+			var max = Math.max( c.r, c.g, c.b );
+			if ( max > 1 ) c.multiplyScalar( 1 / max );
+
+			this.children[ 0 ].material.color.copy( this.material.color );
 
 		}
+
+	};
+
+	RectAreaLightHelper.prototype.dispose = function () {
+
+		this.geometry.dispose();
+		this.material.dispose();
+		this.children[ 0 ].geometry.dispose();
+		this.children[ 0 ].material.dispose();
 
 	};
 
