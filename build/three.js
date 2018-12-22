@@ -13085,42 +13085,42 @@
 			var uniform = this.uniforms[ name ];
 			var value = uniform.value;
 
-			if ( value.isTexture ) {
+			if ( value && value.isTexture ) {
 
 				data.uniforms[ name ] = {
 					type: 't',
 					value: value.toJSON( meta ).uuid
 				};
 
-			} else if ( value.isColor ) {
+			} else if ( value && value.isColor ) {
 
 				data.uniforms[ name ] = {
 					type: 'c',
 					value: value.getHex()
 				};
 
-			} else if ( value.isVector2 ) {
+			} else if ( value && value.isVector2 ) {
 
 				data.uniforms[ name ] = {
 					type: 'v2',
 					value: value.toArray()
 				};
 
-			} else if ( value.isVector3 ) {
+			} else if ( value && value.isVector3 ) {
 
 				data.uniforms[ name ] = {
 					type: 'v3',
 					value: value.toArray()
 				};
 
-			} else if ( value.isVector4 ) {
+			} else if ( value && value.isVector4 ) {
 
 				data.uniforms[ name ] = {
 					type: 'v4',
 					value: value.toArray()
 				};
 
-			} else if ( value.isMatrix4 ) {
+			} else if ( value && value.isMatrix4 ) {
 
 				data.uniforms[ name ] = {
 					type: 'm4',
@@ -23936,7 +23936,7 @@
 
 				} else if ( material.isShadowMaterial ) {
 
-					m_uniforms.color.value = material.color;
+					m_uniforms.color.value.copy( material.color );
 					m_uniforms.opacity.value = material.opacity;
 
 				}
@@ -23982,7 +23982,7 @@
 
 			if ( material.color ) {
 
-				uniforms.diffuse.value = material.color;
+				uniforms.diffuse.value.copy( material.color );
 
 			}
 
@@ -24112,7 +24112,7 @@
 
 		function refreshUniformsLine( uniforms, material ) {
 
-			uniforms.diffuse.value = material.color;
+			uniforms.diffuse.value.copy( material.color );
 			uniforms.opacity.value = material.opacity;
 
 		}
@@ -24127,7 +24127,7 @@
 
 		function refreshUniformsPoints( uniforms, material ) {
 
-			uniforms.diffuse.value = material.color;
+			uniforms.diffuse.value.copy( material.color );
 			uniforms.opacity.value = material.opacity;
 			uniforms.size.value = material.size * _pixelRatio;
 			uniforms.scale.value = _height * 0.5;
@@ -24150,7 +24150,7 @@
 
 		function refreshUniformsSprites( uniforms, material ) {
 
-			uniforms.diffuse.value = material.color;
+			uniforms.diffuse.value.copy( material.color );
 			uniforms.opacity.value = material.opacity;
 			uniforms.rotation.value = material.rotation;
 			uniforms.map.value = material.map;
@@ -24171,7 +24171,7 @@
 
 		function refreshUniformsFog( uniforms, fog ) {
 
-			uniforms.fogColor.value = fog.color;
+			uniforms.fogColor.value.copy( fog.color );
 
 			if ( fog.isFog ) {
 
@@ -24198,7 +24198,7 @@
 
 		function refreshUniformsPhong( uniforms, material ) {
 
-			uniforms.specular.value = material.specular;
+			uniforms.specular.value.copy( material.specular );
 			uniforms.shininess.value = Math.max( material.shininess, 1e-4 ); // to prevent pow( 0.0, 0.0 )
 
 			if ( material.emissiveMap ) {
@@ -40341,10 +40341,11 @@
 
 				if ( this.isPlaying === false ) return;
 
-				var panner = this.panner;
 				this.matrixWorld.decompose( position, quaternion, scale );
 
 				orientation.set( 0, 0, 1 ).applyQuaternion( quaternion );
+
+				var panner = this.panner;
 
 				if ( panner.positionX ) {
 
