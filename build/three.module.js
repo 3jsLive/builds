@@ -11989,7 +11989,21 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 	toNonIndexed: function () {
 
-		function convertBufferAttribute( attribute, indices ) {
+		if ( this.index === null ) {
+
+			console.warn( 'THREE.BufferGeometry.toNonIndexed(): Geometry is already non-indexed.' );
+			return this;
+
+		}
+
+		var geometry2 = new BufferGeometry();
+
+		var indices = this.index.array;
+		var attributes = this.attributes;
+
+		for ( var name in attributes ) {
+
+			var attribute = attributes[ name ];
 
 			var array = attribute.array;
 			var itemSize = attribute.itemSize;
@@ -12010,60 +12024,9 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 			}
 
-			return new BufferAttribute( array2, itemSize );
+			geometry2.addAttribute( name, new BufferAttribute( array2, itemSize ) );
 
 		}
-
-		//
-
-		if ( this.index === null ) {
-
-			console.warn( 'THREE.BufferGeometry.toNonIndexed(): Geometry is already non-indexed.' );
-			return this;
-
-		}
-
-		var geometry2 = new BufferGeometry();
-
-		var indices = this.index.array;
-		var attributes = this.attributes;
-
-		// attributes
-
-		for ( var name in attributes ) {
-
-			var attribute = attributes[ name ];
-
-			var newAttribute = convertBufferAttribute( attribute, indices );
-
-			geometry2.addAttribute( name, newAttribute );
-
-		}
-
-		// morph attributes
-
-		var morphAttributes = this.morphAttributes;
-
-		for ( name in morphAttributes ) {
-
-			var morphArray = [];
-			var morphAttribute = morphAttributes[ name ]; // morphAttribute: array of Float32BufferAttributes
-
-			for ( var i = 0, il = morphAttribute.length; i < il; i ++ ) {
-
-				var attribute = morphAttribute[ i ];
-
-				var newAttribute = convertBufferAttribute( attribute, indices );
-
-				morphArray.push( newAttribute );
-
-			}
-
-			geometry2.morphAttributes[ name ] = morphArray;
-
-		}
-
-		// groups
 
 		var groups = this.groups;
 
@@ -14726,7 +14689,7 @@ function WebGLBackground( renderer, state, objects, premultipliedAlpha ) {
 			}
 
 			// push to the pre-sorted opaque render list
-			renderList.unshift( boxMesh, boxMesh.geometry, boxMesh.material, 0, null );
+			renderList.unshift( boxMesh, boxMesh.geometry, boxMesh.material, 0, 0, null );
 
 		} else if ( background && background.isTexture ) {
 
@@ -14785,7 +14748,7 @@ function WebGLBackground( renderer, state, objects, premultipliedAlpha ) {
 
 
 			// push to the pre-sorted opaque render list
-			renderList.unshift( planeMesh, planeMesh.geometry, planeMesh.material, 0, null );
+			renderList.unshift( planeMesh, planeMesh.geometry, planeMesh.material, 0, 0, null );
 
 		}
 
@@ -17775,7 +17738,11 @@ function WebGLProperties() {
 
 function painterSortStable( a, b ) {
 
-	if ( a.renderOrder !== b.renderOrder ) {
+	if ( a.groupOrder !== b.groupOrder ) {
+
+		return a.groupOrder - b.groupOrder;
+
+	} else if ( a.renderOrder !== b.renderOrder ) {
 
 		return a.renderOrder - b.renderOrder;
 
@@ -17801,7 +17768,11 @@ function painterSortStable( a, b ) {
 
 function reversePainterSortStable( a, b ) {
 
-	if ( a.renderOrder !== b.renderOrder ) {
+	if ( a.groupOrder !== b.groupOrder ) {
+
+		return a.groupOrder - b.groupOrder;
+
+	} else if ( a.renderOrder !== b.renderOrder ) {
 
 		return a.renderOrder - b.renderOrder;
 
@@ -17835,7 +17806,7 @@ function WebGLRenderList() {
 
 	}
 
-	function getNextRenderItem( object, geometry, material, z, group ) {
+	function getNextRenderItem( object, geometry, material, groupOrder, z, group ) {
 
 		var renderItem = renderItems[ renderItemsIndex ];
 
@@ -17847,6 +17818,7 @@ function WebGLRenderList() {
 				geometry: geometry,
 				material: material,
 				program: material.program,
+				groupOrder: groupOrder,
 				renderOrder: object.renderOrder,
 				z: z,
 				group: group
@@ -17861,6 +17833,7 @@ function WebGLRenderList() {
 			renderItem.geometry = geometry;
 			renderItem.material = material;
 			renderItem.program = material.program;
+			renderItem.groupOrder = groupOrder;
 			renderItem.renderOrder = object.renderOrder;
 			renderItem.z = z;
 			renderItem.group = group;
@@ -17873,17 +17846,17 @@ function WebGLRenderList() {
 
 	}
 
-	function push( object, geometry, material, z, group ) {
+	function push( object, geometry, material, groupOrder, z, group ) {
 
-		var renderItem = getNextRenderItem( object, geometry, material, z, group );
+		var renderItem = getNextRenderItem( object, geometry, material, groupOrder, z, group );
 
 		( material.transparent === true ? transparent : opaque ).push( renderItem );
 
 	}
 
-	function unshift( object, geometry, material, z, group ) {
+	function unshift( object, geometry, material, groupOrder, z, group ) {
 
-		var renderItem = getNextRenderItem( object, geometry, material, z, group );
+		var renderItem = getNextRenderItem( object, geometry, material, groupOrder, z, group );
 
 		( material.transparent === true ? transparent : opaque ).unshift( renderItem );
 
@@ -20044,31 +20017,44 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 		if ( ! capabilities.isWebGL2 ) return glFormat;
 
+		var internalFormat = glFormat;
+
 		if ( glFormat === 6403 ) {
 
-			if ( glType === 5126 ) return 33326;
-			if ( glType === 5131 ) return 33325;
-			if ( glType === 5121 ) return 33321;
+			if ( glType === 5126 ) internalFormat = 33326;
+			if ( glType === 5131 ) internalFormat = 33325;
+			if ( glType === 5121 ) internalFormat = 33321;
 
 		}
 
 		if ( glFormat === 6407 ) {
 
-			if ( glType === 5126 ) return 34837;
-			if ( glType === 5131 ) return 34843;
-			if ( glType === 5121 ) return 32849;
+			if ( glType === 5126 ) internalFormat = 34837;
+			if ( glType === 5131 ) internalFormat = 34843;
+			if ( glType === 5121 ) internalFormat = 32849;
 
 		}
 
 		if ( glFormat === 6408 ) {
 
-			if ( glType === 5126 ) return 34836;
-			if ( glType === 5131 ) return 34842;
-			if ( glType === 5121 ) return 32856;
+			if ( glType === 5126 ) internalFormat = 34836;
+			if ( glType === 5131 ) internalFormat = 34842;
+			if ( glType === 5121 ) internalFormat = 32856;
 
 		}
 
-		return glFormat;
+		if ( internalFormat === 33325 || internalFormat === 33326 ||
+			internalFormat === 34842 || internalFormat === 34836 ) {
+
+			extensions.get( 'EXT_color_buffer_float' );
+
+		} else if ( internalFormat === 34843 || internalFormat === 34837 ) {
+
+			console.warn( 'THREE.WebGLRenderer: Floating point textures with RGB format not supported. Please use RGBA instead.' );
+
+		}
+
+		return internalFormat;
 
 	}
 
@@ -23185,7 +23171,7 @@ function WebGLRenderer( parameters ) {
 		currentRenderList = renderLists.get( scene, camera );
 		currentRenderList.init();
 
-		projectObject( scene, camera, _this.sortObjects );
+		projectObject( scene, camera, 0, _this.sortObjects );
 
 		if ( _this.sortObjects === true ) {
 
@@ -23276,7 +23262,7 @@ function WebGLRenderer( parameters ) {
 
 	};
 
-	function projectObject( object, camera, sortObjects ) {
+	function projectObject( object, camera, groupOrder, sortObjects ) {
 
 		if ( object.visible === false ) return;
 
@@ -23284,7 +23270,11 @@ function WebGLRenderer( parameters ) {
 
 		if ( visible ) {
 
-			if ( object.isLight ) {
+			if ( object.isGroup ) {
+
+				groupOrder = object.renderOrder;
+
+			} else if ( object.isLight ) {
 
 				currentRenderState.pushLight( object );
 
@@ -23308,7 +23298,7 @@ function WebGLRenderer( parameters ) {
 					var geometry = objects.update( object );
 					var material = object.material;
 
-					currentRenderList.push( object, geometry, material, _vector3.z, null );
+					currentRenderList.push( object, geometry, material, groupOrder, _vector3.z, null );
 
 				}
 
@@ -23321,7 +23311,7 @@ function WebGLRenderer( parameters ) {
 
 				}
 
-				currentRenderList.push( object, null, object.material, _vector3.z, null );
+				currentRenderList.push( object, null, object.material, groupOrder, _vector3.z, null );
 
 			} else if ( object.isMesh || object.isLine || object.isPoints ) {
 
@@ -23354,7 +23344,7 @@ function WebGLRenderer( parameters ) {
 
 							if ( groupMaterial && groupMaterial.visible ) {
 
-								currentRenderList.push( object, geometry, groupMaterial, _vector3.z, group );
+								currentRenderList.push( object, geometry, groupMaterial, groupOrder, _vector3.z, group );
 
 							}
 
@@ -23362,7 +23352,7 @@ function WebGLRenderer( parameters ) {
 
 					} else if ( material.visible ) {
 
-						currentRenderList.push( object, geometry, material, _vector3.z, null );
+						currentRenderList.push( object, geometry, material, groupOrder, _vector3.z, null );
 
 					}
 
@@ -23376,7 +23366,7 @@ function WebGLRenderer( parameters ) {
 
 		for ( var i = 0, l = children.length; i < l; i ++ ) {
 
-			projectObject( children[ i ], camera, sortObjects );
+			projectObject( children[ i ], camera, groupOrder, sortObjects );
 
 		}
 
