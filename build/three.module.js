@@ -179,7 +179,7 @@ Object.assign( EventDispatcher.prototype, {
 
 } );
 
-var REVISION = '101dev';
+var REVISION = '100dev';
 var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
 var CullFaceNone = 0;
 var CullFaceBack = 1;
@@ -3855,17 +3855,11 @@ Texture.prototype = Object.assign( Object.create( EventDispatcher.prototype ), {
 			wrap: [ this.wrapS, this.wrapT ],
 
 			format: this.format,
-			type: this.type,
-			encoding: this.encoding,
-
 			minFilter: this.minFilter,
 			magFilter: this.magFilter,
 			anisotropy: this.anisotropy,
 
-			flipY: this.flipY,
-
-			premultiplyAlpha: this.premultiplyAlpha,
-			unpackAlignment: this.unpackAlignment
+			flipY: this.flipY
 
 		};
 
@@ -6078,7 +6072,7 @@ var lights_phong_pars_fragment = "varying vec3 vViewPosition;\n#ifndef FLAT_SHAD
 
 var lights_physical_fragment = "PhysicalMaterial material;\nmaterial.diffuseColor = diffuseColor.rgb * ( 1.0 - metalnessFactor );\nmaterial.specularRoughness = clamp( roughnessFactor, 0.04, 1.0 );\n#ifdef STANDARD\n\tmaterial.specularColor = mix( vec3( DEFAULT_SPECULAR_COEFFICIENT ), diffuseColor.rgb, metalnessFactor );\n#else\n\tmaterial.specularColor = mix( vec3( MAXIMUM_SPECULAR_COEFFICIENT * pow2( reflectivity ) ), diffuseColor.rgb, metalnessFactor );\n\tmaterial.clearCoat = saturate( clearCoat );\tmaterial.clearCoatRoughness = clamp( clearCoatRoughness, 0.04, 1.0 );\n#endif";
 
-var lights_physical_pars_fragment = "struct PhysicalMaterial {\n\tvec3\tdiffuseColor;\n\tfloat\tspecularRoughness;\n\tvec3\tspecularColor;\n\t#ifndef STANDARD\n\t\tfloat clearCoat;\n\t\tfloat clearCoatRoughness;\n\t#endif\n};\n#define MAXIMUM_SPECULAR_COEFFICIENT 0.16\n#define DEFAULT_SPECULAR_COEFFICIENT 0.04\nfloat clearCoatDHRApprox( const in float roughness, const in float dotNL ) {\n\treturn DEFAULT_SPECULAR_COEFFICIENT + ( 1.0 - DEFAULT_SPECULAR_COEFFICIENT ) * ( pow( 1.0 - dotNL, 5.0 ) * pow( 1.0 - roughness, 2.0 ) );\n}\n#if NUM_RECT_AREA_LIGHTS > 0\n\tvoid RE_Direct_RectArea_Physical( const in RectAreaLight rectAreaLight, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\t\tvec3 normal = geometry.normal;\n\t\tvec3 viewDir = geometry.viewDir;\n\t\tvec3 position = geometry.position;\n\t\tvec3 lightPos = rectAreaLight.position;\n\t\tvec3 halfWidth = rectAreaLight.halfWidth;\n\t\tvec3 halfHeight = rectAreaLight.halfHeight;\n\t\tvec3 lightColor = rectAreaLight.color;\n\t\tfloat roughness = material.specularRoughness;\n\t\tvec3 rectCoords[ 4 ];\n\t\trectCoords[ 0 ] = lightPos + halfWidth - halfHeight;\t\trectCoords[ 1 ] = lightPos - halfWidth - halfHeight;\n\t\trectCoords[ 2 ] = lightPos - halfWidth + halfHeight;\n\t\trectCoords[ 3 ] = lightPos + halfWidth + halfHeight;\n\t\tvec2 uv = LTC_Uv( normal, viewDir, roughness );\n\t\tvec4 t1 = texture2D( ltc_1, uv );\n\t\tvec4 t2 = texture2D( ltc_2, uv );\n\t\tmat3 mInv = mat3(\n\t\t\tvec3( t1.x, 0, t1.y ),\n\t\t\tvec3(    0, 1,    0 ),\n\t\t\tvec3( t1.z, 0, t1.w )\n\t\t);\n\t\tvec3 fresnel = ( material.specularColor * t2.x + ( vec3( 1.0 ) - material.specularColor ) * t2.y );\n\t\treflectedLight.directSpecular += lightColor * fresnel * LTC_Evaluate( normal, viewDir, position, mInv, rectCoords );\n\t\treflectedLight.directDiffuse += lightColor * material.diffuseColor * LTC_Evaluate( normal, viewDir, position, mat3( 1.0 ), rectCoords );\n\t}\n#endif\nvoid RE_Direct_Physical( const in IncidentLight directLight, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\tfloat dotNL = saturate( dot( geometry.normal, directLight.direction ) );\n\tvec3 irradiance = dotNL * directLight.color;\n\t#ifndef PHYSICALLY_CORRECT_LIGHTS\n\t\tirradiance *= PI;\n\t#endif\n\t#ifndef STANDARD\n\t\tfloat clearCoatDHR = material.clearCoat * clearCoatDHRApprox( material.clearCoatRoughness, dotNL );\n\t#else\n\t\tfloat clearCoatDHR = 0.0;\n\t#endif\n\treflectedLight.directSpecular += ( 1.0 - clearCoatDHR ) * irradiance * BRDF_Specular_GGX( directLight, geometry, material.specularColor, material.specularRoughness );\n\treflectedLight.directDiffuse += ( 1.0 - clearCoatDHR ) * irradiance * BRDF_Diffuse_Lambert( material.diffuseColor );\n\t#ifndef STANDARD\n\t\treflectedLight.directSpecular += irradiance * material.clearCoat * BRDF_Specular_GGX( directLight, geometry, vec3( DEFAULT_SPECULAR_COEFFICIENT ), material.clearCoatRoughness );\n\t#endif\n}\nvoid RE_IndirectDiffuse_Physical( const in vec3 irradiance, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\treflectedLight.indirectDiffuse += irradiance * BRDF_Diffuse_Lambert( material.diffuseColor );\n}\nvoid RE_IndirectSpecular_Physical( const in vec3 radiance, const in vec3 clearCoatRadiance, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\t#ifndef STANDARD\n\t\tfloat dotNV = saturate( dot( geometry.normal, geometry.viewDir ) );\n\t\tfloat dotNL = dotNV;\n\t\tfloat clearCoatDHR = material.clearCoat * clearCoatDHRApprox( material.clearCoatRoughness, dotNL );\n\t#else\n\t\tfloat clearCoatDHR = 0.0;\n\t#endif\n\treflectedLight.indirectSpecular += ( 1.0 - clearCoatDHR ) * radiance * BRDF_Specular_GGX_Environment( geometry, material.specularColor, material.specularRoughness );\n\t#ifndef STANDARD\n\t\treflectedLight.indirectSpecular += clearCoatRadiance * material.clearCoat * BRDF_Specular_GGX_Environment( geometry, vec3( DEFAULT_SPECULAR_COEFFICIENT ), material.clearCoatRoughness );\n\t#endif\n}\n#define RE_Direct\t\t\t\tRE_Direct_Physical\n#define RE_Direct_RectArea\t\tRE_Direct_RectArea_Physical\n#define RE_IndirectDiffuse\t\tRE_IndirectDiffuse_Physical\n#define RE_IndirectSpecular\t\tRE_IndirectSpecular_Physical\n#define Material_BlinnShininessExponent( material )   GGXRoughnessToBlinnExponent( material.specularRoughness )\n#define Material_ClearCoat_BlinnShininessExponent( material )   GGXRoughnessToBlinnExponent( material.clearCoatRoughness )\nfloat computeSpecularOcclusion( const in float dotNV, const in float ambientOcclusion, const in float roughness ) {\n\treturn saturate( pow( dotNV + ambientOcclusion, exp2( - 16.0 * roughness - 1.0 ) ) - 1.0 + ambientOcclusion );\n}";
+var lights_physical_pars_fragment = "struct PhysicalMaterial {\n\tvec3\tdiffuseColor;\n\tfloat\tspecularRoughness;\n\tvec3\tspecularColor;\n\t#ifndef STANDARD\n\t\tfloat clearCoat;\n\t\tfloat clearCoatRoughness;\n\t#endif\n};\n#define MAXIMUM_SPECULAR_COEFFICIENT 0.16\n#define DEFAULT_SPECULAR_COEFFICIENT 0.04\nfloat clearCoatDHRApprox( const in float roughness, const in float dotNL ) {\n\treturn DEFAULT_SPECULAR_COEFFICIENT + ( 1.0 - DEFAULT_SPECULAR_COEFFICIENT ) * ( pow( 1.0 - dotNL, 5.0 ) * pow( 1.0 - roughness, 2.0 ) );\n}\n#if NUM_RECT_AREA_LIGHTS > 0\n\tvoid RE_Direct_RectArea_Physical( const in RectAreaLight rectAreaLight, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\t\tvec3 normal = geometry.normal;\n\t\tvec3 viewDir = geometry.viewDir;\n\t\tvec3 position = geometry.position;\n\t\tvec3 lightPos = rectAreaLight.position;\n\t\tvec3 halfWidth = rectAreaLight.halfWidth;\n\t\tvec3 halfHeight = rectAreaLight.halfHeight;\n\t\tvec3 lightColor = rectAreaLight.color;\n\t\tfloat roughness = material.specularRoughness;\n\t\tvec3 rectCoords[ 4 ];\n\t\trectCoords[ 0 ] = lightPos - halfWidth - halfHeight;\t\trectCoords[ 1 ] = lightPos + halfWidth - halfHeight;\n\t\trectCoords[ 2 ] = lightPos + halfWidth + halfHeight;\n\t\trectCoords[ 3 ] = lightPos - halfWidth + halfHeight;\n\t\tvec2 uv = LTC_Uv( normal, viewDir, roughness );\n\t\tvec4 t1 = texture2D( ltc_1, uv );\n\t\tvec4 t2 = texture2D( ltc_2, uv );\n\t\tmat3 mInv = mat3(\n\t\t\tvec3( t1.x, 0, t1.y ),\n\t\t\tvec3(    0, 1,    0 ),\n\t\t\tvec3( t1.z, 0, t1.w )\n\t\t);\n\t\tvec3 fresnel = ( material.specularColor * t2.x + ( vec3( 1.0 ) - material.specularColor ) * t2.y );\n\t\treflectedLight.directSpecular += lightColor * fresnel * LTC_Evaluate( normal, viewDir, position, mInv, rectCoords );\n\t\treflectedLight.directDiffuse += lightColor * material.diffuseColor * LTC_Evaluate( normal, viewDir, position, mat3( 1.0 ), rectCoords );\n\t}\n#endif\nvoid RE_Direct_Physical( const in IncidentLight directLight, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\tfloat dotNL = saturate( dot( geometry.normal, directLight.direction ) );\n\tvec3 irradiance = dotNL * directLight.color;\n\t#ifndef PHYSICALLY_CORRECT_LIGHTS\n\t\tirradiance *= PI;\n\t#endif\n\t#ifndef STANDARD\n\t\tfloat clearCoatDHR = material.clearCoat * clearCoatDHRApprox( material.clearCoatRoughness, dotNL );\n\t#else\n\t\tfloat clearCoatDHR = 0.0;\n\t#endif\n\treflectedLight.directSpecular += ( 1.0 - clearCoatDHR ) * irradiance * BRDF_Specular_GGX( directLight, geometry, material.specularColor, material.specularRoughness );\n\treflectedLight.directDiffuse += ( 1.0 - clearCoatDHR ) * irradiance * BRDF_Diffuse_Lambert( material.diffuseColor );\n\t#ifndef STANDARD\n\t\treflectedLight.directSpecular += irradiance * material.clearCoat * BRDF_Specular_GGX( directLight, geometry, vec3( DEFAULT_SPECULAR_COEFFICIENT ), material.clearCoatRoughness );\n\t#endif\n}\nvoid RE_IndirectDiffuse_Physical( const in vec3 irradiance, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\treflectedLight.indirectDiffuse += irradiance * BRDF_Diffuse_Lambert( material.diffuseColor );\n}\nvoid RE_IndirectSpecular_Physical( const in vec3 radiance, const in vec3 clearCoatRadiance, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n\t#ifndef STANDARD\n\t\tfloat dotNV = saturate( dot( geometry.normal, geometry.viewDir ) );\n\t\tfloat dotNL = dotNV;\n\t\tfloat clearCoatDHR = material.clearCoat * clearCoatDHRApprox( material.clearCoatRoughness, dotNL );\n\t#else\n\t\tfloat clearCoatDHR = 0.0;\n\t#endif\n\treflectedLight.indirectSpecular += ( 1.0 - clearCoatDHR ) * radiance * BRDF_Specular_GGX_Environment( geometry, material.specularColor, material.specularRoughness );\n\t#ifndef STANDARD\n\t\treflectedLight.indirectSpecular += clearCoatRadiance * material.clearCoat * BRDF_Specular_GGX_Environment( geometry, vec3( DEFAULT_SPECULAR_COEFFICIENT ), material.clearCoatRoughness );\n\t#endif\n}\n#define RE_Direct\t\t\t\tRE_Direct_Physical\n#define RE_Direct_RectArea\t\tRE_Direct_RectArea_Physical\n#define RE_IndirectDiffuse\t\tRE_IndirectDiffuse_Physical\n#define RE_IndirectSpecular\t\tRE_IndirectSpecular_Physical\n#define Material_BlinnShininessExponent( material )   GGXRoughnessToBlinnExponent( material.specularRoughness )\n#define Material_ClearCoat_BlinnShininessExponent( material )   GGXRoughnessToBlinnExponent( material.clearCoatRoughness )\nfloat computeSpecularOcclusion( const in float dotNV, const in float ambientOcclusion, const in float roughness ) {\n\treturn saturate( pow( dotNV + ambientOcclusion, exp2( - 16.0 * roughness - 1.0 ) ) - 1.0 + ambientOcclusion );\n}";
 
 var lights_fragment_begin = "\nGeometricContext geometry;\ngeometry.position = - vViewPosition;\ngeometry.normal = normal;\ngeometry.viewDir = normalize( vViewPosition );\nIncidentLight directLight;\n#if ( NUM_POINT_LIGHTS > 0 ) && defined( RE_Direct )\n\tPointLight pointLight;\n\t#pragma unroll_loop\n\tfor ( int i = 0; i < NUM_POINT_LIGHTS; i ++ ) {\n\t\tpointLight = pointLights[ i ];\n\t\tgetPointDirectLightIrradiance( pointLight, geometry, directLight );\n\t\t#ifdef USE_SHADOWMAP\n\t\tdirectLight.color *= all( bvec2( pointLight.shadow, directLight.visible ) ) ? getPointShadow( pointShadowMap[ i ], pointLight.shadowMapSize, pointLight.shadowBias, pointLight.shadowRadius, vPointShadowCoord[ i ], pointLight.shadowCameraNear, pointLight.shadowCameraFar ) : 1.0;\n\t\t#endif\n\t\tRE_Direct( directLight, geometry, material, reflectedLight );\n\t}\n#endif\n#if ( NUM_SPOT_LIGHTS > 0 ) && defined( RE_Direct )\n\tSpotLight spotLight;\n\t#pragma unroll_loop\n\tfor ( int i = 0; i < NUM_SPOT_LIGHTS; i ++ ) {\n\t\tspotLight = spotLights[ i ];\n\t\tgetSpotDirectLightIrradiance( spotLight, geometry, directLight );\n\t\t#ifdef USE_SHADOWMAP\n\t\tdirectLight.color *= all( bvec2( spotLight.shadow, directLight.visible ) ) ? getShadow( spotShadowMap[ i ], spotLight.shadowMapSize, spotLight.shadowBias, spotLight.shadowRadius, vSpotShadowCoord[ i ] ) : 1.0;\n\t\t#endif\n\t\tRE_Direct( directLight, geometry, material, reflectedLight );\n\t}\n#endif\n#if ( NUM_DIR_LIGHTS > 0 ) && defined( RE_Direct )\n\tDirectionalLight directionalLight;\n\t#pragma unroll_loop\n\tfor ( int i = 0; i < NUM_DIR_LIGHTS; i ++ ) {\n\t\tdirectionalLight = directionalLights[ i ];\n\t\tgetDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );\n\t\t#ifdef USE_SHADOWMAP\n\t\tdirectLight.color *= all( bvec2( directionalLight.shadow, directLight.visible ) ) ? getShadow( directionalShadowMap[ i ], directionalLight.shadowMapSize, directionalLight.shadowBias, directionalLight.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;\n\t\t#endif\n\t\tRE_Direct( directLight, geometry, material, reflectedLight );\n\t}\n#endif\n#if ( NUM_RECT_AREA_LIGHTS > 0 ) && defined( RE_Direct_RectArea )\n\tRectAreaLight rectAreaLight;\n\t#pragma unroll_loop\n\tfor ( int i = 0; i < NUM_RECT_AREA_LIGHTS; i ++ ) {\n\t\trectAreaLight = rectAreaLights[ i ];\n\t\tRE_Direct_RectArea( rectAreaLight, geometry, material, reflectedLight );\n\t}\n#endif\n#if defined( RE_IndirectDiffuse )\n\tvec3 irradiance = getAmbientLightIrradiance( ambientLightColor );\n\t#if ( NUM_HEMI_LIGHTS > 0 )\n\t\t#pragma unroll_loop\n\t\tfor ( int i = 0; i < NUM_HEMI_LIGHTS; i ++ ) {\n\t\t\tirradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometry );\n\t\t}\n\t#endif\n#endif\n#if defined( RE_IndirectSpecular )\n\tvec3 radiance = vec3( 0.0 );\n\tvec3 clearCoatRadiance = vec3( 0.0 );\n#endif";
 
@@ -8472,7 +8466,7 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 			position.setFromMatrixPosition( this.matrixWorld );
 
-			if ( this.isCamera || this.isLight ) {
+			if ( this.isCamera ) {
 
 				m1.lookAt( position, target, this.up );
 
@@ -12041,171 +12035,6 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 	},
 
-	mergeVertices: function ( tolerance = 1e-4 ) {
-
-		tolerance = Math.max( tolerance, Number.EPSILON );
-
-		// Generate an index buffer if the geometry doesn't have one, or optimize it
-		// if it's already available.
-		var hashToIndex = {};
-		var indices = this.getIndex();
-		var positions = this.getAttribute( 'position' );
-		var vertexCount = indices ? indices.count : positions.count;
-
-		// next value for triangle indices
-		var nextIndex = 0;
-
-		// attributes and new attribute arrays
-		var attributeNames = Object.keys( this.attributes );
-		var attrArrays = {};
-		var morphAttrsArrays = {};
-		var newIndices = [];
-		var getters = [ 'getX', 'getY', 'getZ', 'getW' ];
-
-		// initialize the arrays
-		for ( var name of attributeNames ) {
-
-			attrArrays[ name ] = [];
-
-			var morphAttr = this.morphAttributes[ name ];
-			if ( morphAttr ) {
-
-				morphAttrsArrays[ name ] = new Array( morphAttr.length ).fill().map( () => [] );
-
-			}
-
-		}
-
-		// convert the error tolerance to an amount of decimal places to truncate to
-		var decimalShift = Math.log10( 1 / tolerance );
-		var shiftMultiplier = Math.pow( 10, decimalShift );
-		for ( var i = 0; i < vertexCount; i ++ ) {
-
-			var index = indices ? indices.getX( i ) : i;
-
-			// Generate a hash for the vertex attributes at the current index 'i'
-			var hash = '';
-			for ( var j = 0, l = attributeNames.length; j < l; j ++ ) {
-
-				var name = attributeNames[ j ];
-				var attribute = this.getAttribute( name );
-				var itemSize = attribute.itemSize;
-
-				for ( var k = 0; k < itemSize; k ++ ) {
-
-					// double tilde truncates the decimal value
-					hash += `${ ~ ~ ( attribute[ getters[ k ] ]( index ) * shiftMultiplier ) },`;
-
-				}
-
-			}
-
-			// Add another reference to the vertex if it's already
-			// used by another index
-			if ( hash in hashToIndex ) {
-
-				newIndices.push( hashToIndex[ hash ] );
-
-			} else {
-
-				// copy data to the new index in the attribute arrays
-				for ( var j = 0, l = attributeNames.length; j < l; j ++ ) {
-
-					var name = attributeNames[ j ];
-					var attribute = this.getAttribute( name );
-					var morphAttr = this.morphAttributes[ name ];
-					var itemSize = attribute.itemSize;
-					var newarray = attrArrays[ name ];
-					var newMorphArrays = morphAttrsArrays[ name ];
-
-					for ( var k = 0; k < itemSize; k ++ ) {
-
-						var getterFunc = getters[ k ];
-						newarray.push( attribute[ getterFunc ]( index ) );
-
-						if ( morphAttr ) {
-
-							for ( var m = 0, ml = morphAttr.length; m < ml; m ++ ) {
-
-								newMorphArrays[ m ].push( morphAttr[ m ][ getterFunc ]( index ) );
-
-							}
-
-						}
-
-					}
-
-				}
-
-				hashToIndex[ hash ] = nextIndex;
-				newIndices.push( nextIndex );
-				nextIndex ++;
-
-			}
-
-		}
-
-		// Generate typed arrays from new attribute arrays and update
-		// the attributeBuffers
-		for ( var i = 0, l = attributeNames.length; i < l; i ++ ) {
-
-			var name = attributeNames[ i ];
-			var oldAttribute = this.getAttribute( name );
-			var attribute;
-
-			var buffer = new oldAttribute.array.constructor( attrArrays[ name ] );
-			if ( oldAttribute.isInterleavedBufferAttribute ) {
-
-				attribute = new THREE.BufferAttribute( buffer, oldAttribute.itemSize, oldAttribute.itemSize );
-
-			} else {
-
-				attribute = this.getAttribute( name ).clone();
-				attribute.setArray( buffer );
-
-			}
-
-			this.addAttribute( name, attribute );
-
-			// Update the attribute arrays
-			if ( name in morphAttrsArrays ) {
-
-				for ( var j = 0; j < morphAttrsArrays[ name ].length; j ++ ) {
-
-					var morphAttribute = this.morphAttributes[ name ][ j ].clone();
-					morphAttribute.setArray( new morphAttribute.array.constructor( morphAttrsArrays[ name ][ j ] ) );
-					this.morphAttributes[ name ][ j ] = morphAttribute;
-
-				}
-
-			}
-
-		}
-
-		// Generate an index buffer typed array
-		var cons = Uint8Array;
-		if ( newIndices.length >= Math.pow( 2, 8 ) ) cons = Uint16Array;
-		if ( newIndices.length >= Math.pow( 2, 16 ) ) cons = Uint32Array;
-
-		var newIndexBuffer = new cons( newIndices );
-		var newIndices = null;
-		if ( indices === null ) {
-
-			newIndices = new THREE.BufferAttribute( newIndexBuffer, 1 );
-
-		} else {
-
-			newIndices = this.getIndex().clone();
-			newIndices.setArray( newIndexBuffer );
-
-		}
-
-		this.setIndex( newIndices );
-
-		return this;
-
-	},
-
 	toJSON: function () {
 
 		var data = {
@@ -13244,42 +13073,42 @@ ShaderMaterial.prototype.toJSON = function ( meta ) {
 		var uniform = this.uniforms[ name ];
 		var value = uniform.value;
 
-		if ( value && value.isTexture ) {
+		if ( value.isTexture ) {
 
 			data.uniforms[ name ] = {
 				type: 't',
 				value: value.toJSON( meta ).uuid
 			};
 
-		} else if ( value && value.isColor ) {
+		} else if ( value.isColor ) {
 
 			data.uniforms[ name ] = {
 				type: 'c',
 				value: value.getHex()
 			};
 
-		} else if ( value && value.isVector2 ) {
+		} else if ( value.isVector2 ) {
 
 			data.uniforms[ name ] = {
 				type: 'v2',
 				value: value.toArray()
 			};
 
-		} else if ( value && value.isVector3 ) {
+		} else if ( value.isVector3 ) {
 
 			data.uniforms[ name ] = {
 				type: 'v3',
 				value: value.toArray()
 			};
 
-		} else if ( value && value.isVector4 ) {
+		} else if ( value.isVector4 ) {
 
 			data.uniforms[ name ] = {
 				type: 'v4',
 				value: value.toArray()
 			};
 
-		} else if ( value && value.isMatrix4 ) {
+		} else if ( value.isMatrix4 ) {
 
 			data.uniforms[ name ] = {
 				type: 'm4',
@@ -13302,16 +13131,6 @@ ShaderMaterial.prototype.toJSON = function ( meta ) {
 
 	data.vertexShader = this.vertexShader;
 	data.fragmentShader = this.fragmentShader;
-
-	var extensions = {};
-
-	for ( var key in this.extensions ) {
-
-		if ( this.extensions[ key ] === true ) extensions[ key ] = true;
-
-	}
-
-	if ( Object.keys( extensions ).length > 0 ) data.extensions = extensions;
 
 	return data;
 
@@ -14412,7 +14231,17 @@ Mesh.prototype = Object.assign( Object.create( Object3D.prototype ), {
 
 			if ( morphTargets !== undefined && morphTargets.length > 0 ) {
 
-				console.error( 'THREE.Mesh.updateMorphTargets() no longer supports THREE.Geometry. Use THREE.BufferGeometry instead.' );
+				this.morphTargetInfluences = [];
+				this.morphTargetDictionary = {};
+
+				for ( m = 0, ml = morphTargets.length; m < ml; m ++ ) {
+
+					name = morphTargets[ m ].name || String( m );
+
+					this.morphTargetInfluences.push( 0 );
+					this.morphTargetDictionary[ name ] = m;
+
+				}
 
 			}
 
@@ -14854,7 +14683,7 @@ function WebGLBackground( renderer, state, objects, premultipliedAlpha ) {
 			}
 
 			// push to the pre-sorted opaque render list
-			renderList.unshift( boxMesh, boxMesh.geometry, boxMesh.material, 0, 0, null );
+			renderList.unshift( boxMesh, boxMesh.geometry, boxMesh.material, 0, null );
 
 		} else if ( background && background.isTexture ) {
 
@@ -14913,7 +14742,7 @@ function WebGLBackground( renderer, state, objects, premultipliedAlpha ) {
 
 
 			// push to the pre-sorted opaque render list
-			renderList.unshift( planeMesh, planeMesh.geometry, planeMesh.material, 0, 0, null );
+			renderList.unshift( planeMesh, planeMesh.geometry, planeMesh.material, 0, null );
 
 		}
 
@@ -17903,11 +17732,7 @@ function WebGLProperties() {
 
 function painterSortStable( a, b ) {
 
-	if ( a.groupOrder !== b.groupOrder ) {
-
-		return a.groupOrder - b.groupOrder;
-
-	} else if ( a.renderOrder !== b.renderOrder ) {
+	if ( a.renderOrder !== b.renderOrder ) {
 
 		return a.renderOrder - b.renderOrder;
 
@@ -17933,11 +17758,7 @@ function painterSortStable( a, b ) {
 
 function reversePainterSortStable( a, b ) {
 
-	if ( a.groupOrder !== b.groupOrder ) {
-
-		return a.groupOrder - b.groupOrder;
-
-	} else if ( a.renderOrder !== b.renderOrder ) {
+	if ( a.renderOrder !== b.renderOrder ) {
 
 		return a.renderOrder - b.renderOrder;
 
@@ -17971,7 +17792,7 @@ function WebGLRenderList() {
 
 	}
 
-	function getNextRenderItem( object, geometry, material, groupOrder, z, group ) {
+	function getNextRenderItem( object, geometry, material, z, group ) {
 
 		var renderItem = renderItems[ renderItemsIndex ];
 
@@ -17983,7 +17804,6 @@ function WebGLRenderList() {
 				geometry: geometry,
 				material: material,
 				program: material.program,
-				groupOrder: groupOrder,
 				renderOrder: object.renderOrder,
 				z: z,
 				group: group
@@ -17998,7 +17818,6 @@ function WebGLRenderList() {
 			renderItem.geometry = geometry;
 			renderItem.material = material;
 			renderItem.program = material.program;
-			renderItem.groupOrder = groupOrder;
 			renderItem.renderOrder = object.renderOrder;
 			renderItem.z = z;
 			renderItem.group = group;
@@ -18011,17 +17830,17 @@ function WebGLRenderList() {
 
 	}
 
-	function push( object, geometry, material, groupOrder, z, group ) {
+	function push( object, geometry, material, z, group ) {
 
-		var renderItem = getNextRenderItem( object, geometry, material, groupOrder, z, group );
+		var renderItem = getNextRenderItem( object, geometry, material, z, group );
 
 		( material.transparent === true ? transparent : opaque ).push( renderItem );
 
 	}
 
-	function unshift( object, geometry, material, groupOrder, z, group ) {
+	function unshift( object, geometry, material, z, group ) {
 
-		var renderItem = getNextRenderItem( object, geometry, material, groupOrder, z, group );
+		var renderItem = getNextRenderItem( object, geometry, material, z, group );
 
 		( material.transparent === true ? transparent : opaque ).unshift( renderItem );
 
@@ -20182,44 +20001,31 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 		if ( ! capabilities.isWebGL2 ) return glFormat;
 
-		var internalFormat = glFormat;
-
 		if ( glFormat === 6403 ) {
 
-			if ( glType === 5126 ) internalFormat = 33326;
-			if ( glType === 5131 ) internalFormat = 33325;
-			if ( glType === 5121 ) internalFormat = 33321;
+			if ( glType === 5126 ) return 33326;
+			if ( glType === 5131 ) return 33325;
+			if ( glType === 5121 ) return 33321;
 
 		}
 
 		if ( glFormat === 6407 ) {
 
-			if ( glType === 5126 ) internalFormat = 34837;
-			if ( glType === 5131 ) internalFormat = 34843;
-			if ( glType === 5121 ) internalFormat = 32849;
+			if ( glType === 5126 ) return 34837;
+			if ( glType === 5131 ) return 34843;
+			if ( glType === 5121 ) return 32849;
 
 		}
 
 		if ( glFormat === 6408 ) {
 
-			if ( glType === 5126 ) internalFormat = 34836;
-			if ( glType === 5131 ) internalFormat = 34842;
-			if ( glType === 5121 ) internalFormat = 32856;
+			if ( glType === 5126 ) return 34836;
+			if ( glType === 5131 ) return 34842;
+			if ( glType === 5121 ) return 32856;
 
 		}
 
-		if ( internalFormat === 33325 || internalFormat === 33326 ||
-			internalFormat === 34842 || internalFormat === 34836 ) {
-
-			extensions.get( 'EXT_color_buffer_float' );
-
-		} else if ( internalFormat === 34843 || internalFormat === 34837 ) {
-
-			console.warn( 'THREE.WebGLRenderer: Floating point textures with RGB format not supported. Please use RGBA instead.' );
-
-		}
-
-		return internalFormat;
+		return glFormat;
 
 	}
 
@@ -23336,7 +23142,7 @@ function WebGLRenderer( parameters ) {
 		currentRenderList = renderLists.get( scene, camera );
 		currentRenderList.init();
 
-		projectObject( scene, camera, 0, _this.sortObjects );
+		projectObject( scene, camera, _this.sortObjects );
 
 		if ( _this.sortObjects === true ) {
 
@@ -23427,7 +23233,7 @@ function WebGLRenderer( parameters ) {
 
 	};
 
-	function projectObject( object, camera, groupOrder, sortObjects ) {
+	function projectObject( object, camera, sortObjects ) {
 
 		if ( object.visible === false ) return;
 
@@ -23435,11 +23241,7 @@ function WebGLRenderer( parameters ) {
 
 		if ( visible ) {
 
-			if ( object.isGroup ) {
-
-				groupOrder = object.renderOrder;
-
-			} else if ( object.isLight ) {
+			if ( object.isLight ) {
 
 				currentRenderState.pushLight( object );
 
@@ -23463,7 +23265,7 @@ function WebGLRenderer( parameters ) {
 					var geometry = objects.update( object );
 					var material = object.material;
 
-					currentRenderList.push( object, geometry, material, groupOrder, _vector3.z, null );
+					currentRenderList.push( object, geometry, material, _vector3.z, null );
 
 				}
 
@@ -23476,7 +23278,7 @@ function WebGLRenderer( parameters ) {
 
 				}
 
-				currentRenderList.push( object, null, object.material, groupOrder, _vector3.z, null );
+				currentRenderList.push( object, null, object.material, _vector3.z, null );
 
 			} else if ( object.isMesh || object.isLine || object.isPoints ) {
 
@@ -23509,7 +23311,7 @@ function WebGLRenderer( parameters ) {
 
 							if ( groupMaterial && groupMaterial.visible ) {
 
-								currentRenderList.push( object, geometry, groupMaterial, groupOrder, _vector3.z, group );
+								currentRenderList.push( object, geometry, groupMaterial, _vector3.z, group );
 
 							}
 
@@ -23517,7 +23319,7 @@ function WebGLRenderer( parameters ) {
 
 					} else if ( material.visible ) {
 
-						currentRenderList.push( object, geometry, material, groupOrder, _vector3.z, null );
+						currentRenderList.push( object, geometry, material, _vector3.z, null );
 
 					}
 
@@ -23531,7 +23333,7 @@ function WebGLRenderer( parameters ) {
 
 		for ( var i = 0, l = children.length; i < l; i ++ ) {
 
-			projectObject( children[ i ], camera, groupOrder, sortObjects );
+			projectObject( children[ i ], camera, sortObjects );
 
 		}
 
@@ -25171,23 +24973,6 @@ Object.defineProperties( InterleavedBufferAttribute.prototype, {
 Object.assign( InterleavedBufferAttribute.prototype, {
 
 	isInterleavedBufferAttribute: true,
-
-	copy: function ( source ) {
-
-		this.data = source.data;
-		this.itemSize = source.itemSize;
-		this.offset = source.offset;
-		this.normalized = source.normalized;
-
-		return this;
-
-	},
-
-	clone: function () {
-
-		return new this.constructor( this.data, this.itemSize, this.offset, this.normalized ).copy( this );
-
-	},
 
 	setX: function ( index, x ) {
 
@@ -33190,6 +32975,21 @@ Object.assign( KeyframeTrack.prototype, {
 
 		return this;
 
+	},
+
+	clone: function () {
+
+		var times = AnimationUtils.arraySlice( this.times, 0 );
+		var values = AnimationUtils.arraySlice( this.values, 0 );
+
+		var TypedKeyframeTrack = this.constructor;
+		var track = new TypedKeyframeTrack( this.name, times, values );
+
+		// Interpolant argument to constructor is not saved, so copy the factory method directly.
+		track.createInterpolant = this.createInterpolant;
+
+		return track;
+
 	}
 
 } );
@@ -33854,6 +33654,21 @@ Object.assign( AnimationClip.prototype, {
 		}
 
 		return this;
+
+	},
+
+
+	clone: function () {
+
+		var tracks = [];
+
+		for ( var i = 0; i < this.tracks.length; i ++ ) {
+
+			tracks.push( this.tracks[ i ].clone() );
+
+		}
+
+		return new AnimationClip( this.name, this.duration, tracks );
 
 	}
 
@@ -37542,16 +37357,6 @@ Object.assign( MaterialLoader.prototype, {
 		if ( json.vertexShader !== undefined ) material.vertexShader = json.vertexShader;
 		if ( json.fragmentShader !== undefined ) material.fragmentShader = json.fragmentShader;
 
-		if ( json.extensions !== undefined ) {
-
-			for ( var key in json.extensions ) {
-
-				material.extensions[ key ] = json.extensions[ key ];
-
-			}
-
-		}
-
 		// Deprecated
 
 		if ( json.shading !== undefined ) material.flatShading = json.shading === 1; // THREE.FlatShading
@@ -38399,17 +38204,12 @@ Object.assign( ObjectLoader.prototype, {
 				}
 
 				if ( data.format !== undefined ) texture.format = data.format;
-				if ( data.type !== undefined ) texture.type = data.type;
-				if ( data.encoding !== undefined ) texture.encoding = data.encoding;
 
 				if ( data.minFilter !== undefined ) texture.minFilter = parseConstant( data.minFilter, TEXTURE_FILTER );
 				if ( data.magFilter !== undefined ) texture.magFilter = parseConstant( data.magFilter, TEXTURE_FILTER );
 				if ( data.anisotropy !== undefined ) texture.anisotropy = data.anisotropy;
 
 				if ( data.flipY !== undefined ) texture.flipY = data.flipY;
-
-				if ( data.premultiplyAlpha !== undefined ) texture.premultiplyAlpha = data.premultiplyAlpha;
-				if ( data.unpackAlignment !== undefined ) texture.unpackAlignment = data.unpackAlignment;
 
 				textures[ data.uuid ] = texture;
 
@@ -40552,13 +40352,10 @@ PositionalAudio.prototype = Object.assign( Object.create( Audio.prototype ), {
 
 			Object3D.prototype.updateMatrixWorld.call( this, force );
 
-			if ( this.isPlaying === false ) return;
-
+			var panner = this.panner;
 			this.matrixWorld.decompose( position, quaternion, scale );
 
 			orientation.set( 0, 0, 1 ).applyQuaternion( quaternion );
-
-			var panner = this.panner;
 
 			if ( panner.positionX ) {
 
@@ -44610,75 +44407,73 @@ PointLightHelper.prototype.update = function () {
  * @author abelnation / http://github.com/abelnation
  * @author Mugen87 / http://github.com/Mugen87
  * @author WestLangley / http://github.com/WestLangley
- *
- *  This helper must be added as a child of the light
  */
 
 function RectAreaLightHelper( light, color ) {
 
-	this.type = 'RectAreaLightHelper';
+	Object3D.call( this );
 
 	this.light = light;
+	this.light.updateMatrixWorld();
 
-	this.color = color; // optional hardwired color for the helper
+	this.matrix = light.matrixWorld;
+	this.matrixAutoUpdate = false;
 
-	var positions = [ 1, 1, 0, - 1, 1, 0, - 1, - 1, 0, 1, - 1, 0, 1, 1, 0 ];
-
-	var geometry = new BufferGeometry();
-	geometry.addAttribute( 'position', new Float32BufferAttribute( positions, 3 ) );
-	geometry.computeBoundingSphere();
+	this.color = color;
 
 	var material = new LineBasicMaterial( { fog: false } );
 
-	Line.call( this, geometry, material );
+	var geometry = new BufferGeometry();
 
-	//
+	geometry.addAttribute( 'position', new BufferAttribute( new Float32Array( 5 * 3 ), 3 ) );
 
-	var positions2 = [ 1, 1, 0, - 1, 1, 0, - 1, - 1, 0, 1, 1, 0, - 1, - 1, 0, 1, - 1, 0 ];
+	this.line = new Line( geometry, material );
+	this.add( this.line );
 
-	var geometry2 = new BufferGeometry();
-	geometry2.addAttribute( 'position', new Float32BufferAttribute( positions2, 3 ) );
-	geometry2.computeBoundingSphere();
-
-	this.add( new Mesh( geometry2, new MeshBasicMaterial( { side: THREE.BackSide, fog: false } ) ) );
 
 	this.update();
 
 }
 
-RectAreaLightHelper.prototype = Object.create( Line.prototype );
+RectAreaLightHelper.prototype = Object.create( Object3D.prototype );
 RectAreaLightHelper.prototype.constructor = RectAreaLightHelper;
-
-RectAreaLightHelper.prototype.update = function () {
-
-	this.scale.set( 0.5 * this.light.width, 0.5 * this.light.height, 1 );
-
-	if ( this.color !== undefined ) {
-
-		this.material.color.set( this.color );
-		this.children[ 0 ].material.color.set( this.color );
-
-	} else {
-
-		this.material.color.copy( this.light.color ).multiplyScalar( this.light.intensity );
-
-		// prevent hue shift
-		var c = this.material.color;
-		var max = Math.max( c.r, c.g, c.b );
-		if ( max > 1 ) c.multiplyScalar( 1 / max );
-
-		this.children[ 0 ].material.color.copy( this.material.color );
-
-	}
-
-};
 
 RectAreaLightHelper.prototype.dispose = function () {
 
-	this.geometry.dispose();
-	this.material.dispose();
 	this.children[ 0 ].geometry.dispose();
 	this.children[ 0 ].material.dispose();
+
+};
+
+RectAreaLightHelper.prototype.update = function () {
+
+	// calculate new dimensions of the helper
+
+	var hx = this.light.width * 0.5;
+	var hy = this.light.height * 0.5;
+
+	var position = this.line.geometry.attributes.position;
+	var array = position.array;
+
+	// update vertices
+
+	array[ 0 ] = hx; array[ 1 ] = - hy; array[ 2 ] = 0;
+	array[ 3 ] = hx; array[ 4 ] = hy; array[ 5 ] = 0;
+	array[ 6 ] = - hx; array[ 7 ] = hy; array[ 8 ] = 0;
+	array[ 9 ] = - hx; array[ 10 ] = - hy; array[ 11 ] = 0;
+	array[ 12 ] = hx; array[ 13 ] = - hy; array[ 14 ] = 0;
+
+	position.needsUpdate = true;
+
+	if ( this.color !== undefined ) {
+
+		this.line.material.color.set( this.color );
+
+	} else {
+
+		this.line.material.color.copy( this.light.color );
+
+	}
 
 };
 
@@ -47519,4 +47314,4 @@ function LensFlare() {
 
 }
 
-export { WebGLRenderTargetCube, WebGLRenderTarget, WebGLRenderer, ShaderLib, UniformsLib, UniformsUtils, ShaderChunk, FogExp2, Fog, Scene, Sprite, LOD, SkinnedMesh, Skeleton, Bone, Mesh, LineSegments, LineLoop, Line, Points, Group, VideoTexture, DataTexture, DataTexture3D, CompressedTexture, CubeTexture, CanvasTexture, DepthTexture, Texture, AnimationLoader, CompressedTextureLoader, DataTextureLoader, CubeTextureLoader, TextureLoader, ObjectLoader, MaterialLoader, BufferGeometryLoader, DefaultLoadingManager, LoadingManager, ImageLoader, ImageBitmapLoader, FontLoader, FileLoader, Loader, LoaderUtils, Cache, AudioLoader, SpotLightShadow, SpotLight, PointLight, RectAreaLight, HemisphereLight, DirectionalLightShadow, DirectionalLight, AmbientLight, LightShadow, Light, StereoCamera, PerspectiveCamera, OrthographicCamera, CubeCamera, ArrayCamera, Camera, AudioListener, PositionalAudio, AudioContext, AudioAnalyser, Audio, VectorKeyframeTrack, StringKeyframeTrack, QuaternionKeyframeTrack, NumberKeyframeTrack, ColorKeyframeTrack, BooleanKeyframeTrack, PropertyMixer, PropertyBinding, KeyframeTrack, AnimationUtils, AnimationObjectGroup, AnimationMixer, AnimationClip, Uniform, InstancedBufferGeometry, BufferGeometry, Geometry, InterleavedBufferAttribute, InstancedInterleavedBuffer, InterleavedBuffer, InstancedBufferAttribute, Face3, Object3D, Raycaster, Layers, EventDispatcher, Clock, QuaternionLinearInterpolant, LinearInterpolant, DiscreteInterpolant, CubicInterpolant, Interpolant, Triangle, _Math as Math, Spherical, Cylindrical, Plane, Frustum, Sphere, Ray, Matrix4, Matrix3, Box3, Box2, Line3, Euler, Vector4, Vector3, Vector2, Quaternion, Color, ImmediateRenderObject, VertexNormalsHelper, SpotLightHelper, SkeletonHelper, PointLightHelper, RectAreaLightHelper, HemisphereLightHelper, GridHelper, PolarGridHelper, FaceNormalsHelper, DirectionalLightHelper, CameraHelper, BoxHelper, Box3Helper, PlaneHelper, ArrowHelper, AxesHelper, Shape, Path, ShapePath, Font, CurvePath, Curve, ImageUtils, ShapeUtils, WebGLUtils, WireframeGeometry, ParametricGeometry, ParametricBufferGeometry, TetrahedronGeometry, TetrahedronBufferGeometry, OctahedronGeometry, OctahedronBufferGeometry, IcosahedronGeometry, IcosahedronBufferGeometry, DodecahedronGeometry, DodecahedronBufferGeometry, PolyhedronGeometry, PolyhedronBufferGeometry, TubeGeometry, TubeBufferGeometry, TorusKnotGeometry, TorusKnotBufferGeometry, TorusGeometry, TorusBufferGeometry, TextGeometry, TextBufferGeometry, SphereGeometry, SphereBufferGeometry, RingGeometry, RingBufferGeometry, PlaneGeometry, PlaneBufferGeometry, LatheGeometry, LatheBufferGeometry, ShapeGeometry, ShapeBufferGeometry, ExtrudeGeometry, ExtrudeBufferGeometry, EdgesGeometry, ConeGeometry, ConeBufferGeometry, CylinderGeometry, CylinderBufferGeometry, CircleGeometry, CircleBufferGeometry, BoxGeometry, BoxGeometry as CubeGeometry, BoxBufferGeometry, ShadowMaterial, SpriteMaterial, RawShaderMaterial, ShaderMaterial, PointsMaterial, MeshPhysicalMaterial, MeshStandardMaterial, MeshPhongMaterial, MeshToonMaterial, MeshNormalMaterial, MeshLambertMaterial, MeshDepthMaterial, MeshDistanceMaterial, MeshBasicMaterial, MeshMatcapMaterial, LineDashedMaterial, LineBasicMaterial, Material, Float64BufferAttribute, Float32BufferAttribute, Uint32BufferAttribute, Int32BufferAttribute, Uint16BufferAttribute, Int16BufferAttribute, Uint8ClampedBufferAttribute, Uint8BufferAttribute, Int8BufferAttribute, BufferAttribute, ArcCurve, CatmullRomCurve3, CubicBezierCurve, CubicBezierCurve3, EllipseCurve, LineCurve, LineCurve3, QuadraticBezierCurve, QuadraticBezierCurve3, SplineCurve, REVISION, MOUSE, CullFaceNone, CullFaceBack, CullFaceFront, CullFaceFrontBack, FrontFaceDirectionCW, FrontFaceDirectionCCW, BasicShadowMap, PCFShadowMap, PCFSoftShadowMap, FrontSide, BackSide, DoubleSide, FlatShading, SmoothShading, NoColors, FaceColors, VertexColors, NoBlending, NormalBlending, AdditiveBlending, SubtractiveBlending, MultiplyBlending, CustomBlending, AddEquation, SubtractEquation, ReverseSubtractEquation, MinEquation, MaxEquation, ZeroFactor, OneFactor, SrcColorFactor, OneMinusSrcColorFactor, SrcAlphaFactor, OneMinusSrcAlphaFactor, DstAlphaFactor, OneMinusDstAlphaFactor, DstColorFactor, OneMinusDstColorFactor, SrcAlphaSaturateFactor, NeverDepth, AlwaysDepth, LessDepth, LessEqualDepth, EqualDepth, GreaterEqualDepth, GreaterDepth, NotEqualDepth, MultiplyOperation, MixOperation, AddOperation, NoToneMapping, LinearToneMapping, ReinhardToneMapping, Uncharted2ToneMapping, CineonToneMapping, ACESFilmicToneMapping, UVMapping, CubeReflectionMapping, CubeRefractionMapping, EquirectangularReflectionMapping, EquirectangularRefractionMapping, SphericalReflectionMapping, CubeUVReflectionMapping, CubeUVRefractionMapping, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipMapNearestFilter, NearestMipMapLinearFilter, LinearFilter, LinearMipMapNearestFilter, LinearMipMapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedShort565Type, UnsignedInt248Type, AlphaFormat, RGBFormat, RGBAFormat, LuminanceFormat, LuminanceAlphaFormat, RGBEFormat, DepthFormat, DepthStencilFormat, RedFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, LoopOnce, LoopRepeat, LoopPingPong, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, TrianglesDrawMode, TriangleStripDrawMode, TriangleFanDrawMode, LinearEncoding, sRGBEncoding, GammaEncoding, RGBEEncoding, LogLuvEncoding, RGBM7Encoding, RGBM16Encoding, RGBDEncoding, BasicDepthPacking, RGBADepthPacking, TangentSpaceNormalMap, ObjectSpaceNormalMap, Face4, LineStrip, LinePieces, MeshFaceMaterial, MultiMaterial, PointCloud, Particle, ParticleSystem, PointCloudMaterial, ParticleBasicMaterial, ParticleSystemMaterial, Vertex, DynamicBufferAttribute, Int8Attribute, Uint8Attribute, Uint8ClampedAttribute, Int16Attribute, Uint16Attribute, Int32Attribute, Uint32Attribute, Float32Attribute, Float64Attribute, ClosedSplineCurve3, SplineCurve3, Spline, AxisHelper, BoundingBoxHelper, EdgesHelper, WireframeHelper, XHRLoader, BinaryTextureLoader, GeometryUtils, Projector, CanvasRenderer, JSONLoader, SceneUtils, LensFlare };
+export { WebGLRenderTargetCube, WebGLRenderTarget, WebGLRenderer, ShaderLib, UniformsLib, UniformsUtils, ShaderChunk, FogExp2, Fog, Scene, Sprite, LOD, SkinnedMesh, Skeleton, Bone, Mesh, LineSegments, LineLoop, Line, Points, Group, VideoTexture, DataTexture, DataTexture3D, CompressedTexture, CubeTexture, CanvasTexture, DepthTexture, Texture, AnimationLoader, CompressedTextureLoader, DataTextureLoader, CubeTextureLoader, TextureLoader, ObjectLoader, MaterialLoader, BufferGeometryLoader, DefaultLoadingManager, LoadingManager, ImageLoader, ImageBitmapLoader, FontLoader, FileLoader, Loader, LoaderUtils, Cache, AudioLoader, SpotLightShadow, SpotLight, PointLight, RectAreaLight, HemisphereLight, DirectionalLightShadow, DirectionalLight, AmbientLight, LightShadow, Light, StereoCamera, PerspectiveCamera, OrthographicCamera, CubeCamera, ArrayCamera, Camera, AudioListener, PositionalAudio, AudioContext, AudioAnalyser, Audio, VectorKeyframeTrack, StringKeyframeTrack, QuaternionKeyframeTrack, NumberKeyframeTrack, ColorKeyframeTrack, BooleanKeyframeTrack, PropertyMixer, PropertyBinding, KeyframeTrack, AnimationUtils, AnimationObjectGroup, AnimationMixer, AnimationClip, Uniform, InstancedBufferGeometry, BufferGeometry, Geometry, InterleavedBufferAttribute, InstancedInterleavedBuffer, InterleavedBuffer, InstancedBufferAttribute, Face3, Object3D, Raycaster, Layers, EventDispatcher, Clock, QuaternionLinearInterpolant, LinearInterpolant, DiscreteInterpolant, CubicInterpolant, Interpolant, Triangle, _Math as Math, Spherical, Cylindrical, Plane, Frustum, Sphere, Ray, Matrix4, Matrix3, Box3, Box2, Line3, Euler, Vector4, Vector3, Vector2, Quaternion, Color, ImmediateRenderObject, VertexNormalsHelper, SpotLightHelper, SkeletonHelper, PointLightHelper, RectAreaLightHelper, HemisphereLightHelper, GridHelper, PolarGridHelper, FaceNormalsHelper, DirectionalLightHelper, CameraHelper, BoxHelper, Box3Helper, PlaneHelper, ArrowHelper, AxesHelper, Shape, Path, ShapePath, Font, CurvePath, Curve, ImageUtils, ShapeUtils, WebGLUtils, WireframeGeometry, ParametricGeometry, ParametricBufferGeometry, TetrahedronGeometry, TetrahedronBufferGeometry, OctahedronGeometry, OctahedronBufferGeometry, IcosahedronGeometry, IcosahedronBufferGeometry, DodecahedronGeometry, DodecahedronBufferGeometry, PolyhedronGeometry, PolyhedronBufferGeometry, TubeGeometry, TubeBufferGeometry, TorusKnotGeometry, TorusKnotBufferGeometry, TorusGeometry, TorusBufferGeometry, TextGeometry, TextBufferGeometry, SphereGeometry, SphereBufferGeometry, RingGeometry, RingBufferGeometry, PlaneGeometry, PlaneBufferGeometry, LatheGeometry, LatheBufferGeometry, ShapeGeometry, ShapeBufferGeometry, ExtrudeGeometry, ExtrudeBufferGeometry, EdgesGeometry, ConeGeometry, ConeBufferGeometry, CylinderGeometry, CylinderBufferGeometry, CircleGeometry, CircleBufferGeometry, BoxGeometry, BoxBufferGeometry, ShadowMaterial, SpriteMaterial, RawShaderMaterial, ShaderMaterial, PointsMaterial, MeshPhysicalMaterial, MeshStandardMaterial, MeshPhongMaterial, MeshToonMaterial, MeshNormalMaterial, MeshLambertMaterial, MeshDepthMaterial, MeshDistanceMaterial, MeshBasicMaterial, MeshMatcapMaterial, LineDashedMaterial, LineBasicMaterial, Material, Float64BufferAttribute, Float32BufferAttribute, Uint32BufferAttribute, Int32BufferAttribute, Uint16BufferAttribute, Int16BufferAttribute, Uint8ClampedBufferAttribute, Uint8BufferAttribute, Int8BufferAttribute, BufferAttribute, ArcCurve, CatmullRomCurve3, CubicBezierCurve, CubicBezierCurve3, EllipseCurve, LineCurve, LineCurve3, QuadraticBezierCurve, QuadraticBezierCurve3, SplineCurve, REVISION, MOUSE, CullFaceNone, CullFaceBack, CullFaceFront, CullFaceFrontBack, FrontFaceDirectionCW, FrontFaceDirectionCCW, BasicShadowMap, PCFShadowMap, PCFSoftShadowMap, FrontSide, BackSide, DoubleSide, FlatShading, SmoothShading, NoColors, FaceColors, VertexColors, NoBlending, NormalBlending, AdditiveBlending, SubtractiveBlending, MultiplyBlending, CustomBlending, AddEquation, SubtractEquation, ReverseSubtractEquation, MinEquation, MaxEquation, ZeroFactor, OneFactor, SrcColorFactor, OneMinusSrcColorFactor, SrcAlphaFactor, OneMinusSrcAlphaFactor, DstAlphaFactor, OneMinusDstAlphaFactor, DstColorFactor, OneMinusDstColorFactor, SrcAlphaSaturateFactor, NeverDepth, AlwaysDepth, LessDepth, LessEqualDepth, EqualDepth, GreaterEqualDepth, GreaterDepth, NotEqualDepth, MultiplyOperation, MixOperation, AddOperation, NoToneMapping, LinearToneMapping, ReinhardToneMapping, Uncharted2ToneMapping, CineonToneMapping, ACESFilmicToneMapping, UVMapping, CubeReflectionMapping, CubeRefractionMapping, EquirectangularReflectionMapping, EquirectangularRefractionMapping, SphericalReflectionMapping, CubeUVReflectionMapping, CubeUVRefractionMapping, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipMapNearestFilter, NearestMipMapLinearFilter, LinearFilter, LinearMipMapNearestFilter, LinearMipMapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedShort565Type, UnsignedInt248Type, AlphaFormat, RGBFormat, RGBAFormat, LuminanceFormat, LuminanceAlphaFormat, RGBEFormat, DepthFormat, DepthStencilFormat, RedFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, LoopOnce, LoopRepeat, LoopPingPong, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, TrianglesDrawMode, TriangleStripDrawMode, TriangleFanDrawMode, LinearEncoding, sRGBEncoding, GammaEncoding, RGBEEncoding, LogLuvEncoding, RGBM7Encoding, RGBM16Encoding, RGBDEncoding, BasicDepthPacking, RGBADepthPacking, TangentSpaceNormalMap, ObjectSpaceNormalMap, BoxGeometry as CubeGeometry, Face4, LineStrip, LinePieces, MeshFaceMaterial, MultiMaterial, PointCloud, Particle, ParticleSystem, PointCloudMaterial, ParticleBasicMaterial, ParticleSystemMaterial, Vertex, DynamicBufferAttribute, Int8Attribute, Uint8Attribute, Uint8ClampedAttribute, Int16Attribute, Uint16Attribute, Int32Attribute, Uint32Attribute, Float32Attribute, Float64Attribute, ClosedSplineCurve3, SplineCurve3, Spline, AxisHelper, BoundingBoxHelper, EdgesHelper, WireframeHelper, XHRLoader, BinaryTextureLoader, GeometryUtils, Projector, CanvasRenderer, JSONLoader, SceneUtils, LensFlare };
