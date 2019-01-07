@@ -1,8 +1,8 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
-	(global = global || self, factory(global.THREE = {}));
-}(this, function (exports) { 'use strict';
+	(factory((global.THREE = {})));
+}(this, (function (exports) { 'use strict';
 
 	// Polyfills
 
@@ -185,7 +185,7 @@
 
 	} );
 
-	var REVISION = '101dev';
+	var REVISION = '100';
 	var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
 	var CullFaceNone = 0;
 	var CullFaceBack = 1;
@@ -14695,7 +14695,7 @@
 				}
 
 				// push to the pre-sorted opaque render list
-				renderList.unshift( boxMesh, boxMesh.geometry, boxMesh.material, 0, 0, null );
+				renderList.unshift( boxMesh, boxMesh.geometry, boxMesh.material, 0, null );
 
 			} else if ( background && background.isTexture ) {
 
@@ -14754,7 +14754,7 @@
 
 
 				// push to the pre-sorted opaque render list
-				renderList.unshift( planeMesh, planeMesh.geometry, planeMesh.material, 0, 0, null );
+				renderList.unshift( planeMesh, planeMesh.geometry, planeMesh.material, 0, null );
 
 			}
 
@@ -17744,11 +17744,7 @@
 
 	function painterSortStable( a, b ) {
 
-		if ( a.groupOrder !== b.groupOrder ) {
-
-			return a.groupOrder - b.groupOrder;
-
-		} else if ( a.renderOrder !== b.renderOrder ) {
+		if ( a.renderOrder !== b.renderOrder ) {
 
 			return a.renderOrder - b.renderOrder;
 
@@ -17774,11 +17770,7 @@
 
 	function reversePainterSortStable( a, b ) {
 
-		if ( a.groupOrder !== b.groupOrder ) {
-
-			return a.groupOrder - b.groupOrder;
-
-		} else if ( a.renderOrder !== b.renderOrder ) {
+		if ( a.renderOrder !== b.renderOrder ) {
 
 			return a.renderOrder - b.renderOrder;
 
@@ -17812,7 +17804,7 @@
 
 		}
 
-		function getNextRenderItem( object, geometry, material, groupOrder, z, group ) {
+		function getNextRenderItem( object, geometry, material, z, group ) {
 
 			var renderItem = renderItems[ renderItemsIndex ];
 
@@ -17824,7 +17816,6 @@
 					geometry: geometry,
 					material: material,
 					program: material.program,
-					groupOrder: groupOrder,
 					renderOrder: object.renderOrder,
 					z: z,
 					group: group
@@ -17839,7 +17830,6 @@
 				renderItem.geometry = geometry;
 				renderItem.material = material;
 				renderItem.program = material.program;
-				renderItem.groupOrder = groupOrder;
 				renderItem.renderOrder = object.renderOrder;
 				renderItem.z = z;
 				renderItem.group = group;
@@ -17852,17 +17842,17 @@
 
 		}
 
-		function push( object, geometry, material, groupOrder, z, group ) {
+		function push( object, geometry, material, z, group ) {
 
-			var renderItem = getNextRenderItem( object, geometry, material, groupOrder, z, group );
+			var renderItem = getNextRenderItem( object, geometry, material, z, group );
 
 			( material.transparent === true ? transparent : opaque ).push( renderItem );
 
 		}
 
-		function unshift( object, geometry, material, groupOrder, z, group ) {
+		function unshift( object, geometry, material, z, group ) {
 
-			var renderItem = getNextRenderItem( object, geometry, material, groupOrder, z, group );
+			var renderItem = getNextRenderItem( object, geometry, material, z, group );
 
 			( material.transparent === true ? transparent : opaque ).unshift( renderItem );
 
@@ -20023,44 +20013,31 @@
 
 			if ( ! capabilities.isWebGL2 ) return glFormat;
 
-			var internalFormat = glFormat;
-
 			if ( glFormat === 6403 ) {
 
-				if ( glType === 5126 ) internalFormat = 33326;
-				if ( glType === 5131 ) internalFormat = 33325;
-				if ( glType === 5121 ) internalFormat = 33321;
+				if ( glType === 5126 ) return 33326;
+				if ( glType === 5131 ) return 33325;
+				if ( glType === 5121 ) return 33321;
 
 			}
 
 			if ( glFormat === 6407 ) {
 
-				if ( glType === 5126 ) internalFormat = 34837;
-				if ( glType === 5131 ) internalFormat = 34843;
-				if ( glType === 5121 ) internalFormat = 32849;
+				if ( glType === 5126 ) return 34837;
+				if ( glType === 5131 ) return 34843;
+				if ( glType === 5121 ) return 32849;
 
 			}
 
 			if ( glFormat === 6408 ) {
 
-				if ( glType === 5126 ) internalFormat = 34836;
-				if ( glType === 5131 ) internalFormat = 34842;
-				if ( glType === 5121 ) internalFormat = 32856;
+				if ( glType === 5126 ) return 34836;
+				if ( glType === 5131 ) return 34842;
+				if ( glType === 5121 ) return 32856;
 
 			}
 
-			if ( internalFormat === 33325 || internalFormat === 33326 ||
-				internalFormat === 34842 || internalFormat === 34836 ) {
-
-				extensions.get( 'EXT_color_buffer_float' );
-
-			} else if ( internalFormat === 34843 || internalFormat === 34837 ) {
-
-				console.warn( 'THREE.WebGLRenderer: Floating point textures with RGB format not supported. Please use RGBA instead.' );
-
-			}
-
-			return internalFormat;
+			return glFormat;
 
 		}
 
@@ -23177,7 +23154,7 @@
 			currentRenderList = renderLists.get( scene, camera );
 			currentRenderList.init();
 
-			projectObject( scene, camera, 0, _this.sortObjects );
+			projectObject( scene, camera, _this.sortObjects );
 
 			if ( _this.sortObjects === true ) {
 
@@ -23268,7 +23245,7 @@
 
 		};
 
-		function projectObject( object, camera, groupOrder, sortObjects ) {
+		function projectObject( object, camera, sortObjects ) {
 
 			if ( object.visible === false ) return;
 
@@ -23276,11 +23253,7 @@
 
 			if ( visible ) {
 
-				if ( object.isGroup ) {
-
-					groupOrder = object.renderOrder;
-
-				} else if ( object.isLight ) {
+				if ( object.isLight ) {
 
 					currentRenderState.pushLight( object );
 
@@ -23304,7 +23277,7 @@
 						var geometry = objects.update( object );
 						var material = object.material;
 
-						currentRenderList.push( object, geometry, material, groupOrder, _vector3.z, null );
+						currentRenderList.push( object, geometry, material, _vector3.z, null );
 
 					}
 
@@ -23317,7 +23290,7 @@
 
 					}
 
-					currentRenderList.push( object, null, object.material, groupOrder, _vector3.z, null );
+					currentRenderList.push( object, null, object.material, _vector3.z, null );
 
 				} else if ( object.isMesh || object.isLine || object.isPoints ) {
 
@@ -23350,7 +23323,7 @@
 
 								if ( groupMaterial && groupMaterial.visible ) {
 
-									currentRenderList.push( object, geometry, groupMaterial, groupOrder, _vector3.z, group );
+									currentRenderList.push( object, geometry, groupMaterial, _vector3.z, group );
 
 								}
 
@@ -23358,7 +23331,7 @@
 
 						} else if ( material.visible ) {
 
-							currentRenderList.push( object, geometry, material, groupOrder, _vector3.z, null );
+							currentRenderList.push( object, geometry, material, _vector3.z, null );
 
 						}
 
@@ -23372,7 +23345,7 @@
 
 			for ( var i = 0, l = children.length; i < l; i ++ ) {
 
-				projectObject( children[ i ], camera, groupOrder, sortObjects );
+				projectObject( children[ i ], camera, sortObjects );
 
 			}
 
@@ -47529,7 +47502,6 @@
 	exports.CircleGeometry = CircleGeometry;
 	exports.CircleBufferGeometry = CircleBufferGeometry;
 	exports.BoxGeometry = BoxGeometry;
-	exports.CubeGeometry = BoxGeometry;
 	exports.BoxBufferGeometry = BoxBufferGeometry;
 	exports.ShadowMaterial = ShadowMaterial;
 	exports.SpriteMaterial = SpriteMaterial;
@@ -47712,6 +47684,7 @@
 	exports.RGBADepthPacking = RGBADepthPacking;
 	exports.TangentSpaceNormalMap = TangentSpaceNormalMap;
 	exports.ObjectSpaceNormalMap = ObjectSpaceNormalMap;
+	exports.CubeGeometry = BoxGeometry;
 	exports.Face4 = Face4;
 	exports.LineStrip = LineStrip;
 	exports.LinePieces = LinePieces;
@@ -47752,4 +47725,4 @@
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 
-}));
+})));
