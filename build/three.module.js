@@ -179,7 +179,7 @@ Object.assign( EventDispatcher.prototype, {
 
 } );
 
-var REVISION = '100';
+var REVISION = '100dev';
 var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
 var CullFaceNone = 0;
 var CullFaceBack = 1;
@@ -13079,42 +13079,42 @@ ShaderMaterial.prototype.toJSON = function ( meta ) {
 		var uniform = this.uniforms[ name ];
 		var value = uniform.value;
 
-		if ( value && value.isTexture ) {
+		if ( value.isTexture ) {
 
 			data.uniforms[ name ] = {
 				type: 't',
 				value: value.toJSON( meta ).uuid
 			};
 
-		} else if ( value && value.isColor ) {
+		} else if ( value.isColor ) {
 
 			data.uniforms[ name ] = {
 				type: 'c',
 				value: value.getHex()
 			};
 
-		} else if ( value && value.isVector2 ) {
+		} else if ( value.isVector2 ) {
 
 			data.uniforms[ name ] = {
 				type: 'v2',
 				value: value.toArray()
 			};
 
-		} else if ( value && value.isVector3 ) {
+		} else if ( value.isVector3 ) {
 
 			data.uniforms[ name ] = {
 				type: 'v3',
 				value: value.toArray()
 			};
 
-		} else if ( value && value.isVector4 ) {
+		} else if ( value.isVector4 ) {
 
 			data.uniforms[ name ] = {
 				type: 'v4',
 				value: value.toArray()
 			};
 
-		} else if ( value && value.isMatrix4 ) {
+		} else if ( value.isMatrix4 ) {
 
 			data.uniforms[ name ] = {
 				type: 'm4',
@@ -13137,16 +13137,6 @@ ShaderMaterial.prototype.toJSON = function ( meta ) {
 
 	data.vertexShader = this.vertexShader;
 	data.fragmentShader = this.fragmentShader;
-
-	var extensions = {};
-
-	for ( var key in this.extensions ) {
-
-		if ( this.extensions[ key ] === true ) extensions[ key ] = true;
-
-	}
-
-	if ( Object.keys( extensions ).length > 0 ) data.extensions = extensions;
 
 	return data;
 
@@ -14247,7 +14237,17 @@ Mesh.prototype = Object.assign( Object.create( Object3D.prototype ), {
 
 			if ( morphTargets !== undefined && morphTargets.length > 0 ) {
 
-				console.error( 'THREE.Mesh.updateMorphTargets() no longer supports THREE.Geometry. Use THREE.BufferGeometry instead.' );
+				this.morphTargetInfluences = [];
+				this.morphTargetDictionary = {};
+
+				for ( m = 0, ml = morphTargets.length; m < ml; m ++ ) {
+
+					name = morphTargets[ m ].name || String( m );
+
+					this.morphTargetInfluences.push( 0 );
+					this.morphTargetDictionary[ name ] = m;
+
+				}
 
 			}
 
@@ -37333,16 +37333,6 @@ Object.assign( MaterialLoader.prototype, {
 		if ( json.vertexShader !== undefined ) material.vertexShader = json.vertexShader;
 		if ( json.fragmentShader !== undefined ) material.fragmentShader = json.fragmentShader;
 
-		if ( json.extensions !== undefined ) {
-
-			for ( var key in json.extensions ) {
-
-				material.extensions[ key ] = json.extensions[ key ];
-
-			}
-
-		}
-
 		// Deprecated
 
 		if ( json.shading !== undefined ) material.flatShading = json.shading === 1; // THREE.FlatShading
@@ -40345,11 +40335,10 @@ PositionalAudio.prototype = Object.assign( Object.create( Audio.prototype ), {
 
 			if ( this.isPlaying === false ) return;
 
+			var panner = this.panner;
 			this.matrixWorld.decompose( position, quaternion, scale );
 
 			orientation.set( 0, 0, 1 ).applyQuaternion( quaternion );
-
-			var panner = this.panner;
 
 			if ( panner.positionX ) {
 
