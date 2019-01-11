@@ -4743,37 +4743,6 @@
 	} );
 
 	/**
-	 * @author Mugen87 / https://github.com/Mugen87
-	 * @author Matt DesLauriers / @mattdesl
-	 */
-
-	function WebGLMultisampleRenderTarget( width, height, options ) {
-
-		WebGLRenderTarget.call( this, width, height, options );
-
-		this.samples = 4;
-
-	}
-
-	WebGLMultisampleRenderTarget.prototype = Object.assign( Object.create( WebGLRenderTarget.prototype ), {
-
-		constructor: WebGLMultisampleRenderTarget,
-
-		isWebGLMultisampleRenderTarget: true,
-
-		copy: function ( source ) {
-
-			WebGLRenderTarget.prototype.copy.call( this, source );
-
-			this.samples = source.samples;
-
-			return this;
-
-		}
-
-	} );
-
-	/**
 	 * @author alteredq / http://alteredqualia.com
 	 */
 
@@ -12026,7 +11995,21 @@
 
 		toNonIndexed: function () {
 
-			function convertBufferAttribute( attribute, indices ) {
+			if ( this.index === null ) {
+
+				console.warn( 'THREE.BufferGeometry.toNonIndexed(): Geometry is already non-indexed.' );
+				return this;
+
+			}
+
+			var geometry2 = new BufferGeometry();
+
+			var indices = this.index.array;
+			var attributes = this.attributes;
+
+			for ( var name in attributes ) {
+
+				var attribute = attributes[ name ];
 
 				var array = attribute.array;
 				var itemSize = attribute.itemSize;
@@ -12047,60 +12030,9 @@
 
 				}
 
-				return new BufferAttribute( array2, itemSize );
+				geometry2.addAttribute( name, new BufferAttribute( array2, itemSize ) );
 
 			}
-
-			//
-
-			if ( this.index === null ) {
-
-				console.warn( 'THREE.BufferGeometry.toNonIndexed(): Geometry is already non-indexed.' );
-				return this;
-
-			}
-
-			var geometry2 = new BufferGeometry();
-
-			var indices = this.index.array;
-			var attributes = this.attributes;
-
-			// attributes
-
-			for ( var name in attributes ) {
-
-				var attribute = attributes[ name ];
-
-				var newAttribute = convertBufferAttribute( attribute, indices );
-
-				geometry2.addAttribute( name, newAttribute );
-
-			}
-
-			// morph attributes
-
-			var morphAttributes = this.morphAttributes;
-
-			for ( name in morphAttributes ) {
-
-				var morphArray = [];
-				var morphAttribute = morphAttributes[ name ]; // morphAttribute: array of Float32BufferAttributes
-
-				for ( var i = 0, il = morphAttribute.length; i < il; i ++ ) {
-
-					var attribute = morphAttribute[ i ];
-
-					var newAttribute = convertBufferAttribute( attribute, indices );
-
-					morphArray.push( newAttribute );
-
-				}
-
-				geometry2.morphAttributes[ name ] = morphArray;
-
-			}
-
-			// groups
 
 			var groups = this.groups;
 
@@ -13185,13 +13117,6 @@
 
 				data.uniforms[ name ] = {
 					type: 'v4',
-					value: value.toArray()
-				};
-
-			} else if ( value && value.isMatrix3 ) {
-
-				data.uniforms[ name ] = {
-					type: 'm3',
 					value: value.toArray()
 				};
 
@@ -15015,8 +14940,6 @@
 		var floatFragmentTextures = isWebGL2 || !! extensions.get( 'OES_texture_float' );
 		var floatVertexTextures = vertexTextures && floatFragmentTextures;
 
-		var maxSamples = isWebGL2 ? gl.getParameter( 36183 ) : 0;
-
 		return {
 
 			isWebGL2: isWebGL2,
@@ -15039,9 +14962,7 @@
 
 			vertexTextures: vertexTextures,
 			floatFragmentTextures: floatFragmentTextures,
-			floatVertexTextures: floatVertexTextures,
-
-			maxSamples: maxSamples
+			floatVertexTextures: floatVertexTextures
 
 		};
 
@@ -17971,16 +17892,6 @@
 
 		var lists = {};
 
-		function onSceneDispose( event ) {
-
-			var scene = event.target;
-
-			scene.removeEventListener( 'dispose', onSceneDispose );
-
-			delete lists[ scene.id ];
-
-		}
-
 		function get( scene, camera ) {
 
 			var cameras = lists[ scene.id ];
@@ -17990,8 +17901,6 @@
 				list = new WebGLRenderList();
 				lists[ scene.id ] = {};
 				lists[ scene.id ][ camera.id ] = list;
-
-				scene.addEventListener( 'dispose', onSceneDispose );
 
 			} else {
 
@@ -18418,16 +18327,6 @@
 
 		var renderStates = {};
 
-		function onSceneDispose( event ) {
-
-			var scene = event.target;
-
-			scene.removeEventListener( 'dispose', onSceneDispose );
-
-			delete renderStates[ scene.id ];
-
-		}
-
 		function get( scene, camera ) {
 
 			var renderState;
@@ -18437,8 +18336,6 @@
 				renderState = new WebGLRenderState();
 				renderStates[ scene.id ] = {};
 				renderStates[ scene.id ][ camera.id ] = renderState;
-
-				scene.addEventListener( 'dispose', onSceneDispose );
 
 			} else {
 
@@ -20034,55 +19931,32 @@
 
 		//
 
-		function resizeImage( image, needsPowerOfTwo, needsNewCanvas, maxSize ) {
-
-			var scale = 1;
-
-			// handle case if texture exceeds max size
+		function clampToMaxSize( image, maxSize ) {
 
 			if ( image.width > maxSize || image.height > maxSize ) {
 
-				scale = maxSize / Math.max( image.width, image.height );
+				if ( 'data' in image ) {
 
-			}
-
-			// only perform resize if necessary
-
-			if ( scale < 1 || needsPowerOfTwo === true ) {
-
-				// only perform resize for certain image types
-
-				if ( image instanceof HTMLImageElement || image instanceof HTMLCanvasElement || image instanceof ImageBitmap ) {
-
-					if ( _canvas === undefined ) _canvas = document.createElementNS( 'http://www.w3.org/1999/xhtml', 'canvas' );
-
-					// cube textures can't reuse the same canvas
-
-					var canvas = needsNewCanvas ? document.createElementNS( 'http://www.w3.org/1999/xhtml', 'canvas' ) : _canvas;
-
-					var floor = needsPowerOfTwo ? _Math.floorPowerOfTwo : Math.floor;
-
-					canvas.width = floor( scale * image.width );
-					canvas.height = floor( scale * image.height );
-
-					var context = canvas.getContext( '2d' );
-					context.drawImage( image, 0, 0, canvas.width, canvas.height );
-
-					console.warn( 'THREE.WebGLRenderer: Texture has been resized from (' + image.width + 'x' + image.height + ') to (' + canvas.width + 'x' + canvas.height + ').' );
-
-					return canvas;
-
-				} else {
-
-					if ( 'data' in image ) {
-
-						console.warn( 'THREE.WebGLRenderer: Image in DataTexture is too big (' + image.width + 'x' + image.height + ').' );
-
-					}
-
-					return image;
+					console.warn( 'THREE.WebGLRenderer: image in DataTexture is too big (' + image.width + 'x' + image.height + ').' );
+					return;
 
 				}
+
+				// Warning: Scaling through the canvas will only work with images that use
+				// premultiplied alpha.
+
+				var scale = maxSize / Math.max( image.width, image.height );
+
+				var canvas = document.createElementNS( 'http://www.w3.org/1999/xhtml', 'canvas' );
+				canvas.width = Math.floor( image.width * scale );
+				canvas.height = Math.floor( image.height * scale );
+
+				var context = canvas.getContext( '2d' );
+				context.drawImage( image, 0, 0, image.width, image.height, 0, 0, canvas.width, canvas.height );
+
+				console.warn( 'THREE.WebGLRenderer: image is too big (' + image.width + 'x' + image.height + '). Resized to ' + canvas.width + 'x' + canvas.height );
+
+				return canvas;
 
 			}
 
@@ -20093,6 +19967,28 @@
 		function isPowerOfTwo( image ) {
 
 			return _Math.isPowerOfTwo( image.width ) && _Math.isPowerOfTwo( image.height );
+
+		}
+
+		function makePowerOfTwo( image ) {
+
+			if ( image instanceof HTMLImageElement || image instanceof HTMLCanvasElement || image instanceof ImageBitmap ) {
+
+				if ( _canvas === undefined ) _canvas = document.createElementNS( 'http://www.w3.org/1999/xhtml', 'canvas' );
+
+				_canvas.width = _Math.floorPowerOfTwo( image.width );
+				_canvas.height = _Math.floorPowerOfTwo( image.height );
+
+				var context = _canvas.getContext( '2d' );
+				context.drawImage( image, 0, 0, _canvas.width, _canvas.height );
+
+				console.warn( 'THREE.WebGLRenderer: image is not power of two (' + image.width + 'x' + image.height + '). Resized to ' + _canvas.width + 'x' + _canvas.height );
+
+				return _canvas;
+
+			}
+
+			return image;
 
 		}
 
@@ -20366,7 +20262,7 @@
 
 						if ( ! isCompressed && ! isDataTexture ) {
 
-							cubeImage[ i ] = resizeImage( texture.image[ i ], false, true, capabilities.maxCubemapSize );
+							cubeImage[ i ] = clampToMaxSize( texture.image[ i ], capabilities.maxCubemapSize );
 
 						} else {
 
@@ -20558,8 +20454,13 @@
 			_gl.pixelStorei( 37441, texture.premultiplyAlpha );
 			_gl.pixelStorei( 3317, texture.unpackAlignment );
 
-			var needsPowerOfTwo = textureNeedsPowerOfTwo( texture ) && isPowerOfTwo( texture.image ) === false;
-			var image = resizeImage( texture.image, needsPowerOfTwo, false, capabilities.maxTextureSize );
+			var image = clampToMaxSize( texture.image, capabilities.maxTextureSize );
+
+			if ( textureNeedsPowerOfTwo( texture ) && isPowerOfTwo( image ) === false ) {
+
+				image = makePowerOfTwo( image );
+
+			}
 
 			var isPowerOfTwoImage = isPowerOfTwo( image ),
 				glFormat = utils.convert( texture.format ),
@@ -20741,60 +20642,24 @@
 		}
 
 		// Setup storage for internal depth/stencil buffers and bind to correct framebuffer
-		function setupRenderBufferStorage( renderbuffer, renderTarget, isMultisample ) {
+		function setupRenderBufferStorage( renderbuffer, renderTarget ) {
 
 			_gl.bindRenderbuffer( 36161, renderbuffer );
 
 			if ( renderTarget.depthBuffer && ! renderTarget.stencilBuffer ) {
 
-				if ( isMultisample ) {
-
-					var samples = getRenderTargetSamples( renderTarget );
-
-					_gl.renderbufferStorageMultisample( 36161, samples, 33189, renderTarget.width, renderTarget.height );
-
-				} else {
-
-					_gl.renderbufferStorage( 36161, 33189, renderTarget.width, renderTarget.height );
-
-				}
-
+				_gl.renderbufferStorage( 36161, 33189, renderTarget.width, renderTarget.height );
 				_gl.framebufferRenderbuffer( 36160, 36096, 36161, renderbuffer );
 
 			} else if ( renderTarget.depthBuffer && renderTarget.stencilBuffer ) {
 
-				if ( isMultisample ) {
-
-					var samples = getRenderTargetSamples( renderTarget );
-
-					_gl.renderbufferStorageMultisample( 36161, samples, 34041, renderTarget.width, renderTarget.height );
-
-				} else {
-
-					_gl.renderbufferStorage( 36161, 34041, renderTarget.width, renderTarget.height );
-
-				}
-
-
+				_gl.renderbufferStorage( 36161, 34041, renderTarget.width, renderTarget.height );
 				_gl.framebufferRenderbuffer( 36160, 33306, 36161, renderbuffer );
 
 			} else {
 
-				var glFormat = utils.convert( renderTarget.texture.format );
-				var glType = utils.convert( renderTarget.texture.type );
-				var glInternalFormat = getInternalFormat( glFormat, glType );
-
-				if ( isMultisample ) {
-
-					var samples = getRenderTargetSamples( renderTarget );
-
-					_gl.renderbufferStorageMultisample( 36161, samples, glInternalFormat, renderTarget.width, renderTarget.height );
-
-				} else {
-
-					_gl.renderbufferStorage( 36161, glInternalFormat, renderTarget.width, renderTarget.height );
-
-				}
+				// FIXME: We don't support !depth !stencil
+				_gl.renderbufferStorage( 36161, 32854, renderTarget.width, renderTarget.height );
 
 			}
 
@@ -20901,7 +20766,6 @@
 			info.memory.textures ++;
 
 			var isCube = ( renderTarget.isWebGLRenderTargetCube === true );
-			var isMultisample = ( renderTarget.isWebGLMultisampleRenderTarget === true );
 			var isTargetPowerOfTwo = isPowerOfTwo( renderTarget );
 
 			// Setup framebuffer
@@ -20919,42 +20783,6 @@
 			} else {
 
 				renderTargetProperties.__webglFramebuffer = _gl.createFramebuffer();
-
-				if ( isMultisample ) {
-
-					if ( capabilities.isWebGL2 ) {
-
-						renderTargetProperties.__webglMultisampledFramebuffer = _gl.createFramebuffer();
-						renderTargetProperties.__webglColorRenderbuffer = _gl.createRenderbuffer();
-
-						_gl.bindRenderbuffer( 36161, renderTargetProperties.__webglColorRenderbuffer );
-						var glFormat = utils.convert( renderTarget.texture.format );
-						var glType = utils.convert( renderTarget.texture.type );
-						var glInternalFormat = getInternalFormat( glFormat, glType );
-						var samples = getRenderTargetSamples( renderTarget );
-						_gl.renderbufferStorageMultisample( 36161, samples, glInternalFormat, renderTarget.width, renderTarget.height );
-
-						_gl.bindFramebuffer( 36160, renderTargetProperties.__webglMultisampledFramebuffer );
-						_gl.framebufferRenderbuffer( 36160, 36064, 36161, renderTargetProperties.__webglColorRenderbuffer );
-						_gl.bindRenderbuffer( 36161, null );
-
-						if ( renderTarget.depthBuffer ) {
-
-							renderTargetProperties.__webglDepthRenderbuffer = _gl.createRenderbuffer();
-							setupRenderBufferStorage( renderTargetProperties.__webglDepthRenderbuffer, renderTarget, true );
-
-						}
-
-						_gl.bindFramebuffer( 36160, null );
-
-
-					} else {
-
-						console.warn( 'THREE.WebGLRenderer: WebGLMultisampleRenderTarget can only be used with WebGL2.' );
-
-					}
-
-				}
 
 			}
 
@@ -21023,43 +20851,6 @@
 
 		}
 
-		function updateMultisampleRenderTarget( renderTarget ) {
-
-			if ( renderTarget.isWebGLMultisampleRenderTarget ) {
-
-				if ( capabilities.isWebGL2 ) {
-
-					var renderTargetProperties = properties.get( renderTarget );
-
-					_gl.bindFramebuffer( 36008, renderTargetProperties.__webglMultisampledFramebuffer );
-					_gl.bindFramebuffer( 36009, renderTargetProperties.__webglFramebuffer );
-
-					var width = renderTarget.width;
-					var height = renderTarget.height;
-					var mask = 16384;
-
-					if ( renderTarget.depthBuffer ) mask |= 256;
-					if ( renderTarget.stencilBuffer ) mask |= 1024;
-
-					_gl.blitFramebuffer( 0, 0, width, height, 0, 0, width, height, mask, 9728 );
-
-				} else {
-
-					console.warn( 'THREE.WebGLRenderer: WebGLMultisampleRenderTarget can only be used with WebGL2.' );
-
-				}
-
-			}
-
-		}
-
-		function getRenderTargetSamples( renderTarget ) {
-
-			return ( capabilities.isWebGL2 && renderTarget.isWebGLMultisampleRenderTarget ) ?
-				Math.min( capabilities.maxSamples, renderTarget.samples ) : 0;
-
-		}
-
 		function updateVideoTexture( texture ) {
 
 			var id = texture.id;
@@ -21082,7 +20873,6 @@
 		this.setTextureCubeDynamic = setTextureCubeDynamic;
 		this.setupRenderTarget = setupRenderTarget;
 		this.updateRenderTargetMipmap = updateRenderTargetMipmap;
-		this.updateMultisampleRenderTarget = updateMultisampleRenderTarget;
 
 	}
 
@@ -23447,17 +23237,11 @@
 
 			}
 
-			//
+			// Generate mipmap if we're using any kind of mipmap filtering
 
 			if ( renderTarget ) {
 
-				// Generate mipmap if we're using any kind of mipmap filtering
-
 				textures.updateRenderTargetMipmap( renderTarget );
-
-				// resolve multisample renderbuffers to a single-sample texture if necessary
-
-				textures.updateMultisampleRenderTarget( renderTarget );
 
 			}
 
@@ -24814,10 +24598,6 @@
 					framebuffer = __webglFramebuffer[ renderTarget.activeCubeFace ];
 					isCube = true;
 
-				} else if ( renderTarget.isWebGLMultisampleRenderTarget ) {
-
-					framebuffer = properties.get( renderTarget ).__webglMultisampledFramebuffer;
-
 				} else {
 
 					framebuffer = __webglFramebuffer;
@@ -25078,12 +24858,6 @@
 			if ( this.fog !== null ) data.object.fog = this.fog.toJSON();
 
 			return data;
-
-		},
-
-		dispose: function () {
-
-			this.dispatchEvent( { type: 'dispose' } );
 
 		}
 
@@ -37575,9 +37349,6 @@
 							material.uniforms[ name ].value = new Vector4().fromArray( uniform.value );
 							break;
 
-						case 'm3':
-							material.uniforms[ name ].value = new Matrix3().fromArray( uniform.value );
-
 						case 'm4':
 							material.uniforms[ name ].value = new Matrix4().fromArray( uniform.value );
 							break;
@@ -39905,8 +39676,6 @@
 
 			if ( this.parent === null ) this.updateMatrixWorld();
 
-			var currentRenderTarget = renderer.getRenderTarget();
-
 			var renderTarget = this.renderTarget;
 			var generateMipmaps = renderTarget.texture.generateMipmaps;
 
@@ -39932,13 +39701,11 @@
 			renderTarget.activeCubeFace = 5;
 			renderer.render( scene, cameraNZ, renderTarget );
 
-			renderer.setRenderTarget( currentRenderTarget );
+			renderer.setRenderTarget( null );
 
 		};
 
 		this.clear = function ( renderer, color, depth, stencil ) {
-
-			var currentRenderTarget = renderer.getRenderTarget();
 
 			var renderTarget = this.renderTarget;
 
@@ -39951,7 +39718,7 @@
 
 			}
 
-			renderer.setRenderTarget( currentRenderTarget );
+			renderer.setRenderTarget( null );
 
 		};
 
@@ -47576,7 +47343,6 @@
 
 	}
 
-	exports.WebGLMultisampleRenderTarget = WebGLMultisampleRenderTarget;
 	exports.WebGLRenderTargetCube = WebGLRenderTargetCube;
 	exports.WebGLRenderTarget = WebGLRenderTarget;
 	exports.WebGLRenderer = WebGLRenderer;
