@@ -40262,7 +40262,7 @@
 			var source = this.context.createBufferSource();
 
 			source.buffer = this.buffer;
-			source.detune.value = this.detune;
+			this.setDetune( this.detune );
 			source.loop = this.loop;
 			source.onended = this.onEnded.bind( this );
 			source.playbackRate.setValueAtTime( this.playbackRate, this.startTime );
@@ -40394,6 +40394,13 @@
 		setDetune: function ( value ) {
 
 			this.detune = value;
+
+			if ( this.source.detune === undefined ) {
+
+				console.warn( 'THREE.Audio: AudioBufferSourceNode.detune not supported by the browser.' );
+				return;
+
+			}
 
 			if ( this.isPlaying === true ) {
 
