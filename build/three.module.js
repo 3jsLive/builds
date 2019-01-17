@@ -20212,10 +20212,23 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 		var textureProperties = properties.get( texture );
 
-		if ( textureProperties.__webglInit === undefined ) return;
+		if ( texture.image && textureProperties.__image__webglTextureCube ) {
 
-		_gl.deleteTexture( textureProperties.__webglTexture );
+			// cube texture
 
+			_gl.deleteTexture( textureProperties.__image__webglTextureCube );
+
+		} else {
+
+			// 2D texture
+
+			if ( textureProperties.__webglInit === undefined ) return;
+
+			_gl.deleteTexture( textureProperties.__webglTexture );
+
+		}
+
+		// remove all webgl properties
 		properties.remove( texture );
 
 	}
@@ -20312,6 +20325,7 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 	}
 
+
 	function setTextureCube( texture, slot ) {
 
 		var textureProperties = properties.get( texture );
@@ -20320,10 +20334,18 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 			if ( texture.version > 0 && textureProperties.__version !== texture.version ) {
 
-				initTexture( textureProperties, texture );
+				if ( ! textureProperties.__image__webglTextureCube ) {
+
+					texture.addEventListener( 'dispose', onTextureDispose );
+
+					textureProperties.__image__webglTextureCube = _gl.createTexture();
+
+					info.memory.textures ++;
+
+				}
 
 				state.activeTexture( 33984 + slot );
-				state.bindTexture( 34067, textureProperties.__webglTexture );
+				state.bindTexture( 34067, textureProperties.__image__webglTextureCube );
 
 				_gl.pixelStorei( 37440, texture.flipY );
 
@@ -20424,7 +20446,7 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 			} else {
 
 				state.activeTexture( 33984 + slot );
-				state.bindTexture( 34067, textureProperties.__webglTexture );
+				state.bindTexture( 34067, textureProperties.__image__webglTextureCube );
 
 			}
 
@@ -20491,7 +20513,20 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 	}
 
-	function initTexture( textureProperties, texture ) {
+	function uploadTexture( textureProperties, texture, slot ) {
+
+		var textureType;
+
+		if ( texture.isDataTexture3D ) {
+
+			textureType = 32879;
+
+		} else {
+
+			textureType = 3553;
+
+		}
+
 
 		if ( textureProperties.__webglInit === undefined ) {
 
@@ -20504,17 +20539,12 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 			info.memory.textures ++;
 
 		}
-
-	}
-
-	function uploadTexture( textureProperties, texture, slot ) {
-
-		var textureType = ( texture.isDataTexture3D ) ? 32879 : 3553;
-
-		initTexture( textureProperties, texture );
-
 		state.activeTexture( 33984 + slot );
+
+
 		state.bindTexture( textureType, textureProperties.__webglTexture );
+
+
 
 		_gl.pixelStorei( 37440, texture.flipY );
 		_gl.pixelStorei( 37441, texture.premultiplyAlpha );
@@ -44659,7 +44689,7 @@ function RectAreaLightHelper( light, color ) {
 	geometry2.addAttribute( 'position', new Float32BufferAttribute( positions2, 3 ) );
 	geometry2.computeBoundingSphere();
 
-	this.add( new Mesh( geometry2, new MeshBasicMaterial( { side: BackSide, fog: false } ) ) );
+	this.add( new Mesh( geometry2, new MeshBasicMaterial( { side: THREE.BackSide, fog: false } ) ) );
 
 	this.update();
 
@@ -45551,8 +45581,8 @@ function ArrowHelper( dir, origin, length, color, headLength, headWidth ) {
 
 	Object3D.call( this );
 
-	if ( dir === undefined ) dir = new Vector3( 0, 0, 1 );
-	if ( origin === undefined ) origin = new Vector3( 0, 0, 0 );
+	if ( dir === undefined ) dir = new THREE.Vector3( 0, 0, 1 );
+	if ( origin === undefined ) origin = new THREE.Vector3( 0, 0, 0 );
 	if ( length === undefined ) length = 1;
 	if ( color === undefined ) color = 0xffff00;
 	if ( headLength === undefined ) headLength = 0.2 * length;
