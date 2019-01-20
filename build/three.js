@@ -330,26 +330,6 @@
 	var TangentSpaceNormalMap = 0;
 	var ObjectSpaceNormalMap = 1;
 
-	// StencilOp
-	var ZERO = 0;
-	var KEEP = 7680;
-	var REPLACE = 7681;
-	var INCR = 7682;
-	var DECR = 7683;
-	var INCR_WRAP = 34055;
-	var DECR_WRAP = 34056;
-	var INVERT = 5386;
-
-	// StencilFunc
-	var NEVER = 512;
-	var LESS = 513;
-	var EQUAL = 514;
-	var LEQUAL = 515;
-	var GREATER = 516;
-	var NOTEQUAL = 517;
-	var GEQUAL = 518;
-	var ALWAYS = 519;
-
 	/**
 	 * @author alteredq / http://alteredqualia.com/
 	 * @author mrdoob / http://mrdoob.com/
@@ -12714,8 +12694,6 @@
 		this.depthTest = true;
 		this.depthWrite = true;
 
-		this.stencil = null;
-
 		this.clippingPlanes = null;
 		this.clipIntersection = false;
 		this.clipShadows = false;
@@ -19745,16 +19723,6 @@
 			depthBuffer.setTest( material.depthTest );
 			depthBuffer.setMask( material.depthWrite );
 			colorBuffer.setMask( material.colorWrite );
-
-			var stencil = material.stencil;
-			var useStencil = stencil !== null;
-			stencilBuffer.setTest( useStencil );
-			if ( useStencil ) {
-
-				stencilBuffer.setFunc( stencil.func, stencil.ref, stencil.mask );
-				stencilBuffer.setOp( stencil.fail, stencil.zfail, stencil.zpass );
-
-			}
 
 			setPolygonOffset( material.polygonOffset, material.polygonOffsetFactor, material.polygonOffsetUnits );
 
@@ -47976,22 +47944,6 @@
 	exports.RGBADepthPacking = RGBADepthPacking;
 	exports.TangentSpaceNormalMap = TangentSpaceNormalMap;
 	exports.ObjectSpaceNormalMap = ObjectSpaceNormalMap;
-	exports.ZERO = ZERO;
-	exports.KEEP = KEEP;
-	exports.REPLACE = REPLACE;
-	exports.INCR = INCR;
-	exports.DECR = DECR;
-	exports.INCR_WRAP = INCR_WRAP;
-	exports.DECR_WRAP = DECR_WRAP;
-	exports.INVERT = INVERT;
-	exports.NEVER = NEVER;
-	exports.LESS = LESS;
-	exports.EQUAL = EQUAL;
-	exports.LEQUAL = LEQUAL;
-	exports.GREATER = GREATER;
-	exports.NOTEQUAL = NOTEQUAL;
-	exports.GEQUAL = GEQUAL;
-	exports.ALWAYS = ALWAYS;
 	exports.Face4 = Face4;
 	exports.LineStrip = LineStrip;
 	exports.LinePieces = LinePieces;
