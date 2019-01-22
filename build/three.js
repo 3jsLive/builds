@@ -12718,7 +12718,7 @@
 		this.stencilFail = KeepStencilOp;
 		this.stencilZFail = KeepStencilOp;
 		this.stencilZPass = KeepStencilOp;
-		this.stencilWrite = true;
+		this.stencilWrite = false;
 
 		this.clippingPlanes = null;
 		this.clipIntersection = false;
@@ -19750,13 +19750,12 @@
 			depthBuffer.setMask( material.depthWrite );
 			colorBuffer.setMask( material.colorWrite );
 
-			var stencil = material.stencil;
-			var useStencil = stencil !== null;
-			stencilBuffer.setTest( useStencil );
-			if ( useStencil ) {
+			var stencilWrite = material.stencilWrite;
+			stencilBuffer.setTest( stencilWrite );
+			if ( stencilWrite ) {
 
-				stencilBuffer.setFunc( stencil.func, stencil.ref, stencil.mask );
-				stencilBuffer.setOp( stencil.fail, stencil.zfail, stencil.zpass );
+				stencilBuffer.setFunc( material.stencilFunc, material.stencilRef, material.stencilMask );
+				stencilBuffer.setOp( material.stencilFail, material.stencilZFail, material.stencilZPass );
 
 			}
 
