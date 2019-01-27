@@ -38314,13 +38314,8 @@
 
 					} else {
 
-						if ( cache[ data.uuid ] === undefined ) {
-
-							cache[ data.uuid ] = loader.parse( data );
-
-						}
-
-						materials[ data.uuid ] = cache[ data.uuid ];
+						materials[ data.uuid ] = loader.parse( data );
+						cache[ data.uuid ] = materials[ data.uuid ];
 
 					}
 
