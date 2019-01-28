@@ -8889,6 +8889,10 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 		if ( this.matrixAutoUpdate === false ) object.matrixAutoUpdate = false;
 
+		// object specific properties
+
+		if ( this.isMesh && this.drawMode !== TrianglesDrawMode ) object.drawMode = this.drawMode;
+
 		//
 
 		function serialize( library, element ) {
@@ -38308,8 +38312,13 @@ Object.assign( ObjectLoader.prototype, {
 
 				} else {
 
-					materials[ data.uuid ] = loader.parse( data );
-					cache[ data.uuid ] = materials[ data.uuid ];
+					if ( cache[ data.uuid ] === undefined ) {
+
+						cache[ data.uuid ] = loader.parse( data );
+
+					}
+
+					materials[ data.uuid ] = cache[ data.uuid ];
 
 				}
 
@@ -38655,6 +38664,8 @@ Object.assign( ObjectLoader.prototype, {
 					object = new Mesh( geometry, material );
 
 				}
+
+				if ( data.drawMode !== undefined ) object.setDrawMode( data.drawMode );
 
 				break;
 
