@@ -8889,10 +8889,6 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 		if ( this.matrixAutoUpdate === false ) object.matrixAutoUpdate = false;
 
-		// object specific properties
-
-		if ( this.isMesh && this.drawMode !== TrianglesDrawMode ) object.drawMode = this.drawMode;
-
 		//
 
 		function serialize( library, element ) {
@@ -38664,8 +38660,6 @@ Object.assign( ObjectLoader.prototype, {
 					object = new Mesh( geometry, material );
 
 				}
-
-				if ( data.drawMode !== undefined ) object.setDrawMode( data.drawMode );
 
 				break;
 
