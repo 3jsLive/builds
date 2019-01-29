@@ -25051,6 +25051,8 @@ Scene.prototype = Object.assign( Object.create( Object3D.prototype ), {
 
 	constructor: Scene,
 
+	isScene: true,
+
 	copy: function ( source, recursive ) {
 
 		Object3D.prototype.copy.call( this, source, recursive );
