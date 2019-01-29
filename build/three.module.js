@@ -14723,7 +14723,7 @@ function WebGLBackground( renderer, state, objects, premultipliedAlpha ) {
 						vertexShader: ShaderLib.cube.vertexShader,
 						fragmentShader: ShaderLib.cube.fragmentShader,
 						side: BackSide,
-						depthTest: true,
+						depthTest: false,
 						depthWrite: false,
 						fog: false
 					} )
