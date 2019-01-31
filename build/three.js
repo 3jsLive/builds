@@ -14492,6 +14492,7 @@
 									if ( intersection ) {
 
 										intersection.faceIndex = Math.floor( j / 3 ); // triangle number in indexed buffer semantics
+										intersection.face.materialIndex = group.materialIndex;
 										intersects.push( intersection );
 
 									}
@@ -14549,6 +14550,7 @@
 									if ( intersection ) {
 
 										intersection.faceIndex = Math.floor( j / 3 ); // triangle number in non-indexed buffer semantics
+										intersection.face.materialIndex = group.materialIndex;
 										intersects.push( intersection );
 
 									}
@@ -20107,9 +20109,9 @@
 
 		}
 
-		function textureNeedsGenerateMipmaps( texture, isPowerOfTwo ) {
+		function textureNeedsGenerateMipmaps( texture, supportsMips ) {
 
-			return texture.generateMipmaps && isPowerOfTwo &&
+			return texture.generateMipmaps && supportsMips &&
 				texture.minFilter !== NearestFilter && texture.minFilter !== LinearFilter;
 
 		}
@@ -20379,12 +20381,12 @@
 					}
 
 					var image = cubeImage[ 0 ],
-						isPowerOfTwoImage = isPowerOfTwo( image ),
+						supportsMips = isPowerOfTwo( image ) || capabilities.isWebGL2,
 						glFormat = utils.convert( texture.format ),
 						glType = utils.convert( texture.type ),
 						glInternalFormat = getInternalFormat( glFormat, glType );
 
-					setTextureParameters( 34067, texture, isPowerOfTwoImage );
+					setTextureParameters( 34067, texture, supportsMips );
 
 					for ( var i = 0; i < 6; i ++ ) {
 
@@ -20442,7 +20444,7 @@
 
 					}
 
-					if ( textureNeedsGenerateMipmaps( texture, isPowerOfTwoImage ) ) {
+					if ( textureNeedsGenerateMipmaps( texture, supportsMips ) ) {
 
 						// We assume images for cube map have the same size.
 						generateMipmap( 34067, texture, image.width, image.height );
@@ -20471,11 +20473,11 @@
 
 		}
 
-		function setTextureParameters( textureType, texture, isPowerOfTwoImage ) {
+		function setTextureParameters( textureType, texture, supportsMips ) {
 
 			var extension;
 
-			if ( isPowerOfTwoImage ) {
+			if ( supportsMips ) {
 
 				_gl.texParameteri( textureType, 10242, utils.convert( texture.wrapS ) );
 				_gl.texParameteri( textureType, 10243, utils.convert( texture.wrapT ) );
@@ -20563,12 +20565,12 @@
 			var needsPowerOfTwo = textureNeedsPowerOfTwo( texture ) && isPowerOfTwo( texture.image ) === false;
 			var image = resizeImage( texture.image, needsPowerOfTwo, false, capabilities.maxTextureSize );
 
-			var isPowerOfTwoImage = isPowerOfTwo( image ),
+			var supportsMips = isPowerOfTwo( image ) || capabilities.isWebGL2,
 				glFormat = utils.convert( texture.format ),
 				glType = utils.convert( texture.type ),
 				glInternalFormat = getInternalFormat( glFormat, glType );
 
-			setTextureParameters( textureType, texture, isPowerOfTwoImage );
+			setTextureParameters( textureType, texture, supportsMips );
 
 			var mipmap, mipmaps = texture.mipmaps;
 
@@ -20634,7 +20636,7 @@
 				// if there are no manual mipmaps
 				// set 0 level mipmap and then use GL to generate other mipmap levels
 
-				if ( mipmaps.length > 0 && isPowerOfTwoImage ) {
+				if ( mipmaps.length > 0 && supportsMips ) {
 
 					for ( var i = 0, il = mipmaps.length; i < il; i ++ ) {
 
@@ -20694,7 +20696,7 @@
 				// if there are no manual mipmaps
 				// set 0 level mipmap and then use GL to generate other mipmap levels
 
-				if ( mipmaps.length > 0 && isPowerOfTwoImage ) {
+				if ( mipmaps.length > 0 && supportsMips ) {
 
 					for ( var i = 0, il = mipmaps.length; i < il; i ++ ) {
 
@@ -20715,7 +20717,7 @@
 
 			}
 
-			if ( textureNeedsGenerateMipmaps( texture, isPowerOfTwoImage ) ) {
+			if ( textureNeedsGenerateMipmaps( texture, supportsMips ) ) {
 
 				generateMipmap( 3553, texture, image.width, image.height );
 
@@ -20904,7 +20906,7 @@
 
 			var isCube = ( renderTarget.isWebGLRenderTargetCube === true );
 			var isMultisample = ( renderTarget.isWebGLMultisampleRenderTarget === true );
-			var isTargetPowerOfTwo = isPowerOfTwo( renderTarget );
+			var supportsMips = isPowerOfTwo( renderTarget ) || capabilities.isWebGL2;
 
 			// Setup framebuffer
 
@@ -20965,7 +20967,7 @@
 			if ( isCube ) {
 
 				state.bindTexture( 34067, textureProperties.__webglTexture );
-				setTextureParameters( 34067, renderTarget.texture, isTargetPowerOfTwo );
+				setTextureParameters( 34067, renderTarget.texture, supportsMips );
 
 				for ( var i = 0; i < 6; i ++ ) {
 
@@ -20973,7 +20975,7 @@
 
 				}
 
-				if ( textureNeedsGenerateMipmaps( renderTarget.texture, isTargetPowerOfTwo ) ) {
+				if ( textureNeedsGenerateMipmaps( renderTarget.texture, supportsMips ) ) {
 
 					generateMipmap( 34067, renderTarget.texture, renderTarget.width, renderTarget.height );
 
@@ -20984,10 +20986,10 @@
 			} else {
 
 				state.bindTexture( 3553, textureProperties.__webglTexture );
-				setTextureParameters( 3553, renderTarget.texture, isTargetPowerOfTwo );
+				setTextureParameters( 3553, renderTarget.texture, supportsMips );
 				setupFrameBufferTexture( renderTargetProperties.__webglFramebuffer, renderTarget, 36064, 3553 );
 
-				if ( textureNeedsGenerateMipmaps( renderTarget.texture, isTargetPowerOfTwo ) ) {
+				if ( textureNeedsGenerateMipmaps( renderTarget.texture, supportsMips ) ) {
 
 					generateMipmap( 3553, renderTarget.texture, renderTarget.width, renderTarget.height );
 
@@ -21010,9 +21012,9 @@
 		function updateRenderTargetMipmap( renderTarget ) {
 
 			var texture = renderTarget.texture;
-			var isTargetPowerOfTwo = isPowerOfTwo( renderTarget );
+			var supportsMips = isPowerOfTwo( renderTarget ) || capabilities.isWebGL2;
 
-			if ( textureNeedsGenerateMipmaps( texture, isTargetPowerOfTwo ) ) {
+			if ( textureNeedsGenerateMipmaps( texture, supportsMips ) ) {
 
 				var target = renderTarget.isWebGLRenderTargetCube ? 34067 : 3553;
 				var webglTexture = properties.get( texture ).__webglTexture;
