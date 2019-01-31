@@ -14486,7 +14486,6 @@ Mesh.prototype = Object.assign( Object.create( Object3D.prototype ), {
 								if ( intersection ) {
 
 									intersection.faceIndex = Math.floor( j / 3 ); // triangle number in indexed buffer semantics
-									intersection.face.materialIndex = group.materialIndex;
 									intersects.push( intersection );
 
 								}
@@ -14544,7 +14543,6 @@ Mesh.prototype = Object.assign( Object.create( Object3D.prototype ), {
 								if ( intersection ) {
 
 									intersection.faceIndex = Math.floor( j / 3 ); // triangle number in non-indexed buffer semantics
-									intersection.face.materialIndex = group.materialIndex;
 									intersects.push( intersection );
 
 								}
