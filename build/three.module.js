@@ -13059,17 +13059,8 @@ function ShaderMaterial( parameters ) {
 	this.defines = {};
 	this.uniforms = {};
 
-	this.vertexShader = /* glsl */ `
-	void main() {
-		gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-	}
-	`;
-
-	this.fragmentShader = /* glsl */ `
-	void main() {
-		gl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );
-	}
-	`;
+	this.vertexShader = 'void main() {\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}';
+	this.fragmentShader = 'void main() {\n\tgl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );\n}';
 
 	this.linewidth = 1;
 
@@ -20160,7 +20151,7 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 		}
 
-		if ( internalFormat === 33325 || internalFormat === 33326 ||
+		if ( internalFormat === 33325 || internalFormat === 33326 ||
 			internalFormat === 34842 || internalFormat === 34836 ) {
 
 			extensions.get( 'EXT_color_buffer_float' );
