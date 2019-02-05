@@ -13035,6 +13035,10 @@
 
 	} );
 
+	var default_vertex = "void main() {\n\tgl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}";
+
+	var default_fragment = "void main() {\n\tgl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );\n}";
+
 	/**
 	 * @author alteredq / http://alteredqualia.com/
 	 *
@@ -13065,17 +13069,8 @@
 		this.defines = {};
 		this.uniforms = {};
 
-		this.vertexShader = /* glsl */ `
-	void main() {
-		gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-	}
-	`;
-
-		this.fragmentShader = /* glsl */ `
-	void main() {
-		gl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );
-	}
-	`;
+		this.vertexShader = default_vertex;
+		this.fragmentShader = default_fragment;
 
 		this.linewidth = 1;
 
