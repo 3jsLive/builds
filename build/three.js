@@ -20228,23 +20228,10 @@
 
 			var textureProperties = properties.get( texture );
 
-			if ( texture.image && textureProperties.__image__webglTextureCube ) {
+			if ( textureProperties.__webglInit === undefined ) return;
 
-				// cube texture
+			_gl.deleteTexture( textureProperties.__webglTexture );
 
-				_gl.deleteTexture( textureProperties.__image__webglTextureCube );
-
-			} else {
-
-				// 2D texture
-
-				if ( textureProperties.__webglInit === undefined ) return;
-
-				_gl.deleteTexture( textureProperties.__webglTexture );
-
-			}
-
-			// remove all webgl properties
 			properties.remove( texture );
 
 		}
@@ -20341,7 +20328,6 @@
 
 		}
 
-
 		function setTextureCube( texture, slot ) {
 
 			var textureProperties = properties.get( texture );
@@ -20350,18 +20336,10 @@
 
 				if ( texture.version > 0 && textureProperties.__version !== texture.version ) {
 
-					if ( ! textureProperties.__image__webglTextureCube ) {
-
-						texture.addEventListener( 'dispose', onTextureDispose );
-
-						textureProperties.__image__webglTextureCube = _gl.createTexture();
-
-						info.memory.textures ++;
-
-					}
+					initTexture( textureProperties, texture );
 
 					state.activeTexture( 33984 + slot );
-					state.bindTexture( 34067, textureProperties.__image__webglTextureCube );
+					state.bindTexture( 34067, textureProperties.__webglTexture );
 
 					_gl.pixelStorei( 37440, texture.flipY );
 
@@ -20462,7 +20440,7 @@
 				} else {
 
 					state.activeTexture( 33984 + slot );
-					state.bindTexture( 34067, textureProperties.__image__webglTextureCube );
+					state.bindTexture( 34067, textureProperties.__webglTexture );
 
 				}
 
@@ -20529,20 +20507,7 @@
 
 		}
 
-		function uploadTexture( textureProperties, texture, slot ) {
-
-			var textureType;
-
-			if ( texture.isDataTexture3D ) {
-
-				textureType = 32879;
-
-			} else {
-
-				textureType = 3553;
-
-			}
-
+		function initTexture( textureProperties, texture ) {
 
 			if ( textureProperties.__webglInit === undefined ) {
 
@@ -20555,12 +20520,17 @@
 				info.memory.textures ++;
 
 			}
+
+		}
+
+		function uploadTexture( textureProperties, texture, slot ) {
+
+			var textureType = ( texture.isDataTexture3D ) ? 32879 : 3553;
+
+			initTexture( textureProperties, texture );
+
 			state.activeTexture( 33984 + slot );
-
-
 			state.bindTexture( textureType, textureProperties.__webglTexture );
-
-
 
 			_gl.pixelStorei( 37440, texture.flipY );
 			_gl.pixelStorei( 37441, texture.premultiplyAlpha );
