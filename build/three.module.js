@@ -22704,17 +22704,9 @@ function WebGLRenderer( parameters ) {
 
 	};
 
-	this.getCurrentViewport = function ( target ) {
+	this.getCurrentViewport = function () {
 
-		if ( target === undefined ) {
-
-			console.warn( 'WebGLRenderer: .getCurrentViewport() now requires a Vector4 as an argument' );
-
-			target = new Vector4();
-
-		}
-
-		return target.copy( _currentViewport );
+		return _currentViewport;
 
 	};
 
