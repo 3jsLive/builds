@@ -17871,7 +17871,7 @@
 
 			return a.renderOrder - b.renderOrder;
 
-		} else if ( a.z !== b.z ) {
+		} if ( a.z !== b.z ) {
 
 			return b.z - a.z;
 
@@ -22718,14 +22718,14 @@
 
 		this.setViewport = function ( x, y, width, height ) {
 
-			_viewport.set( x, _height - y - height, width, height );
+			_viewport.set( x, y, width, height );
 			state.viewport( _currentViewport.copy( _viewport ).multiplyScalar( _pixelRatio ) );
 
 		};
 
 		this.setScissor = function ( x, y, width, height ) {
 
-			_scissor.set( x, _height - y - height, width, height );
+			_scissor.set( x, y, width, height );
 			state.scissor( _currentScissor.copy( _scissor ).multiplyScalar( _pixelRatio ) );
 
 		};
