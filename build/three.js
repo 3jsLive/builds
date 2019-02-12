@@ -185,7 +185,7 @@
 
 	} );
 
-	var REVISION = '102dev';
+	var REVISION = '101';
 	var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
 	var CullFaceNone = 0;
 	var CullFaceBack = 1;
@@ -15818,8 +15818,6 @@
 		this.magFilter = NearestFilter;
 		this.minFilter = NearestFilter;
 
-		this.wrapR = ClampToEdgeWrapping;
-
 		this.generateMipmaps = false;
 		this.flipY = false;
 
@@ -20467,12 +20465,6 @@
 				_gl.texParameteri( textureType, 10242, utils.convert( texture.wrapS ) );
 				_gl.texParameteri( textureType, 10243, utils.convert( texture.wrapT ) );
 
-				if ( textureType === 32879 ) {
-
-					_gl.texParameteri( textureType, 32882, utils.convert( texture.wrapR ) );
-
-				}
-
 				_gl.texParameteri( textureType, 10240, utils.convert( texture.magFilter ) );
 				_gl.texParameteri( textureType, 10241, utils.convert( texture.minFilter ) );
 
@@ -20480,12 +20472,6 @@
 
 				_gl.texParameteri( textureType, 10242, 33071 );
 				_gl.texParameteri( textureType, 10243, 33071 );
-
-				if ( textureType === 32879 ) {
-
-					_gl.texParameteri( textureType, 32882, 33071 );
-
-				}
 
 				if ( texture.wrapS !== ClampToEdgeWrapping || texture.wrapT !== ClampToEdgeWrapping ) {
 
