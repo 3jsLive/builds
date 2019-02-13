@@ -23333,8 +23333,7 @@
 
 		this.render = function ( scene, camera ) {
 
-			var renderTarget;
-			var forceClear;
+			var renderTarget, forceClear;
 
 			if ( arguments[ 2 ] !== undefined ) {
 
