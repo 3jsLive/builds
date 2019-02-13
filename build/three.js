@@ -18859,8 +18859,6 @@
 
 				}
 
-				var currentRenderTarget = _renderer.getRenderTarget();
-
 				_renderer.setRenderTarget( shadowMap );
 				_renderer.clear();
 
