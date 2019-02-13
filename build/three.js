@@ -18857,6 +18857,8 @@
 
 				}
 
+				var currentRenderTarget = _renderer.getRenderTarget();
+
 				_renderer.setRenderTarget( shadowMap );
 				_renderer.clear();
 
@@ -18892,6 +18894,8 @@
 			}
 
 			scope.needsUpdate = false;
+
+			_renderer.setRenderTarget( currentRenderTarget );
 
 		};
 
