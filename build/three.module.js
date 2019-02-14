@@ -23393,7 +23393,7 @@ function WebGLRenderer( parameters ) {
 		currentRenderState = renderStates.get( scene, camera );
 		currentRenderState.init();
 
-		scene.onBeforeRender( _this, scene, camera, renderTarget );
+		scene.onBeforeRender( _this, scene, camera, _currentRenderTarget );
 
 		_projScreenMatrix.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse );
 		_frustum.setFromMatrix( _projScreenMatrix );
@@ -23464,15 +23464,15 @@ function WebGLRenderer( parameters ) {
 
 		//
 
-		if ( renderTarget !== undefined ) {
+		if ( _currentRenderTarget ) {
 
 			// Generate mipmap if we're using any kind of mipmap filtering
 
-			textures.updateRenderTargetMipmap( renderTarget );
+			textures.updateRenderTargetMipmap( _currentRenderTarget );
 
 			// resolve multisample renderbuffers to a single-sample texture if necessary
 
-			textures.updateMultisampleRenderTarget( renderTarget );
+			textures.updateMultisampleRenderTarget( _currentRenderTarget );
 
 		}
 
