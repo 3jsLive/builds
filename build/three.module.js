@@ -22536,7 +22536,7 @@ function WebGLRenderer( parameters ) {
 	} catch ( error ) {
 
 		console.error( 'THREE.WebGLRenderer: ' + error.message );
-
+		throw error;
 	}
 
 	var extensions, capabilities, state, info;
