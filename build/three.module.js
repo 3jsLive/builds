@@ -10043,6 +10043,7 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 			for ( var key in parameters ) {
 
 				if ( parameters[ key ] !== undefined ) data[ key ] = parameters[ key ];
+
 			}
 
 			return data;
@@ -27884,6 +27885,7 @@ TubeBufferGeometry.prototype.toJSON = function () {
 	data.path = this.parameters.path.toJSON();
 
 	return data;
+
 };
 
 /**
@@ -38168,18 +38170,6 @@ Object.assign( ObjectLoader.prototype, {
 							data.q
 						);
 
-						break;
-
-					case 'TubeGeometry':
-					case 'TubeBufferGeometry':
-
-						geometry = new Geometries[ data.type ](
-							new Curves[ data.path.type ]().fromJSON( data.path ),
-							data.tubularSegments,
-							data.radius,
-							data.radialSegments,
-							data.closed
-						);
 						break;
 
 					case 'LatheGeometry':

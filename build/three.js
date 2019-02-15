@@ -10049,6 +10049,7 @@
 				for ( var key in parameters ) {
 
 					if ( parameters[ key ] !== undefined ) data[ key ] = parameters[ key ];
+
 				}
 
 				return data;
@@ -27890,6 +27891,7 @@
 		data.path = this.parameters.path.toJSON();
 
 		return data;
+
 	};
 
 	/**
@@ -38174,18 +38176,6 @@
 								data.q
 							);
 
-							break;
-
-						case 'TubeGeometry':
-						case 'TubeBufferGeometry':
-
-							geometry = new Geometries[ data.type ](
-								new Curves[ data.path.type ]().fromJSON( data.path ),
-								data.tubularSegments,
-								data.radius,
-								data.radialSegments,
-								data.closed
-							);
 							break;
 
 						case 'LatheGeometry':
