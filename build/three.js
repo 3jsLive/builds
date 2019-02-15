@@ -38188,6 +38188,7 @@
 								data.radialSegments,
 								data.closed
 							);
+
 							break;
 
 						case 'LatheGeometry':
