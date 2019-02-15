@@ -27891,7 +27891,6 @@
 		data.path = this.parameters.path.toJSON();
 
 		return data;
-
 	};
 
 	/**

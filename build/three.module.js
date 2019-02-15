@@ -27885,7 +27885,6 @@ TubeBufferGeometry.prototype.toJSON = function () {
 	data.path = this.parameters.path.toJSON();
 
 	return data;
-
 };
 
 /**
