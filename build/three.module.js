@@ -10042,21 +10042,7 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 			for ( var key in parameters ) {
 
-				var value = parameters[ key ];
-				if ( value !== undefined ) {
-
-					if ( value.toJSON ) {
-
-						data[ key ] = value.toJSON();
-
-					} else {
-
-						data[ key ] = value;
-
-					}
-
-				}
-
+				if ( parameters[ key ] !== undefined ) data[ key ] = parameters[ key ];
 			}
 
 			return data;
@@ -12149,20 +12135,7 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 			for ( var key in parameters ) {
 
-				var value = parameters[ key ];
-				if ( value !== undefined ) {
-
-					if ( value.toJSON ) {
-
-						data[ key ] = value.toJSON();
-
-					} else {
-
-						data[ key ] = value;
-
-					}
-
-				}
+				if ( parameters[ key ] !== undefined ) data[ key ] = parameters[ key ];
 
 			}
 
