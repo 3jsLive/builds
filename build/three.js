@@ -10048,20 +10048,7 @@
 
 				for ( var key in parameters ) {
 
-					var value = parameters[ key ];
-					if ( value !== undefined ) {
-
-						if ( value.toJSON ) {
-
-							data[ key ] = value.toJSON();
-
-						} else {
-
-							data[ key ] = value;
-
-						}
-
-					}
+					if ( parameters[ key ] !== undefined ) data[ key ] = parameters[ key ];
 
 				}
 
@@ -12155,20 +12142,7 @@
 
 				for ( var key in parameters ) {
 
-					var value = parameters[ key ];
-					if ( value !== undefined ) {
-
-						if ( value.toJSON ) {
-
-							data[ key ] = value.toJSON();
-
-						} else {
-
-							data[ key ] = value;
-
-						}
-
-					}
+					if ( parameters[ key ] !== undefined ) data[ key ] = parameters[ key ];
 
 				}
 
@@ -38176,19 +38150,6 @@
 								data.radialSegments,
 								data.tubularSegments,
 								data.arc
-							);
-
-							break;
-
-						case 'TubeGeometry':
-						case 'TubeBufferGeometry':
-
-							geometry = new Geometries[ data.type ](
-								new Curves[ data.path.type ]().fromJSON( data.path ),
-								data.tubularSegments,
-								data.radius,
-								data.radialSegments,
-								data.closed
 							);
 
 							break;
