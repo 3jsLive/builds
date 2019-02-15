@@ -10048,7 +10048,20 @@
 
 				for ( var key in parameters ) {
 
-					if ( parameters[ key ] !== undefined ) data[ key ] = parameters[ key ];
+					var value = parameters[ key ];
+					if ( value !== undefined ) {
+
+						if ( value.toJSON ) {
+
+							data[ key ] = value.toJSON();
+
+						} else {
+
+							data[ key ] = value;
+
+						}
+
+					}
 
 				}
 
@@ -12142,7 +12155,20 @@
 
 				for ( var key in parameters ) {
 
-					if ( parameters[ key ] !== undefined ) data[ key ] = parameters[ key ];
+					var value = parameters[ key ];
+					if ( value !== undefined ) {
+
+						if ( value.toJSON ) {
+
+							data[ key ] = value.toJSON();
+
+						} else {
+
+							data[ key ] = value;
+
+						}
+
+					}
 
 				}
 
@@ -27884,6 +27910,15 @@
 	TubeBufferGeometry.prototype = Object.create( BufferGeometry.prototype );
 	TubeBufferGeometry.prototype.constructor = TubeBufferGeometry;
 
+	TubeBufferGeometry.prototype.toJSON = function () {
+
+		var data = BufferGeometry.prototype.toJSON.call( this );
+
+		data.path = this.parameters.path.toJSON();
+
+		return data;
+	};
+
 	/**
 	 * @author oosmoxiecode
 	 * @author Mugen87 / https://github.com/Mugen87
@@ -38166,6 +38201,18 @@
 								data.q
 							);
 
+							break;
+
+						case 'TubeGeometry':
+						case 'TubeBufferGeometry':
+
+							geometry = new Geometries[ data.type ](
+								new Curves[ data.path.type ]().fromJSON( data.path ),
+								data.tubularSegments,
+								data.radius,
+								data.radialSegments,
+								data.closed
+							);
 							break;
 
 						case 'LatheGeometry':
