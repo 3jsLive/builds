@@ -38975,8 +38975,6 @@
 
 			} );
 
-			scope.manager.itemStart( url );
-
 		},
 
 		setCrossOrigin: function ( /* value */ ) {
