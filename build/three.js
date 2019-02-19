@@ -20091,40 +20091,25 @@
 
 				// only perform resize for certain image types
 
-				if ( image instanceof ImageBitmap || image instanceof HTMLImageElement || image instanceof HTMLCanvasElement ) {
+				if ( image instanceof HTMLImageElement || image instanceof HTMLCanvasElement || image instanceof ImageBitmap ) {
 
-					// Use an offscreen canvas to resize the image if available, otherwise a canvas element will be created but this won't work in web workers
-
-					var useOffscreenCanvas = typeof OffscreenCanvas !== 'undefined';
-
-					function createCanvas( width, height ) {
-
-						return useOffscreenCanvas ?
-							new OffscreenCanvas( width, height ) :
-							document.createElementNS( 'http://www.w3.org/1999/xhtml', 'canvas' );
-
-					}
-
-					var floor = needsPowerOfTwo ? _Math.floorPowerOfTwo : Math.floor;
-
-					var width = floor( scale * image.width );
-					var height = floor( scale * image.height );
-
-					if ( _canvas === undefined ) _canvas = createCanvas( width, height );
+					if ( _canvas === undefined ) _canvas = document.createElementNS( 'http://www.w3.org/1999/xhtml', 'canvas' );
 
 					// cube textures can't reuse the same canvas
 
-					var canvas = needsNewCanvas ? createCanvas( width, height ) : _canvas;
+					var canvas = needsNewCanvas ? document.createElementNS( 'http://www.w3.org/1999/xhtml', 'canvas' ) : _canvas;
 
-					canvas.width = width;
-					canvas.height = height;
+					var floor = needsPowerOfTwo ? _Math.floorPowerOfTwo : Math.floor;
+
+					canvas.width = floor( scale * image.width );
+					canvas.height = floor( scale * image.height );
 
 					var context = canvas.getContext( '2d' );
-					context.drawImage( image, 0, 0, width, height );
+					context.drawImage( image, 0, 0, canvas.width, canvas.height );
 
-					console.warn( 'THREE.WebGLRenderer: Texture has been resized from (' + image.width + 'x' + image.height + ') to (' + width + 'x' + height + ').' );
+					console.warn( 'THREE.WebGLRenderer: Texture has been resized from (' + image.width + 'x' + image.height + ') to (' + canvas.width + 'x' + canvas.height + ').' );
 
-					return useOffscreenCanvas ? canvas.transferToImageBitmap() : canvas;
+					return canvas;
 
 				} else {
 
