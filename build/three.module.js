@@ -12156,15 +12156,17 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 		}
 
-		data.data = { attributes: {} };
+		data.data = { attributes: {}, morphAttributes: {} };
 
 		var index = this.index;
 
 		if ( index !== null ) {
 
+			var array = Array.prototype.slice.call( index.array );
+
 			data.data.index = {
 				type: index.array.constructor.name,
-				array: Array.prototype.slice.call( index.array )
+				array: array
 			};
 
 		}
@@ -12175,23 +12177,20 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 			var attribute = attributes[ key ];
 
-			var attributeData = {
+			var array = Array.prototype.slice.call( attribute.array );
+
+			data.data.attributes[ key ] = {
 				itemSize: attribute.itemSize,
 				type: attribute.array.constructor.name,
-				array: Array.prototype.slice.call( attribute.array ),
+				array: array,
 				normalized: attribute.normalized
 			};
 
-			if ( attribute.name !== '' ) attributeData.name = attribute.name;
-
-			data.data.attributes[ key ] = attributeData;
-
 		}
 
-		var morphAttributes = {};
-		var hasMorphAttributes = false;
+		var morphAttributes = this.morphAttributes;
 
-		for ( var key in this.morphAttributes ) {
+		for ( var key in morphAttributes ) {
 
 			var attributeArray = this.morphAttributes[ key ];
 
@@ -12201,30 +12200,19 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 				var attribute = attributeArray[ i ];
 
-				var attributeData = {
+				array.push( {
+					name: attribute.name,
 					itemSize: attribute.itemSize,
 					type: attribute.array.constructor.name,
 					array: Array.prototype.slice.call( attribute.array ),
 					normalized: attribute.normalized
-				};
-
-				if ( attribute.name !== '' ) attributeData.name = attribute.name;
-
-				array.push( attributeData );
+				} );
 
 			}
 
-			if ( array.length > 0 ) {
-
-				morphAttributes[ key ] = array;
-
-				hasMorphAttributes = true;
-
-			}
+			data.data.morphAttributes[ key ] = array;
 
 		}
-
-		if ( hasMorphAttributes ) data.data.morphAttributes = morphAttributes;
 
 		var groups = this.groups;
 
@@ -37951,36 +37939,30 @@ Object.assign( BufferGeometryLoader.prototype, {
 			var attribute = attributes[ key ];
 			var typedArray = new TYPED_ARRAYS[ attribute.type ]( attribute.array );
 
-			var bufferAttribute = new BufferAttribute( typedArray, attribute.itemSize, attribute.normalized );
-			if ( attribute.name !== undefined ) bufferAttribute.name = attribute.name;
-			geometry.addAttribute( key, bufferAttribute );
+			geometry.addAttribute( key, new BufferAttribute( typedArray, attribute.itemSize, attribute.normalized ) );
 
 		}
 
 		var morphAttributes = json.data.morphAttributes;
 
-		if ( morphAttributes ) {
+		for ( var key in morphAttributes ) {
 
-			for ( var key in morphAttributes ) {
+			var attributeArray = morphAttributes[ key ];
 
-				var attributeArray = morphAttributes[ key ];
+			var array = [];
 
-				var array = [];
+			for ( var i = 0, il = attributeArray.length; i < il; i ++ ) {
 
-				for ( var i = 0, il = attributeArray.length; i < il; i ++ ) {
+				var attribute = attributeArray[ i ];
+				var typedArray = new TYPED_ARRAYS[ attribute.type ]( attribute.array );
 
-					var attribute = attributeArray[ i ];
-					var typedArray = new TYPED_ARRAYS[ attribute.type ]( attribute.array );
-
-					var bufferAttribute = new BufferAttribute( typedArray, attribute.itemSize, attribute.normalized );
-					if ( attribute.name !== undefined ) bufferAttribute.name = attribute.name;
-					array.push( bufferAttribute );
-
-				}
-
-				geometry.morphAttributes[ key ] = array;
+				var bufferAttribute = new BufferAttribute( typedArray, attribute.itemSize, attribute.normalized );
+				if ( attribute.name !== undefined ) bufferAttribute.name = attribute.name;
+				array.push( bufferAttribute );
 
 			}
+
+			geometry.morphAttributes[ key ] = array;
 
 		}
 
