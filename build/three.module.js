@@ -12156,7 +12156,7 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 		}
 
-		data.data = { attributes: {} };
+		data.data = { attributes: {}, morphAttributes: {} };
 
 		var index = this.index;
 
@@ -12185,6 +12185,32 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 				array: array,
 				normalized: attribute.normalized
 			};
+
+		}
+
+		var morphAttributes = this.morphAttributes;
+
+		for ( var key in morphAttributes ) {
+
+			var attributeArray = this.morphAttributes[ key ];
+
+			var array = [];
+
+			for ( var i = 0, il = attributeArray.length; i < il; i ++ ) {
+
+				var attribute = attributeArray[ i ];
+
+				array.push( {
+					name: attribute.name,
+					itemSize: attribute.itemSize,
+					type: attribute.array.constructor.name,
+					array: Array.prototype.slice.call( attribute.array ),
+					normalized: attribute.normalized
+				} );
+
+			}
+
+			data.data.morphAttributes[ key ] = array;
 
 		}
 
@@ -22795,7 +22821,16 @@ function WebGLRenderer( parameters ) {
 
 	this.setViewport = function ( x, y, width, height ) {
 
-		_viewport.set( x, y, width, height );
+		if ( x.isVector4 ) {
+
+			_viewport.set( x.x, x.y, x.z, x.w );
+
+		} else {
+
+			_viewport.set( x, y, width, height );
+
+		}
+
 		state.viewport( _currentViewport.copy( _viewport ).multiplyScalar( _pixelRatio ) );
 
 	};
@@ -37884,6 +37919,29 @@ Object.assign( BufferGeometryLoader.prototype, {
 			var typedArray = new TYPED_ARRAYS[ attribute.type ]( attribute.array );
 
 			geometry.addAttribute( key, new BufferAttribute( typedArray, attribute.itemSize, attribute.normalized ) );
+
+		}
+
+		var morphAttributes = json.data.morphAttributes;
+
+		for ( var key in morphAttributes ) {
+
+			var attributeArray = morphAttributes[ key ];
+
+			var array = [];
+
+			for ( var i = 0, il = attributeArray.length; i < il; i ++ ) {
+
+				var attribute = attributeArray[ i ];
+				var typedArray = new TYPED_ARRAYS[ attribute.type ]( attribute.array );
+
+				var bufferAttribute = new BufferAttribute( typedArray, attribute.itemSize, attribute.normalized );
+				if ( attribute.name !== undefined ) bufferAttribute.name = attribute.name;
+				array.push( bufferAttribute );
+
+			}
+
+			geometry.morphAttributes[ key ] = array;
 
 		}
 
