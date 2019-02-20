@@ -28017,6 +28017,16 @@ function TubeBufferGeometry( path, tubularSegments, radius, radialSegments, clos
 TubeBufferGeometry.prototype = Object.create( BufferGeometry.prototype );
 TubeBufferGeometry.prototype.constructor = TubeBufferGeometry;
 
+TubeBufferGeometry.prototype.toJSON = function () {
+
+	var data = BufferGeometry.prototype.toJSON.call( this );
+
+	data.path = this.parameters.path.toJSON();
+
+	return data;
+
+};
+
 /**
  * @author oosmoxiecode
  * @author Mugen87 / https://github.com/Mugen87
@@ -38326,6 +38336,21 @@ Object.assign( ObjectLoader.prototype, {
 							data.radialSegments,
 							data.p,
 							data.q
+						);
+
+						break;
+
+					case 'TubeGeometry':
+					case 'TubeBufferGeometry':
+
+						// This only works for built-in curves (e.g. CatmullRomCurve3).
+						// User defined curves or instances of CurvePath will not be deserialized.
+						geometry = new Geometries[ data.type ](
+							new Curves[ data.path.type ]().fromJSON( data.path ),
+							data.tubularSegments,
+							data.radius,
+							data.radialSegments,
+							data.closed
 						);
 
 						break;
