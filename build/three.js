@@ -12168,9 +12168,11 @@
 
 			if ( index !== null ) {
 
+				var array = Array.prototype.slice.call( index.array );
+
 				data.data.index = {
 					type: index.array.constructor.name,
-					array: Array.prototype.slice.call( index.array )
+					array: array
 				};
 
 			}
@@ -12181,10 +12183,12 @@
 
 				var attribute = attributes[ key ];
 
+				var array = Array.prototype.slice.call( attribute.array );
+
 				var attributeData = {
 					itemSize: attribute.itemSize,
 					type: attribute.array.constructor.name,
-					array: Array.prototype.slice.call( attribute.array ),
+					array: array,
 					normalized: attribute.normalized
 				};
 
