@@ -4781,9 +4781,6 @@
 
 		WebGLRenderTarget.call( this, width, height, options );
 
-		this.activeCubeFace = 0; // PX 0, NX 1, PY 2, NY 3, PZ 4, NZ 5
-		this.activeMipMapLevel = 0;
-
 	}
 
 	WebGLRenderTargetCube.prototype = Object.create( WebGLRenderTarget.prototype );
@@ -12162,7 +12159,7 @@
 
 			}
 
-			data.data = { attributes: {} };
+			data.data = { attributes: {}, morphAttributes: {} };
 
 			var index = this.index;
 
@@ -12194,10 +12191,9 @@
 
 			}
 
-			var morphAttributes = {};
-			var hasMorphAttributes = false;
+			var morphAttributes = this.morphAttributes;
 
-			for ( var key in this.morphAttributes ) {
+			for ( var key in morphAttributes ) {
 
 				var attributeArray = this.morphAttributes[ key ];
 
@@ -12207,30 +12203,19 @@
 
 					var attribute = attributeArray[ i ];
 
-					var attributeData = {
+					array.push( {
+						name: attribute.name,
 						itemSize: attribute.itemSize,
 						type: attribute.array.constructor.name,
 						array: Array.prototype.slice.call( attribute.array ),
 						normalized: attribute.normalized
-					};
-
-					if ( attribute.name !== '' ) attributeData.name = attribute.name;
-
-					array.push( attributeData );
+					} );
 
 				}
 
-				if ( array.length > 0 ) {
-
-					morphAttributes[ key ] = array;
-
-					hasMorphAttributes = true;
-
-				}
+				data.data.morphAttributes[ key ] = array;
 
 			}
-
-			if ( hasMorphAttributes ) data.data.morphAttributes = morphAttributes;
 
 			var groups = this.groups;
 
@@ -24935,7 +24920,7 @@
 
 		};
 
-		this.setRenderTarget = function ( renderTarget ) {
+		this.setRenderTarget = function ( renderTarget, activeCubeFace, activeMipMapLevel ) {
 
 			_currentRenderTarget = renderTarget;
 
@@ -24954,7 +24939,7 @@
 
 				if ( renderTarget.isWebGLRenderTargetCube ) {
 
-					framebuffer = __webglFramebuffer[ renderTarget.activeCubeFace ];
+					framebuffer = __webglFramebuffer[ activeCubeFace || 0 ];
 					isCube = true;
 
 				} else if ( renderTarget.isWebGLMultisampleRenderTarget ) {
@@ -24993,7 +24978,7 @@
 			if ( isCube ) {
 
 				var textureProperties = properties.get( renderTarget.texture );
-				_gl.framebufferTexture2D( 36160, 36064, 34069 + renderTarget.activeCubeFace, textureProperties.__webglTexture, renderTarget.activeMipMapLevel );
+				_gl.framebufferTexture2D( 36160, 36064, 34069 + activeCubeFace || 0, textureProperties.__webglTexture, activeMipMapLevel || 0 );
 
 			}
 
@@ -37963,28 +37948,24 @@
 
 			var morphAttributes = json.data.morphAttributes;
 
-			if ( morphAttributes ) {
+			for ( var key in morphAttributes ) {
 
-				for ( var key in morphAttributes ) {
+				var attributeArray = morphAttributes[ key ];
 
-					var attributeArray = morphAttributes[ key ];
+				var array = [];
 
-					var array = [];
+				for ( var i = 0, il = attributeArray.length; i < il; i ++ ) {
 
-					for ( var i = 0, il = attributeArray.length; i < il; i ++ ) {
+					var attribute = attributeArray[ i ];
+					var typedArray = new TYPED_ARRAYS[ attribute.type ]( attribute.array );
 
-						var attribute = attributeArray[ i ];
-						var typedArray = new TYPED_ARRAYS[ attribute.type ]( attribute.array );
-
-						var bufferAttribute = new BufferAttribute( typedArray, attribute.itemSize, attribute.normalized );
-						if ( attribute.name !== undefined ) bufferAttribute.name = attribute.name;
-						array.push( bufferAttribute );
-
-					}
-
-					geometry.morphAttributes[ key ] = array;
+					var bufferAttribute = new BufferAttribute( typedArray, attribute.itemSize, attribute.normalized );
+					if ( attribute.name !== undefined ) bufferAttribute.name = attribute.name;
+					array.push( bufferAttribute );
 
 				}
+
+				geometry.morphAttributes[ key ] = array;
 
 			}
 
@@ -40125,26 +40106,24 @@
 
 			renderTarget.texture.generateMipmaps = false;
 
-			renderTarget.activeCubeFace = 0;
-			renderer.setRenderTarget( renderTarget );
-
+			renderer.setRenderTarget( renderTarget, 0 );
 			renderer.render( scene, cameraPX );
 
-			renderTarget.activeCubeFace = 1;
+			renderer.setRenderTarget( renderTarget, 1 );
 			renderer.render( scene, cameraNX );
 
-			renderTarget.activeCubeFace = 2;
+			renderer.setRenderTarget( renderTarget, 2 );
 			renderer.render( scene, cameraPY );
 
-			renderTarget.activeCubeFace = 3;
+			renderer.setRenderTarget( renderTarget, 3 );
 			renderer.render( scene, cameraNY );
 
-			renderTarget.activeCubeFace = 4;
+			renderer.setRenderTarget( renderTarget, 4 );
 			renderer.render( scene, cameraPZ );
 
 			renderTarget.texture.generateMipmaps = generateMipmaps;
 
-			renderTarget.activeCubeFace = 5;
+			renderer.setRenderTarget( renderTarget, 5 );
 			renderer.render( scene, cameraNZ );
 
 			renderer.setRenderTarget( currentRenderTarget );
