@@ -12156,7 +12156,7 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 		}
 
-		data.data = { attributes: {} };
+		data.data = { attributes: {}, morphAttributes: {} };
 
 		var index = this.index;
 
@@ -12188,10 +12188,9 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 		}
 
-		var morphAttributes = {};
-		var hasMorphAttributes = false;
+		var morphAttributes = this.morphAttributes;
 
-		for ( var key in this.morphAttributes ) {
+		for ( var key in morphAttributes ) {
 
 			var attributeArray = this.morphAttributes[ key ];
 
@@ -12211,17 +12210,9 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 			}
 
-			if ( array.length > 0 ) {
-
-				morphAttributes[ key ] = array;
-
-				hasMorphAttributes = true;
-
-			}
+			data.data.morphAttributes[ key ] = array;
 
 		}
-
-		if ( hasMorphAttributes ) data.data.morphAttributes = morphAttributes;
 
 		var groups = this.groups;
 
@@ -37954,28 +37945,24 @@ Object.assign( BufferGeometryLoader.prototype, {
 
 		var morphAttributes = json.data.morphAttributes;
 
-		if ( morphAttributes ) {
+		for ( var key in morphAttributes ) {
 
-			for ( var key in morphAttributes ) {
+			var attributeArray = morphAttributes[ key ];
 
-				var attributeArray = morphAttributes[ key ];
+			var array = [];
 
-				var array = [];
+			for ( var i = 0, il = attributeArray.length; i < il; i ++ ) {
 
-				for ( var i = 0, il = attributeArray.length; i < il; i ++ ) {
+				var attribute = attributeArray[ i ];
+				var typedArray = new TYPED_ARRAYS[ attribute.type ]( attribute.array );
 
-					var attribute = attributeArray[ i ];
-					var typedArray = new TYPED_ARRAYS[ attribute.type ]( attribute.array );
-
-					var bufferAttribute = new BufferAttribute( typedArray, attribute.itemSize, attribute.normalized );
-					if ( attribute.name !== undefined ) bufferAttribute.name = attribute.name;
-					array.push( bufferAttribute );
-
-				}
-
-				geometry.morphAttributes[ key ] = array;
+				var bufferAttribute = new BufferAttribute( typedArray, attribute.itemSize, attribute.normalized );
+				if ( attribute.name !== undefined ) bufferAttribute.name = attribute.name;
+				array.push( bufferAttribute );
 
 			}
+
+			geometry.morphAttributes[ key ] = array;
 
 		}
 
