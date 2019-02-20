@@ -20073,6 +20073,18 @@
 
 		//
 
+		var useOffscreenCanvas = typeof OffscreenCanvas !== 'undefined';
+
+		function createCanvas( width, height ) {
+
+			// Use OffscreenCanvas when available. Specially needed in web workers
+
+			return useOffscreenCanvas ?
+				new OffscreenCanvas( width, height ) :
+				document.createElementNS( 'http://www.w3.org/1999/xhtml', 'canvas' );
+
+		}
+
 		function resizeImage( image, needsPowerOfTwo, needsNewCanvas, maxSize ) {
 
 			var scale = 1;
@@ -20092,18 +20104,6 @@
 				// only perform resize for certain image types
 
 				if ( image instanceof ImageBitmap || image instanceof HTMLImageElement || image instanceof HTMLCanvasElement ) {
-
-					// Use an offscreen canvas to resize the image if available, otherwise a canvas element will be created but this won't work in web workers
-
-					var useOffscreenCanvas = typeof OffscreenCanvas !== 'undefined';
-
-					function createCanvas( width, height ) {
-
-						return useOffscreenCanvas ?
-							new OffscreenCanvas( width, height ) :
-							document.createElementNS( 'http://www.w3.org/1999/xhtml', 'canvas' );
-
-					}
 
 					var floor = needsPowerOfTwo ? _Math.floorPowerOfTwo : Math.floor;
 
