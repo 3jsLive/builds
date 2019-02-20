@@ -4781,9 +4781,6 @@
 
 		WebGLRenderTarget.call( this, width, height, options );
 
-		this.activeCubeFace = 0; // PX 0, NX 1, PY 2, NY 3, PZ 4, NZ 5
-		this.activeMipMapLevel = 0;
-
 	}
 
 	WebGLRenderTargetCube.prototype = Object.create( WebGLRenderTarget.prototype );
@@ -24923,7 +24920,7 @@
 
 		};
 
-		this.setRenderTarget = function ( renderTarget ) {
+		this.setRenderTarget = function ( renderTarget, activeCubeFace, activeMipMapLevel ) {
 
 			_currentRenderTarget = renderTarget;
 
@@ -24942,7 +24939,7 @@
 
 				if ( renderTarget.isWebGLRenderTargetCube ) {
 
-					framebuffer = __webglFramebuffer[ renderTarget.activeCubeFace ];
+					framebuffer = __webglFramebuffer[ activeCubeFace || 0 ];
 					isCube = true;
 
 				} else if ( renderTarget.isWebGLMultisampleRenderTarget ) {
@@ -24981,7 +24978,7 @@
 			if ( isCube ) {
 
 				var textureProperties = properties.get( renderTarget.texture );
-				_gl.framebufferTexture2D( 36160, 36064, 34069 + renderTarget.activeCubeFace, textureProperties.__webglTexture, renderTarget.activeMipMapLevel );
+				_gl.framebufferTexture2D( 36160, 36064, 34069 + activeCubeFace || 0, textureProperties.__webglTexture, activeMipMapLevel || 0 );
 
 			}
 
@@ -40109,26 +40106,24 @@
 
 			renderTarget.texture.generateMipmaps = false;
 
-			renderTarget.activeCubeFace = 0;
-			renderer.setRenderTarget( renderTarget );
-
+			renderer.setRenderTarget( renderTarget, 0 );
 			renderer.render( scene, cameraPX );
 
-			renderTarget.activeCubeFace = 1;
+			renderer.setRenderTarget( renderTarget, 1 );
 			renderer.render( scene, cameraNX );
 
-			renderTarget.activeCubeFace = 2;
+			renderer.setRenderTarget( renderTarget, 2 );
 			renderer.render( scene, cameraPY );
 
-			renderTarget.activeCubeFace = 3;
+			renderer.setRenderTarget( renderTarget, 3 );
 			renderer.render( scene, cameraNY );
 
-			renderTarget.activeCubeFace = 4;
+			renderer.setRenderTarget( renderTarget, 4 );
 			renderer.render( scene, cameraPZ );
 
 			renderTarget.texture.generateMipmaps = generateMipmaps;
 
-			renderTarget.activeCubeFace = 5;
+			renderer.setRenderTarget( renderTarget, 5 );
 			renderer.render( scene, cameraNZ );
 
 			renderer.setRenderTarget( currentRenderTarget );
