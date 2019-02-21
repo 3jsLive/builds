@@ -4781,6 +4781,9 @@
 
 		WebGLRenderTarget.call( this, width, height, options );
 
+		this.activeCubeFace = 0; // PX 0, NX 1, PY 2, NY 3, PZ 4, NZ 5
+		this.activeMipMapLevel = 0;
+
 	}
 
 	WebGLRenderTargetCube.prototype = Object.create( WebGLRenderTarget.prototype );
@@ -12165,9 +12168,11 @@
 
 			if ( index !== null ) {
 
+				var array = Array.prototype.slice.call( index.array );
+
 				data.data.index = {
 					type: index.array.constructor.name,
-					array: Array.prototype.slice.call( index.array )
+					array: array
 				};
 
 			}
@@ -12178,56 +12183,16 @@
 
 				var attribute = attributes[ key ];
 
-				var attributeData = {
+				var array = Array.prototype.slice.call( attribute.array );
+
+				data.data.attributes[ key ] = {
 					itemSize: attribute.itemSize,
 					type: attribute.array.constructor.name,
-					array: Array.prototype.slice.call( attribute.array ),
+					array: array,
 					normalized: attribute.normalized
 				};
 
-				if ( attribute.name !== '' ) attributeData.name = attribute.name;
-
-				data.data.attributes[ key ] = attributeData;
-
 			}
-
-			var morphAttributes = {};
-			var hasMorphAttributes = false;
-
-			for ( var key in this.morphAttributes ) {
-
-				var attributeArray = this.morphAttributes[ key ];
-
-				var array = [];
-
-				for ( var i = 0, il = attributeArray.length; i < il; i ++ ) {
-
-					var attribute = attributeArray[ i ];
-
-					var attributeData = {
-						itemSize: attribute.itemSize,
-						type: attribute.array.constructor.name,
-						array: Array.prototype.slice.call( attribute.array ),
-						normalized: attribute.normalized
-					};
-
-					if ( attribute.name !== '' ) attributeData.name = attribute.name;
-
-					array.push( attributeData );
-
-				}
-
-				if ( array.length > 0 ) {
-
-					morphAttributes[ key ] = array;
-
-					hasMorphAttributes = true;
-
-				}
-
-			}
-
-			if ( hasMorphAttributes ) data.data.morphAttributes = morphAttributes;
 
 			var groups = this.groups;
 
@@ -20108,18 +20073,6 @@
 
 		//
 
-		var useOffscreenCanvas = typeof OffscreenCanvas !== 'undefined';
-
-		function createCanvas( width, height ) {
-
-			// Use OffscreenCanvas when available. Specially needed in web workers
-
-			return useOffscreenCanvas ?
-				new OffscreenCanvas( width, height ) :
-				document.createElementNS( 'http://www.w3.org/1999/xhtml', 'canvas' );
-
-		}
-
 		function resizeImage( image, needsPowerOfTwo, needsNewCanvas, maxSize ) {
 
 			var scale = 1;
@@ -20138,28 +20091,25 @@
 
 				// only perform resize for certain image types
 
-				if ( image instanceof ImageBitmap || image instanceof HTMLImageElement || image instanceof HTMLCanvasElement ) {
+				if ( image instanceof HTMLImageElement || image instanceof HTMLCanvasElement || image instanceof ImageBitmap ) {
 
-					var floor = needsPowerOfTwo ? _Math.floorPowerOfTwo : Math.floor;
-
-					var width = floor( scale * image.width );
-					var height = floor( scale * image.height );
-
-					if ( _canvas === undefined ) _canvas = createCanvas( width, height );
+					if ( _canvas === undefined ) _canvas = document.createElementNS( 'http://www.w3.org/1999/xhtml', 'canvas' );
 
 					// cube textures can't reuse the same canvas
 
-					var canvas = needsNewCanvas ? createCanvas( width, height ) : _canvas;
+					var canvas = needsNewCanvas ? document.createElementNS( 'http://www.w3.org/1999/xhtml', 'canvas' ) : _canvas;
 
-					canvas.width = width;
-					canvas.height = height;
+					var floor = needsPowerOfTwo ? _Math.floorPowerOfTwo : Math.floor;
+
+					canvas.width = floor( scale * image.width );
+					canvas.height = floor( scale * image.height );
 
 					var context = canvas.getContext( '2d' );
-					context.drawImage( image, 0, 0, width, height );
+					context.drawImage( image, 0, 0, canvas.width, canvas.height );
 
-					console.warn( 'THREE.WebGLRenderer: Texture has been resized from (' + image.width + 'x' + image.height + ') to (' + width + 'x' + height + ').' );
+					console.warn( 'THREE.WebGLRenderer: Texture has been resized from (' + image.width + 'x' + image.height + ') to (' + canvas.width + 'x' + canvas.height + ').' );
 
-					return useOffscreenCanvas ? canvas.transferToImageBitmap() : canvas;
+					return canvas;
 
 				} else {
 
@@ -22616,7 +22566,6 @@
 		} catch ( error ) {
 
 			console.error( 'THREE.WebGLRenderer: ' + error.message );
-			throw error;
 
 		}
 
@@ -22836,45 +22785,15 @@
 
 		this.setViewport = function ( x, y, width, height ) {
 
-			if ( x.isVector4 ) {
-
-				_viewport.set( x.x, x.y, x.z, x.w );
-
-			} else {
-
-				_viewport.set( x, y, width, height );
-
-			}
-
+			_viewport.set( x, y, width, height );
 			state.viewport( _currentViewport.copy( _viewport ).multiplyScalar( _pixelRatio ) );
-
-		};
-
-		this.getScissor = function ( target ) {
-
-			return target.copy( _scissor );
 
 		};
 
 		this.setScissor = function ( x, y, width, height ) {
 
-			if ( x.isVector4 ) {
-
-				_scissor.set( x.x, x.y, x.z, x.w );
-
-			} else {
-
-				_scissor.set( x, y, width, height );
-
-			}
-
+			_scissor.set( x, y, width, height );
 			state.scissor( _currentScissor.copy( _scissor ).multiplyScalar( _pixelRatio ) );
-
-		};
-
-		this.getScissorTest = function () {
-
-			return _scissorTest;
 
 		};
 
@@ -24932,7 +24851,7 @@
 
 		};
 
-		this.setRenderTarget = function ( renderTarget, activeCubeFace, activeMipMapLevel ) {
+		this.setRenderTarget = function ( renderTarget ) {
 
 			_currentRenderTarget = renderTarget;
 
@@ -24951,7 +24870,7 @@
 
 				if ( renderTarget.isWebGLRenderTargetCube ) {
 
-					framebuffer = __webglFramebuffer[ activeCubeFace || 0 ];
+					framebuffer = __webglFramebuffer[ renderTarget.activeCubeFace ];
 					isCube = true;
 
 				} else if ( renderTarget.isWebGLMultisampleRenderTarget ) {
@@ -24990,7 +24909,7 @@
 			if ( isCube ) {
 
 				var textureProperties = properties.get( renderTarget.texture );
-				_gl.framebufferTexture2D( 36160, 36064, 34069 + activeCubeFace || 0, textureProperties.__webglTexture, activeMipMapLevel || 0 );
+				_gl.framebufferTexture2D( 36160, 36064, 34069 + renderTarget.activeCubeFace, textureProperties.__webglTexture, renderTarget.activeMipMapLevel );
 
 			}
 
@@ -28019,16 +27938,6 @@
 
 	TubeBufferGeometry.prototype = Object.create( BufferGeometry.prototype );
 	TubeBufferGeometry.prototype.constructor = TubeBufferGeometry;
-
-	TubeBufferGeometry.prototype.toJSON = function () {
-
-		var data = BufferGeometry.prototype.toJSON.call( this );
-
-		data.path = this.parameters.path.toJSON();
-
-		return data;
-
-	};
 
 	/**
 	 * @author oosmoxiecode
@@ -37964,36 +37873,7 @@
 				var attribute = attributes[ key ];
 				var typedArray = new TYPED_ARRAYS[ attribute.type ]( attribute.array );
 
-				var bufferAttribute = new BufferAttribute( typedArray, attribute.itemSize, attribute.normalized );
-				if ( attribute.name !== undefined ) bufferAttribute.name = attribute.name;
-				geometry.addAttribute( key, bufferAttribute );
-
-			}
-
-			var morphAttributes = json.data.morphAttributes;
-
-			if ( morphAttributes ) {
-
-				for ( var key in morphAttributes ) {
-
-					var attributeArray = morphAttributes[ key ];
-
-					var array = [];
-
-					for ( var i = 0, il = attributeArray.length; i < il; i ++ ) {
-
-						var attribute = attributeArray[ i ];
-						var typedArray = new TYPED_ARRAYS[ attribute.type ]( attribute.array );
-
-						var bufferAttribute = new BufferAttribute( typedArray, attribute.itemSize, attribute.normalized );
-						if ( attribute.name !== undefined ) bufferAttribute.name = attribute.name;
-						array.push( bufferAttribute );
-
-					}
-
-					geometry.morphAttributes[ key ] = array;
-
-				}
+				geometry.addAttribute( key, new BufferAttribute( typedArray, attribute.itemSize, attribute.normalized ) );
 
 			}
 
@@ -38339,21 +38219,6 @@
 								data.radialSegments,
 								data.p,
 								data.q
-							);
-
-							break;
-
-						case 'TubeGeometry':
-						case 'TubeBufferGeometry':
-
-							// This only works for built-in curves (e.g. CatmullRomCurve3).
-							// User defined curves or instances of CurvePath will not be deserialized.
-							geometry = new Geometries[ data.type ](
-								new Curves[ data.path.type ]().fromJSON( data.path ),
-								data.tubularSegments,
-								data.radius,
-								data.radialSegments,
-								data.closed
 							);
 
 							break;
@@ -39109,8 +38974,6 @@
 				scope.manager.itemEnd( url );
 
 			} );
-
-			scope.manager.itemStart( url );
 
 		},
 
@@ -40149,24 +40012,26 @@
 
 			renderTarget.texture.generateMipmaps = false;
 
-			renderer.setRenderTarget( renderTarget, 0 );
+			renderTarget.activeCubeFace = 0;
+			renderer.setRenderTarget( renderTarget );
+
 			renderer.render( scene, cameraPX );
 
-			renderer.setRenderTarget( renderTarget, 1 );
+			renderTarget.activeCubeFace = 1;
 			renderer.render( scene, cameraNX );
 
-			renderer.setRenderTarget( renderTarget, 2 );
+			renderTarget.activeCubeFace = 2;
 			renderer.render( scene, cameraPY );
 
-			renderer.setRenderTarget( renderTarget, 3 );
+			renderTarget.activeCubeFace = 3;
 			renderer.render( scene, cameraNY );
 
-			renderer.setRenderTarget( renderTarget, 4 );
+			renderTarget.activeCubeFace = 4;
 			renderer.render( scene, cameraPZ );
 
 			renderTarget.texture.generateMipmaps = generateMipmaps;
 
-			renderer.setRenderTarget( renderTarget, 5 );
+			renderTarget.activeCubeFace = 5;
 			renderer.render( scene, cameraNZ );
 
 			renderer.setRenderTarget( currentRenderTarget );
