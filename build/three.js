@@ -22451,8 +22451,11 @@
 
 			frameOfReference = value;
 
-			renderer.setFramebuffer( session.baseLayer.framebuffer );
+			if ( session.baseLayer && session.baseLayer.framebuffer ) {
 
+				renderer.setFramebuffer( session.baseLayer.framebuffer );
+
+			}
 			animation.setContext( session );
 			animation.start();
 
@@ -22481,7 +22484,15 @@
 				session.addEventListener( 'selectend', onSessionEvent );
 				session.addEventListener( 'end', onSessionEnd );
 
-				session.baseLayer = new XRWebGLLayer( session, gl, { framebufferScaleFactor: framebufferScaleFactor } );
+				if ( session.updateRenderState !== undefined ) {
+
+					session.updateRenderState( {  baseLayer:  new XRWebGLLayer( session, gl ) } );
+
+				} else {
+
+					session.baseLayer =  new XRWebGLLayer( session, gl, {  framebufferScaleFactor: framebufferScaleFactor } );
+
+				}
 
 				if ( session.requestFrameOfReference !== undefined ) {
 
@@ -22583,8 +22594,14 @@
 
 			if ( pose !== null ) {
 
-				var layer = session.baseLayer;
+				var layer = 'renderState' in session ? session.renderState.baseLayer : session.baseLayer;
 				var views = frame.views || pose.views;
+
+				if ( 'renderState' in session ) {
+
+					renderer.setFramebuffer( session.renderState.baseLayer.framebuffer );
+
+				}
 
 				for ( var i = 0; i < views.length; i ++ ) {
 
@@ -22819,7 +22836,8 @@
 				antialias: _antialias,
 				premultipliedAlpha: _premultipliedAlpha,
 				preserveDrawingBuffer: _preserveDrawingBuffer,
-				powerPreference: _powerPreference
+				powerPreference: _powerPreference,
+				xrCompatible: true
 			};
 
 			// event listeners must be registered before WebGL context is created, see #12753
