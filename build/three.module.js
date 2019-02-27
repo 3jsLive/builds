@@ -17687,7 +17687,7 @@ function WebGLPrograms( renderer, extensions, capabilities ) {
 
 			combine: material.combine,
 
-			vertexTangents: material.vertexTangents,
+			vertexTangents: ( material.normalMap && material.vertexTangents ),
 			vertexColors: material.vertexColors,
 
 			fog: !! fog,
@@ -21534,17 +21534,17 @@ PerspectiveCamera.prototype = Object.assign( Object.create( Camera.prototype ), 
 	 *   var fullHeight = h * 2;
 	 *
 	 *   --A--
-	 *   camera.setViewOffset( fullWidth, fullHeight, w * 0, h * 0, w, h );
+	 *   camera.setOffset( fullWidth, fullHeight, w * 0, h * 0, w, h );
 	 *   --B--
-	 *   camera.setViewOffset( fullWidth, fullHeight, w * 1, h * 0, w, h );
+	 *   camera.setOffset( fullWidth, fullHeight, w * 1, h * 0, w, h );
 	 *   --C--
-	 *   camera.setViewOffset( fullWidth, fullHeight, w * 2, h * 0, w, h );
+	 *   camera.setOffset( fullWidth, fullHeight, w * 2, h * 0, w, h );
 	 *   --D--
-	 *   camera.setViewOffset( fullWidth, fullHeight, w * 0, h * 1, w, h );
+	 *   camera.setOffset( fullWidth, fullHeight, w * 0, h * 1, w, h );
 	 *   --E--
-	 *   camera.setViewOffset( fullWidth, fullHeight, w * 1, h * 1, w, h );
+	 *   camera.setOffset( fullWidth, fullHeight, w * 1, h * 1, w, h );
 	 *   --F--
-	 *   camera.setViewOffset( fullWidth, fullHeight, w * 2, h * 1, w, h );
+	 *   camera.setOffset( fullWidth, fullHeight, w * 2, h * 1, w, h );
 	 *
 	 *   Note there is no reason monitors have to be the same size or in a grid.
 	 */
@@ -25114,27 +25114,23 @@ function FogExp2( color, density ) {
 
 }
 
-Object.assign( FogExp2.prototype, {
+FogExp2.prototype.isFogExp2 = true;
 
-	isFogExp2: true,
+FogExp2.prototype.clone = function () {
 
-	clone: function () {
+	return new FogExp2( this.color, this.density );
 
-		return new FogExp2( this.color, this.density );
+};
 
-	},
+FogExp2.prototype.toJSON = function ( /* meta */ ) {
 
-	toJSON: function ( /* meta */ ) {
+	return {
+		type: 'FogExp2',
+		color: this.color.getHex(),
+		density: this.density
+	};
 
-		return {
-			type: 'FogExp2',
-			color: this.color.getHex(),
-			density: this.density
-		};
-
-	}
-
-} );
+};
 
 /**
  * @author mrdoob / http://mrdoob.com/
@@ -25152,28 +25148,24 @@ function Fog( color, near, far ) {
 
 }
 
-Object.assign( Fog.prototype, {
+Fog.prototype.isFog = true;
 
-	isFog: true,
+Fog.prototype.clone = function () {
 
-	clone: function () {
+	return new Fog( this.color, this.near, this.far );
 
-		return new Fog( this.color, this.near, this.far );
+};
 
-	},
+Fog.prototype.toJSON = function ( /* meta */ ) {
 
-	toJSON: function ( /* meta */ ) {
+	return {
+		type: 'Fog',
+		color: this.color.getHex(),
+		near: this.near,
+		far: this.far
+	};
 
-		return {
-			type: 'Fog',
-			color: this.color.getHex(),
-			near: this.near,
-			far: this.far
-		};
-
-	}
-
-} );
+};
 
 /**
  * @author mrdoob / http://mrdoob.com/
