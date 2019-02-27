@@ -25175,7 +25175,7 @@
 				color: this.color.getHex(),
 				near: this.near,
 				far: this.far
-			}
+			};
 
 		}
 
