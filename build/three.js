@@ -21540,17 +21540,17 @@
 		 *   var fullHeight = h * 2;
 		 *
 		 *   --A--
-		 *   camera.setOffset( fullWidth, fullHeight, w * 0, h * 0, w, h );
+		 *   camera.setViewOffset( fullWidth, fullHeight, w * 0, h * 0, w, h );
 		 *   --B--
-		 *   camera.setOffset( fullWidth, fullHeight, w * 1, h * 0, w, h );
+		 *   camera.setViewOffset( fullWidth, fullHeight, w * 1, h * 0, w, h );
 		 *   --C--
-		 *   camera.setOffset( fullWidth, fullHeight, w * 2, h * 0, w, h );
+		 *   camera.setViewOffset( fullWidth, fullHeight, w * 2, h * 0, w, h );
 		 *   --D--
-		 *   camera.setOffset( fullWidth, fullHeight, w * 0, h * 1, w, h );
+		 *   camera.setViewOffset( fullWidth, fullHeight, w * 0, h * 1, w, h );
 		 *   --E--
-		 *   camera.setOffset( fullWidth, fullHeight, w * 1, h * 1, w, h );
+		 *   camera.setViewOffset( fullWidth, fullHeight, w * 1, h * 1, w, h );
 		 *   --F--
-		 *   camera.setOffset( fullWidth, fullHeight, w * 2, h * 1, w, h );
+		 *   camera.setViewOffset( fullWidth, fullHeight, w * 2, h * 1, w, h );
 		 *
 		 *   Note there is no reason monitors have to be the same size or in a grid.
 		 */
@@ -25120,23 +25120,27 @@
 
 	}
 
-	FogExp2.prototype.isFogExp2 = true;
+	Object.assign( FogExp2.prototype, {
 
-	FogExp2.prototype.clone = function () {
+		isFogExp2: true,
 
-		return new FogExp2( this.color, this.density );
+		clone: function () {
 
-	};
+			return new FogExp2( this.color, this.density );
 
-	FogExp2.prototype.toJSON = function ( /* meta */ ) {
+		},
 
-		return {
-			type: 'FogExp2',
-			color: this.color.getHex(),
-			density: this.density
-		};
+		toJSON: function ( /* meta */ ) {
 
-	};
+			return {
+				type: 'FogExp2',
+				color: this.color.getHex(),
+				density: this.density
+			};
+
+		}
+
+	} );
 
 	/**
 	 * @author mrdoob / http://mrdoob.com/
@@ -25154,24 +25158,28 @@
 
 	}
 
-	Fog.prototype.isFog = true;
+	Object.assign( Fog.prototype, {
 
-	Fog.prototype.clone = function () {
+		isFog: true,
 
-		return new Fog( this.color, this.near, this.far );
+		clone: function () {
 
-	};
+			return new Fog( this.color, this.near, this.far );
 
-	Fog.prototype.toJSON = function ( /* meta */ ) {
+		},
 
-		return {
-			type: 'Fog',
-			color: this.color.getHex(),
-			near: this.near,
-			far: this.far
-		};
+		toJSON: function ( /* meta */ ) {
 
-	};
+			return {
+				type: 'Fog',
+				color: this.color.getHex(),
+				near: this.near,
+				far: this.far
+			};
+
+		}
+
+	} );
 
 	/**
 	 * @author mrdoob / http://mrdoob.com/
