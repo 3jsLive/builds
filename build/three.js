@@ -21961,6 +21961,8 @@
 			if ( isPresenting() === false ) {
 
 				camera.position.set( 0, userHeight, 0 );
+				camera.rotation.set( 0, 0, 0 );
+
 				return camera;
 
 			}
