@@ -22205,7 +22205,7 @@ function WebXRManager( renderer ) {
 	function onSessionEnd() {
 
 		renderer.setFramebuffer( null );
-		renderer.setRenderTarget( renderer.getRenderTarget() );
+		renderer.setRenderTarget( renderer.getRenderTarget() ); // Hack #15830
 		animation.stop();
 
 	}
