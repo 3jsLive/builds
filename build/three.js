@@ -22421,7 +22421,7 @@
 		this.getStandingMatrix = function () {
 
 			console.warn( 'THREE.WebXRManager: getStandingMatrix() is no longer needed.' );
-			return new Matrix4();
+			return new THREE.Matrix4();
 
 		};
 
