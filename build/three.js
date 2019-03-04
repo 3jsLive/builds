@@ -185,7 +185,7 @@
 
 	} );
 
-	var REVISION = '102';
+	var REVISION = '103dev';
 	var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
 	var CullFaceNone = 0;
 	var CullFaceBack = 1;
@@ -20138,7 +20138,9 @@
 
 				// only perform resize for certain image types
 
-				if ( image instanceof ImageBitmap || image instanceof HTMLImageElement || image instanceof HTMLCanvasElement ) {
+				if ( ( typeof HTMLImageElement !== 'undefined' && image instanceof HTMLImageElement ) ||
+					( typeof HTMLCanvasElement !== 'undefined' && image instanceof HTMLCanvasElement ) ||
+					( typeof ImageBitmap !== 'undefined' && image instanceof ImageBitmap ) ) {
 
 					var floor = needsPowerOfTwo ? _Math.floorPowerOfTwo : Math.floor;
 
@@ -22421,7 +22423,7 @@
 		this.getStandingMatrix = function () {
 
 			console.warn( 'THREE.WebXRManager: getStandingMatrix() is no longer needed.' );
-			return new THREE.Matrix4();
+			return new Matrix4();
 
 		};
 
@@ -40190,8 +40192,7 @@
 
 			for ( var i = 0; i < 6; i ++ ) {
 
-				renderTarget.activeCubeFace = i;
-				renderer.setRenderTarget( renderTarget );
+				renderer.setRenderTarget( renderTarget, i );
 
 				renderer.clear( color, depth, stencil );
 
