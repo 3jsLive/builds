@@ -179,7 +179,7 @@ Object.assign( EventDispatcher.prototype, {
 
 } );
 
-var REVISION = '103dev';
+var REVISION = '102';
 var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
 var CullFaceNone = 0;
 var CullFaceBack = 1;
@@ -20132,7 +20132,7 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 			// only perform resize for certain image types
 
-			if ( image instanceof HTMLImageElement || image instanceof HTMLCanvasElement || image instanceof ImageBitmap ) {
+			if ( image instanceof ImageBitmap || image instanceof HTMLImageElement || image instanceof HTMLCanvasElement ) {
 
 				var floor = needsPowerOfTwo ? _Math.floorPowerOfTwo : Math.floor;
 
@@ -22415,7 +22415,7 @@ function WebXRManager( renderer ) {
 	this.getStandingMatrix = function () {
 
 		console.warn( 'THREE.WebXRManager: getStandingMatrix() is no longer needed.' );
-		return new Matrix4();
+		return new THREE.Matrix4();
 
 	};
 
@@ -40184,7 +40184,8 @@ function CubeCamera( near, far, cubeResolution, options ) {
 
 		for ( var i = 0; i < 6; i ++ ) {
 
-			renderer.setRenderTarget( renderTarget, i );
+			renderTarget.activeCubeFace = i;
+			renderer.setRenderTarget( renderTarget );
 
 			renderer.clear( color, depth, stencil );
 
