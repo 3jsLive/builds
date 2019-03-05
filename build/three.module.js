@@ -14744,18 +14744,6 @@ function WebGLBackground( renderer, state, objects, premultipliedAlpha ) {
 
 		var background = scene.background;
 
-		// Ignore background in AR
-		// TODO: Reconsider this.
-
-		var vr = renderer.vr;
-		var session = vr.getSession && vr.getSession();
-
-		if ( session && session.environmentBlendMode === 'additive' ) {
-
-			background = null;
-
-		}
-
 		if ( background === null ) {
 
 			setClear( clearColor, clearAlpha );
@@ -16357,7 +16345,7 @@ function getSingularSetter( type ) {
 		case 0x8b5c: return setValue4fm; // _MAT4
 
 		case 0x8b5e: case 0x8d66: return setValueT1; // SAMPLER_2D, SAMPLER_EXTERNAL_OES
-		case 0x8b5f: return setValueT3D1; // SAMPLER_3D
+		case 0x8B5F: return setValueT3D1; // SAMPLER_3D
 		case 0x8b60: return setValueT6; // SAMPLER_CUBE
 
 		case 0x1404: case 0x8b56: return setValue1i; // INT, BOOL
@@ -20114,13 +20102,13 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 	//
 
-	var useOffscreenCanvas = typeof OffscreenCanvas !== 'undefined';
+	var isWorker = typeof document === 'undefined';
 
 	function createCanvas( width, height ) {
 
 		// Use OffscreenCanvas when available. Specially needed in web workers
 
-		return useOffscreenCanvas ?
+		return isWorker ?
 			new OffscreenCanvas( width, height ) :
 			document.createElementNS( 'http://www.w3.org/1999/xhtml', 'canvas' );
 
@@ -20144,9 +20132,7 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 			// only perform resize for certain image types
 
-			if ( ( typeof HTMLImageElement !== 'undefined' && image instanceof HTMLImageElement ) ||
-				( typeof HTMLCanvasElement !== 'undefined' && image instanceof HTMLCanvasElement ) ||
-				( typeof ImageBitmap !== 'undefined' && image instanceof ImageBitmap ) ) {
+			if ( image instanceof ImageBitmap || image instanceof HTMLImageElement || image instanceof HTMLCanvasElement ) {
 
 				var floor = needsPowerOfTwo ? _Math.floorPowerOfTwo : Math.floor;
 
@@ -20163,11 +20149,21 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 				canvas.height = height;
 
 				var context = canvas.getContext( '2d' );
+
+				// ImageBitmap is flipped vertically
+
+				if ( isWorker ) {
+
+					context.translate( 0, height );
+					context.scale( 1, - 1 );
+
+				}
+
 				context.drawImage( image, 0, 0, width, height );
 
 				console.warn( 'THREE.WebGLRenderer: Texture has been resized from (' + image.width + 'x' + image.height + ') to (' + width + 'x' + height + ').' );
 
-				return useOffscreenCanvas ? canvas.transferToImageBitmap() : canvas;
+				return isWorker ? canvas.transferToImageBitmap() : canvas;
 
 			} else {
 
@@ -23669,11 +23665,7 @@ function WebGLRenderer( parameters ) {
 					var geometry = objects.update( object );
 					var material = object.material;
 
-					if ( material.visible ) {
-
-						currentRenderList.push( object, geometry, material, groupOrder, _vector3.z, null );
-
-					}
+					currentRenderList.push( object, geometry, material, groupOrder, _vector3.z, null );
 
 				}
 
@@ -24859,11 +24851,16 @@ function WebGLRenderer( parameters ) {
 
 	}() );
 
-	this.setTexture3D = function ( texture, slot ) {
+	this.setTexture3D = ( function () {
 
-		textures.setTexture3D( texture, slot );
+		// backwards compatibility: peel texture.texture
+		return function setTexture3D( texture, slot ) {
 
-	};
+			textures.setTexture3D( texture, slot );
+
+		};
+
+	}() );
 
 	this.setTexture = ( function () {
 
@@ -39107,16 +39104,7 @@ ImageBitmapLoader.prototype = {
 
 		} ).then( function ( blob ) {
 
-			if ( scope.options === undefined ) {
-
-				// Workaround for FireFox. It causes an error if you pass options.
-				return createImageBitmap( blob );
-
-			} else {
-
-				return createImageBitmap( blob, scope.options );
-
-			}
+			return createImageBitmap( blob, scope.options );
 
 		} ).then( function ( imageBitmap ) {
 
