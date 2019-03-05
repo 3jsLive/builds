@@ -14750,6 +14750,9 @@
 
 			var background = scene.background;
 
+			var session = renderer.vr.getSession();
+			if ( session && session.environmentBlendMode === 'additive' ) background = null;
+
 			if ( background === null ) {
 
 				setClear( clearColor, clearAlpha );
