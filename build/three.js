@@ -23675,11 +23675,7 @@
 						var geometry = objects.update( object );
 						var material = object.material;
 
-						if ( material.visible ) {
-
-							currentRenderList.push( object, geometry, material, groupOrder, _vector3.z, null );
-
-						}
+						currentRenderList.push( object, geometry, material, groupOrder, _vector3.z, null );
 
 					}
 
@@ -39113,7 +39109,16 @@
 
 			} ).then( function ( blob ) {
 
-				return createImageBitmap( blob, scope.options );
+				if ( scope.options === undefined ) {
+
+					// Workaround for FireFox. It causes an error if you pass options.
+					return createImageBitmap( blob );
+
+				} else {
+
+					return createImageBitmap( blob, scope.options );
+
+				}
 
 			} ).then( function ( imageBitmap ) {
 
