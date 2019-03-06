@@ -20108,7 +20108,7 @@
 
 		//
 
-		var useOffscreenCanvas  = typeof OffscreenCanvas  === 'undefined';
+		var useOffscreenCanvas  = typeof OffscreenCanvas  !== 'undefined';
 
 		function createCanvas( width, height ) {
 
