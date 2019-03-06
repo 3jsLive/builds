@@ -14744,6 +14744,18 @@ function WebGLBackground( renderer, state, objects, premultipliedAlpha ) {
 
 		var background = scene.background;
 
+		// Ignore background in AR
+		// TODO: Reconsider this.
+
+		var vr = renderer.vr;
+		var session = vr.getSession && vr.getSession();
+
+		if ( session && session.environmentBlendMode === 'additive' ) {
+
+			background = null;
+
+		}
+
 		if ( background === null ) {
 
 			setClear( clearColor, clearAlpha );
@@ -16345,7 +16357,7 @@ function getSingularSetter( type ) {
 		case 0x8b5c: return setValue4fm; // _MAT4
 
 		case 0x8b5e: case 0x8d66: return setValueT1; // SAMPLER_2D, SAMPLER_EXTERNAL_OES
-		case 0x8B5F: return setValueT3D1; // SAMPLER_3D
+		case 0x8b5f: return setValueT3D1; // SAMPLER_3D
 		case 0x8b60: return setValueT6; // SAMPLER_CUBE
 
 		case 0x1404: case 0x8b56: return setValue1i; // INT, BOOL
@@ -20132,7 +20144,9 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 			// only perform resize for certain image types
 
-			if ( image instanceof ImageBitmap || image instanceof HTMLImageElement || image instanceof HTMLCanvasElement ) {
+			if ( ( typeof HTMLImageElement !== 'undefined' && image instanceof HTMLImageElement ) ||
+				( typeof HTMLCanvasElement !== 'undefined' && image instanceof HTMLCanvasElement ) ||
+				( typeof ImageBitmap !== 'undefined' && image instanceof ImageBitmap ) ) {
 
 				var floor = needsPowerOfTwo ? _Math.floorPowerOfTwo : Math.floor;
 
@@ -20149,16 +20163,6 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 				canvas.height = height;
 
 				var context = canvas.getContext( '2d' );
-
-				// ImageBitmap is flipped vertically
-
-				if ( useOffscreenCanvas ) {
-
-					context.translate( 0, height );
-					context.scale( 1, - 1 );
-
-				}
-
 				context.drawImage( image, 0, 0, width, height );
 
 				console.warn( 'THREE.WebGLRenderer: Texture has been resized from (' + image.width + 'x' + image.height + ') to (' + width + 'x' + height + ').' );
@@ -23665,7 +23669,11 @@ function WebGLRenderer( parameters ) {
 					var geometry = objects.update( object );
 					var material = object.material;
 
-					currentRenderList.push( object, geometry, material, groupOrder, _vector3.z, null );
+					if ( material.visible ) {
+
+						currentRenderList.push( object, geometry, material, groupOrder, _vector3.z, null );
+
+					}
 
 				}
 
@@ -24851,16 +24859,11 @@ function WebGLRenderer( parameters ) {
 
 	}() );
 
-	this.setTexture3D = ( function () {
+	this.setTexture3D = function ( texture, slot ) {
 
-		// backwards compatibility: peel texture.texture
-		return function setTexture3D( texture, slot ) {
+		textures.setTexture3D( texture, slot );
 
-			textures.setTexture3D( texture, slot );
-
-		};
-
-	}() );
+	};
 
 	this.setTexture = ( function () {
 
