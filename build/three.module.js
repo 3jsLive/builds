@@ -34662,7 +34662,7 @@ Object.assign( AnimationLoader.prototype, {
 
 	},
 
-	parse: function ( json ) {
+	parse: function ( json, onLoad ) {
 
 		var animations = [];
 
@@ -34674,7 +34674,7 @@ Object.assign( AnimationLoader.prototype, {
 
 		}
 
-		return animations;
+		onLoad( animations );
 
 	},
 
