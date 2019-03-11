@@ -34668,7 +34668,7 @@
 
 		},
 
-		parse: function ( json, onLoad ) {
+		parse: function ( json ) {
 
 			var animations = [];
 
@@ -34680,7 +34680,7 @@
 
 			}
 
-			onLoad( animations );
+			return animations;
 
 		},
 
