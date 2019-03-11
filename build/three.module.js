@@ -16296,7 +16296,7 @@ function setValueT1( gl, v, renderer ) {
 
 }
 
-function setValueT2DArray1( gl, v, renderer, textures ) {
+function setValueT2DArray1( gl, v, renderer ) {
 
 	var cache = this.cache;
 	var unit = renderer.allocTextureUnit();
@@ -16308,11 +16308,11 @@ function setValueT2DArray1( gl, v, renderer, textures ) {
 
 	}
 
-	textures.setTexture2DArray( v || emptyTexture2dArray, unit );
+	renderer.setTexture2DArray( v || emptyTexture2dArray, unit );
 
 }
 
-function setValueT3D1( gl, v, renderer, textures ) {
+function setValueT3D1( gl, v, renderer ) {
 
 	var cache = this.cache;
 	var unit = renderer.allocTextureUnit();
@@ -16324,7 +16324,7 @@ function setValueT3D1( gl, v, renderer, textures ) {
 
 	}
 
-	textures.setTexture3D( v || emptyTexture3d, unit );
+	renderer.setTexture3D( v || emptyTexture3d, unit );
 
 }
 
@@ -16725,12 +16725,11 @@ function parseUniform( activeInfo, addr, container ) {
 
 // Root Container
 
-function WebGLUniforms( gl, program, renderer, textures ) {
+function WebGLUniforms( gl, program, renderer ) {
 
 	UniformContainer.call( this );
 
 	this.renderer = renderer;
-	this.textures = textures;
 
 	var n = gl.getProgramParameter( program, 35718 );
 
@@ -16749,7 +16748,7 @@ WebGLUniforms.prototype.setValue = function ( gl, name, value ) {
 
 	var u = this.map[ name ];
 
-	if ( u !== undefined ) u.setValue( gl, value, this.renderer, this.textures );
+	if ( u !== undefined ) u.setValue( gl, value, this.renderer );
 
 };
 
@@ -16764,7 +16763,7 @@ WebGLUniforms.prototype.setOptional = function ( gl, object, name ) {
 
 // Static interface
 
-WebGLUniforms.upload = function ( gl, seq, values, renderer, textures ) {
+WebGLUniforms.upload = function ( gl, seq, values, renderer ) {
 
 	for ( var i = 0, n = seq.length; i !== n; ++ i ) {
 
@@ -16774,7 +16773,7 @@ WebGLUniforms.upload = function ( gl, seq, values, renderer, textures ) {
 		if ( v.needsUpdate !== false ) {
 
 			// note: always updating when .needsUpdate is undefined
-			u.setValue( gl, v.value, renderer, textures );
+			u.setValue( gl, v.value, renderer );
 
 		}
 
@@ -17044,7 +17043,7 @@ function unrollLoops( string ) {
 
 }
 
-function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities, textures ) {
+function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities ) {
 
 	var gl = renderer.context;
 
@@ -17508,7 +17507,7 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 
 		if ( cachedUniforms === undefined ) {
 
-			cachedUniforms = new WebGLUniforms( gl, program, renderer, textures );
+			cachedUniforms = new WebGLUniforms( gl, program, renderer );
 
 		}
 
@@ -17584,7 +17583,7 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
  * @author mrdoob / http://mrdoob.com/
  */
 
-function WebGLPrograms( renderer, extensions, capabilities, textures ) {
+function WebGLPrograms( renderer, extensions, capabilities ) {
 
 	var programs = [];
 
@@ -17858,7 +17857,7 @@ function WebGLPrograms( renderer, extensions, capabilities, textures ) {
 
 		if ( program === undefined ) {
 
-			program = new WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities, textures );
+			program = new WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities );
 			programs.push( program );
 
 		}
@@ -22738,7 +22737,7 @@ function WebGLRenderer( parameters ) {
 		geometries = new WebGLGeometries( _gl, attributes, info );
 		objects = new WebGLObjects( geometries, info );
 		morphtargets = new WebGLMorphtargets( _gl );
-		programCache = new WebGLPrograms( _this, extensions, capabilities, textures );
+		programCache = new WebGLPrograms( _this, extensions, capabilities );
 		renderLists = new WebGLRenderLists();
 		renderStates = new WebGLRenderStates();
 
@@ -24411,13 +24410,13 @@ function WebGLRenderer( parameters ) {
 			if ( m_uniforms.ltc_1 !== undefined ) m_uniforms.ltc_1.value = UniformsLib.LTC_1;
 			if ( m_uniforms.ltc_2 !== undefined ) m_uniforms.ltc_2.value = UniformsLib.LTC_2;
 
-			WebGLUniforms.upload( _gl, materialProperties.uniformsList, m_uniforms, _this, textures );
+			WebGLUniforms.upload( _gl, materialProperties.uniformsList, m_uniforms, _this );
 
 		}
 
 		if ( material.isShaderMaterial && material.uniformsNeedUpdate === true ) {
 
-			WebGLUniforms.upload( _gl, materialProperties.uniformsList, m_uniforms, _this, textures );
+			WebGLUniforms.upload( _gl, materialProperties.uniformsList, m_uniforms, _this );
 			material.uniformsNeedUpdate = false;
 
 		}
@@ -24926,6 +24925,18 @@ function WebGLRenderer( parameters ) {
 		};
 
 	}() );
+
+	this.setTexture2DArray = function ( texture, slot ) {
+
+		textures.setTexture2DArray( texture, slot );
+
+	};
+
+	this.setTexture3D = function ( texture, slot ) {
+
+		textures.setTexture3D( texture, slot );
+
+	};
 
 	this.setTexture = ( function () {
 
