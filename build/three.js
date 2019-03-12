@@ -20215,7 +20215,7 @@
 
 					console.warn( 'THREE.WebGLRenderer: Texture has been resized from (' + image.width + 'x' + image.height + ') to (' + width + 'x' + height + ').' );
 
-					return canvas;
+					return useOffscreenCanvas ? canvas.transferToImageBitmap() : canvas;
 
 				} else {
 
@@ -34668,7 +34668,7 @@
 
 		},
 
-		parse: function ( json ) {
+		parse: function ( json, onLoad ) {
 
 			var animations = [];
 
@@ -34680,7 +34680,7 @@
 
 			}
 
-			return animations;
+			onLoad( animations );
 
 		},
 

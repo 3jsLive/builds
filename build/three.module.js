@@ -20209,7 +20209,7 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 				console.warn( 'THREE.WebGLRenderer: Texture has been resized from (' + image.width + 'x' + image.height + ') to (' + width + 'x' + height + ').' );
 
-				return canvas;
+				return useOffscreenCanvas ? canvas.transferToImageBitmap() : canvas;
 
 			} else {
 
@@ -34662,7 +34662,7 @@ Object.assign( AnimationLoader.prototype, {
 
 	},
 
-	parse: function ( json ) {
+	parse: function ( json, onLoad ) {
 
 		var animations = [];
 
@@ -34674,7 +34674,7 @@ Object.assign( AnimationLoader.prototype, {
 
 		}
 
-		return animations;
+		onLoad( animations );
 
 	},
 
