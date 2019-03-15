@@ -11780,59 +11780,35 @@
 
 		computeBoundingBox: function () {
 
-			var box = new Box3();
+			if ( this.boundingBox === null ) {
 
-			return function computeBoundingBox() {
+				this.boundingBox = new Box3();
 
-				if ( this.boundingBox === null ) {
+			}
 
-					this.boundingBox = new Box3();
+			var position = this.attributes.position;
 
-				}
+			if ( position !== undefined ) {
 
-				var position = this.attributes.position;
-				var morphAttributesPosition = this.morphAttributes.position;
+				this.boundingBox.setFromBufferAttribute( position );
 
-				if ( position !== undefined ) {
+			} else {
 
-					this.boundingBox.setFromBufferAttribute( position );
+				this.boundingBox.makeEmpty();
 
-					// process morph attributes if present
+			}
 
-					if ( morphAttributesPosition ) {
+			if ( isNaN( this.boundingBox.min.x ) || isNaN( this.boundingBox.min.y ) || isNaN( this.boundingBox.min.z ) ) {
 
-						for ( var i = 0, il = morphAttributesPosition.length; i < il; i ++ ) {
+				console.error( 'THREE.BufferGeometry.computeBoundingBox: Computed min/max have NaN values. The "position" attribute is likely to have NaN values.', this );
 
-							var morphAttribute = morphAttributesPosition[ i ];
-							box.setFromBufferAttribute( morphAttribute );
+			}
 
-							this.boundingBox.expandByPoint( box.min );
-							this.boundingBox.expandByPoint( box.max );
-
-						}
-
-					}
-
-				} else {
-
-					this.boundingBox.makeEmpty();
-
-				}
-
-				if ( isNaN( this.boundingBox.min.x ) || isNaN( this.boundingBox.min.y ) || isNaN( this.boundingBox.min.z ) ) {
-
-					console.error( 'THREE.BufferGeometry.computeBoundingBox: Computed min/max have NaN values. The "position" attribute is likely to have NaN values.', this );
-
-				}
-
-			};
-
-		}(),
+		},
 
 		computeBoundingSphere: function () {
 
 			var box = new Box3();
-			var boxMorphTargets = new Box3();
 			var vector = new Vector3();
 
 			return function computeBoundingSphere() {
@@ -11844,64 +11820,25 @@
 				}
 
 				var position = this.attributes.position;
-				var morphAttributesPosition = this.morphAttributes.position;
 
 				if ( position ) {
-
-					// first, find the center of the bounding sphere
 
 					var center = this.boundingSphere.center;
 
 					box.setFromBufferAttribute( position );
-
-					// process morph attributes if present
-
-					if ( morphAttributesPosition ) {
-
-						for ( var i = 0, il = morphAttributesPosition.length; i < il; i ++ ) {
-
-							var morphAttribute = morphAttributesPosition[ i ];
-							boxMorphTargets.setFromBufferAttribute( morphAttribute );
-
-							box.expandByPoint( boxMorphTargets.min );
-							box.expandByPoint( boxMorphTargets.max );
-
-						}
-
-					}
-
 					box.getCenter( center );
 
-					// second, try to find a boundingSphere with a radius smaller than the
+					// hoping to find a boundingSphere with a radius smaller than the
 					// boundingSphere of the boundingBox: sqrt(3) smaller in the best case
 
 					var maxRadiusSq = 0;
 
 					for ( var i = 0, il = position.count; i < il; i ++ ) {
 
-						vector.fromBufferAttribute( position, i );
-
+						vector.x = position.getX( i );
+						vector.y = position.getY( i );
+						vector.z = position.getZ( i );
 						maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( vector ) );
-
-					}
-
-					// process morph attributes if present
-
-					if ( morphAttributesPosition ) {
-
-						for ( var i = 0, il = morphAttributesPosition.length; i < il; i ++ ) {
-
-							var morphAttribute = morphAttributesPosition[ i ];
-
-							for ( var j = 0, jl = morphAttribute.count; j < jl; j ++ ) {
-
-								vector.fromBufferAttribute( morphAttribute, i );
-
-								maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( vector ) );
-
-							}
-
-						}
 
 					}
 
@@ -14469,10 +14406,6 @@
 			var tempB = new Vector3();
 			var tempC = new Vector3();
 
-			var morphA = new Vector3();
-			var morphB = new Vector3();
-			var morphC = new Vector3();
-
 			var uvA = new Vector2();
 			var uvB = new Vector2();
 			var uvC = new Vector2();
@@ -14511,42 +14444,11 @@
 
 			}
 
-			function checkBufferGeometryIntersection( object, material, raycaster, ray, position, morphPosition, uv, a, b, c ) {
+			function checkBufferGeometryIntersection( object, material, raycaster, ray, position, uv, a, b, c ) {
 
 				vA.fromBufferAttribute( position, a );
 				vB.fromBufferAttribute( position, b );
 				vC.fromBufferAttribute( position, c );
-
-				var morphInfluences = object.morphTargetInfluences;
-
-				if ( material.morphTargets && morphPosition && morphInfluences ) {
-
-					morphA.set( 0, 0, 0 );
-					morphB.set( 0, 0, 0 );
-					morphC.set( 0, 0, 0 );
-
-					for ( var i = 0, il = morphPosition.length; i < il; i ++ ) {
-
-						var influence = morphInfluences[ i ];
-						var morphAttribute = morphPosition[ i ];
-
-						if ( influence === 0 ) continue;
-
-						tempA.fromBufferAttribute( morphAttribute, a );
-						tempB.fromBufferAttribute( morphAttribute, b );
-						tempC.fromBufferAttribute( morphAttribute, c );
-
-						morphA.addScaledVector( tempA.sub( vA ), influence );
-						morphB.addScaledVector( tempB.sub( vB ), influence );
-						morphC.addScaledVector( tempC.sub( vC ), influence );
-
-					}
-
-					vA.add( morphA );
-					vB.add( morphB );
-					vC.add( morphC );
-
-				}
 
 				var intersection = checkIntersection( object, material, raycaster, ray, vA, vB, vC, intersectionPoint );
 
@@ -14610,7 +14512,6 @@
 					var a, b, c;
 					var index = geometry.index;
 					var position = geometry.attributes.position;
-					var morphPosition = geometry.morphAttributes.position;
 					var uv = geometry.attributes.uv;
 					var groups = geometry.groups;
 					var drawRange = geometry.drawRange;
@@ -14638,7 +14539,7 @@
 									b = index.getX( j + 1 );
 									c = index.getX( j + 2 );
 
-									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, morphPosition, uv, a, b, c );
+									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, uv, a, b, c );
 
 									if ( intersection ) {
 
@@ -14663,7 +14564,7 @@
 								b = index.getX( i + 1 );
 								c = index.getX( i + 2 );
 
-								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, morphPosition, uv, a, b, c );
+								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, uv, a, b, c );
 
 								if ( intersection ) {
 
@@ -14696,7 +14597,7 @@
 									b = j + 1;
 									c = j + 2;
 
-									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, morphPosition, uv, a, b, c );
+									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, uv, a, b, c );
 
 									if ( intersection ) {
 
@@ -14721,7 +14622,7 @@
 								b = i + 1;
 								c = i + 2;
 
-								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, morphPosition, uv, a, b, c );
+								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, uv, a, b, c );
 
 								if ( intersection ) {
 
@@ -14758,6 +14659,39 @@
 						fvA = vertices[ face.a ];
 						fvB = vertices[ face.b ];
 						fvC = vertices[ face.c ];
+
+						if ( faceMaterial.morphTargets === true ) {
+
+							var morphTargets = geometry.morphTargets;
+							var morphInfluences = this.morphTargetInfluences;
+
+							vA.set( 0, 0, 0 );
+							vB.set( 0, 0, 0 );
+							vC.set( 0, 0, 0 );
+
+							for ( var t = 0, tl = morphTargets.length; t < tl; t ++ ) {
+
+								var influence = morphInfluences[ t ];
+
+								if ( influence === 0 ) continue;
+
+								var targets = morphTargets[ t ].vertices;
+
+								vA.addScaledVector( tempA.subVectors( targets[ face.a ], fvA ), influence );
+								vB.addScaledVector( tempB.subVectors( targets[ face.b ], fvB ), influence );
+								vC.addScaledVector( tempC.subVectors( targets[ face.c ], fvC ), influence );
+
+							}
+
+							vA.add( fvA );
+							vB.add( fvB );
+							vC.add( fvC );
+
+							fvA = vA;
+							fvB = vB;
+							fvC = vC;
+
+						}
 
 						intersection = checkIntersection( this, faceMaterial, raycaster, ray, fvA, fvB, fvC, intersectionPoint );
 
@@ -20281,7 +20215,7 @@
 
 					console.warn( 'THREE.WebGLRenderer: Texture has been resized from (' + image.width + 'x' + image.height + ') to (' + width + 'x' + height + ').' );
 
-					return canvas;
+					return useOffscreenCanvas ? canvas.transferToImageBitmap() : canvas;
 
 				} else {
 
@@ -26625,9 +26559,20 @@
 
 		}() ),
 
+		copy: function ( source ) {
+
+			Object3D.prototype.copy.call( this, source );
+
+			this.geometry.copy( source.geometry );
+			this.material.copy( source.material );
+
+			return this;
+
+		},
+
 		clone: function () {
 
-			return new this.constructor( this.geometry, this.material ).copy( this );
+			return new this.constructor().copy( this );
 
 		}
 
@@ -34723,7 +34668,7 @@
 
 		},
 
-		parse: function ( json ) {
+		parse: function ( json, onLoad ) {
 
 			var animations = [];
 
@@ -34735,7 +34680,7 @@
 
 			}
 
-			return animations;
+			onLoad( animations );
 
 		},
 
