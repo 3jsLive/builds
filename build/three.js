@@ -14469,6 +14469,10 @@
 			var tempB = new Vector3();
 			var tempC = new Vector3();
 
+			var morphA = new Vector3();
+			var morphB = new Vector3();
+			var morphC = new Vector3();
+
 			var uvA = new Vector2();
 			var uvB = new Vector2();
 			var uvC = new Vector2();
@@ -14507,11 +14511,42 @@
 
 			}
 
-			function checkBufferGeometryIntersection( object, material, raycaster, ray, position, uv, a, b, c ) {
+			function checkBufferGeometryIntersection( object, material, raycaster, ray, position, morphPosition, uv, a, b, c ) {
 
 				vA.fromBufferAttribute( position, a );
 				vB.fromBufferAttribute( position, b );
 				vC.fromBufferAttribute( position, c );
+
+				var morphInfluences = object.morphTargetInfluences;
+
+				if ( material.morphTargets && morphPosition && morphInfluences ) {
+
+					morphA.set( 0, 0, 0 );
+					morphB.set( 0, 0, 0 );
+					morphC.set( 0, 0, 0 );
+
+					for ( var i = 0, il = morphPosition.length; i < il; i ++ ) {
+
+						var influence = morphInfluences[ i ];
+						var morphAttribute = morphPosition[ i ];
+
+						if ( influence === 0 ) continue;
+
+						tempA.fromBufferAttribute( morphAttribute, a );
+						tempB.fromBufferAttribute( morphAttribute, b );
+						tempC.fromBufferAttribute( morphAttribute, c );
+
+						morphA.addScaledVector( tempA.sub( vA ), influence );
+						morphB.addScaledVector( tempB.sub( vB ), influence );
+						morphC.addScaledVector( tempC.sub( vC ), influence );
+
+					}
+
+					vA.add( morphA );
+					vB.add( morphB );
+					vC.add( morphC );
+
+				}
 
 				var intersection = checkIntersection( object, material, raycaster, ray, vA, vB, vC, intersectionPoint );
 
@@ -14575,6 +14610,7 @@
 					var a, b, c;
 					var index = geometry.index;
 					var position = geometry.attributes.position;
+					var morphPosition = geometry.morphAttributes.position;
 					var uv = geometry.attributes.uv;
 					var groups = geometry.groups;
 					var drawRange = geometry.drawRange;
@@ -14602,7 +14638,7 @@
 									b = index.getX( j + 1 );
 									c = index.getX( j + 2 );
 
-									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, uv, a, b, c );
+									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, morphPosition, uv, a, b, c );
 
 									if ( intersection ) {
 
@@ -14627,7 +14663,7 @@
 								b = index.getX( i + 1 );
 								c = index.getX( i + 2 );
 
-								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, uv, a, b, c );
+								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, morphPosition, uv, a, b, c );
 
 								if ( intersection ) {
 
@@ -14660,7 +14696,7 @@
 									b = j + 1;
 									c = j + 2;
 
-									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, uv, a, b, c );
+									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, morphPosition, uv, a, b, c );
 
 									if ( intersection ) {
 
@@ -14685,7 +14721,7 @@
 								b = i + 1;
 								c = i + 2;
 
-								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, uv, a, b, c );
+								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, morphPosition, uv, a, b, c );
 
 								if ( intersection ) {
 
@@ -14722,39 +14758,6 @@
 						fvA = vertices[ face.a ];
 						fvB = vertices[ face.b ];
 						fvC = vertices[ face.c ];
-
-						if ( faceMaterial.morphTargets === true ) {
-
-							var morphTargets = geometry.morphTargets;
-							var morphInfluences = this.morphTargetInfluences;
-
-							vA.set( 0, 0, 0 );
-							vB.set( 0, 0, 0 );
-							vC.set( 0, 0, 0 );
-
-							for ( var t = 0, tl = morphTargets.length; t < tl; t ++ ) {
-
-								var influence = morphInfluences[ t ];
-
-								if ( influence === 0 ) continue;
-
-								var targets = morphTargets[ t ].vertices;
-
-								vA.addScaledVector( tempA.subVectors( targets[ face.a ], fvA ), influence );
-								vB.addScaledVector( tempB.subVectors( targets[ face.b ], fvB ), influence );
-								vC.addScaledVector( tempC.subVectors( targets[ face.c ], fvC ), influence );
-
-							}
-
-							vA.add( fvA );
-							vB.add( fvB );
-							vC.add( fvC );
-
-							fvA = vA;
-							fvB = vB;
-							fvC = vC;
-
-						}
 
 						intersection = checkIntersection( this, faceMaterial, raycaster, ray, fvA, fvB, fvC, intersectionPoint );
 
@@ -22246,6 +22249,8 @@
 		this.setAnimationLoop = function ( callback ) {
 
 			animation.setAnimationLoop( callback );
+
+			if ( isPresenting() ) { animation.start(); }
 
 		};
 
