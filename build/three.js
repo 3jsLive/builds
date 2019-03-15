@@ -22247,6 +22247,8 @@
 
 			animation.setAnimationLoop( callback );
 
+			if ( isPresenting() ) { animation.start(); }
+
 		};
 
 		this.submitFrame = function () {
