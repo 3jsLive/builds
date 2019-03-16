@@ -11774,59 +11774,35 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 	computeBoundingBox: function () {
 
-		var box = new Box3();
+		if ( this.boundingBox === null ) {
 
-		return function computeBoundingBox() {
+			this.boundingBox = new Box3();
 
-			if ( this.boundingBox === null ) {
+		}
 
-				this.boundingBox = new Box3();
+		var position = this.attributes.position;
 
-			}
+		if ( position !== undefined ) {
 
-			var position = this.attributes.position;
-			var morphAttributesPosition = this.morphAttributes.position;
+			this.boundingBox.setFromBufferAttribute( position );
 
-			if ( position !== undefined ) {
+		} else {
 
-				this.boundingBox.setFromBufferAttribute( position );
+			this.boundingBox.makeEmpty();
 
-				// process morph attributes if present
+		}
 
-				if ( morphAttributesPosition ) {
+		if ( isNaN( this.boundingBox.min.x ) || isNaN( this.boundingBox.min.y ) || isNaN( this.boundingBox.min.z ) ) {
 
-					for ( var i = 0, il = morphAttributesPosition.length; i < il; i ++ ) {
+			console.error( 'THREE.BufferGeometry.computeBoundingBox: Computed min/max have NaN values. The "position" attribute is likely to have NaN values.', this );
 
-						var morphAttribute = morphAttributesPosition[ i ];
-						box.setFromBufferAttribute( morphAttribute );
+		}
 
-						this.boundingBox.expandByPoint( box.min );
-						this.boundingBox.expandByPoint( box.max );
-
-					}
-
-				}
-
-			} else {
-
-				this.boundingBox.makeEmpty();
-
-			}
-
-			if ( isNaN( this.boundingBox.min.x ) || isNaN( this.boundingBox.min.y ) || isNaN( this.boundingBox.min.z ) ) {
-
-				console.error( 'THREE.BufferGeometry.computeBoundingBox: Computed min/max have NaN values. The "position" attribute is likely to have NaN values.', this );
-
-			}
-
-		};
-
-	}(),
+	},
 
 	computeBoundingSphere: function () {
 
 		var box = new Box3();
-		var boxMorphTargets = new Box3();
 		var vector = new Vector3();
 
 		return function computeBoundingSphere() {
@@ -11838,64 +11814,25 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 			}
 
 			var position = this.attributes.position;
-			var morphAttributesPosition = this.morphAttributes.position;
 
 			if ( position ) {
-
-				// first, find the center of the bounding sphere
 
 				var center = this.boundingSphere.center;
 
 				box.setFromBufferAttribute( position );
-
-				// process morph attributes if present
-
-				if ( morphAttributesPosition ) {
-
-					for ( var i = 0, il = morphAttributesPosition.length; i < il; i ++ ) {
-
-						var morphAttribute = morphAttributesPosition[ i ];
-						boxMorphTargets.setFromBufferAttribute( morphAttribute );
-
-						box.expandByPoint( boxMorphTargets.min );
-						box.expandByPoint( boxMorphTargets.max );
-
-					}
-
-				}
-
 				box.getCenter( center );
 
-				// second, try to find a boundingSphere with a radius smaller than the
+				// hoping to find a boundingSphere with a radius smaller than the
 				// boundingSphere of the boundingBox: sqrt(3) smaller in the best case
 
 				var maxRadiusSq = 0;
 
 				for ( var i = 0, il = position.count; i < il; i ++ ) {
 
-					vector.fromBufferAttribute( position, i );
-
+					vector.x = position.getX( i );
+					vector.y = position.getY( i );
+					vector.z = position.getZ( i );
 					maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( vector ) );
-
-				}
-
-				// process morph attributes if present
-
-				if ( morphAttributesPosition ) {
-
-					for ( var i = 0, il = morphAttributesPosition.length; i < il; i ++ ) {
-
-						var morphAttribute = morphAttributesPosition[ i ];
-
-						for ( var j = 0, jl = morphAttribute.count; j < jl; j ++ ) {
-
-							vector.fromBufferAttribute( morphAttribute, i );
-
-							maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( vector ) );
-
-						}
-
-					}
 
 				}
 
@@ -20272,7 +20209,7 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 				console.warn( 'THREE.WebGLRenderer: Texture has been resized from (' + image.width + 'x' + image.height + ') to (' + width + 'x' + height + ').' );
 
-				return canvas;
+				return useOffscreenCanvas ? canvas.transferToImageBitmap() : canvas;
 
 			} else {
 
@@ -26616,9 +26553,20 @@ Line.prototype = Object.assign( Object.create( Object3D.prototype ), {
 
 	}() ),
 
+	copy: function ( source ) {
+
+		Object3D.prototype.copy.call( this, source );
+
+		this.geometry.copy( source.geometry );
+		this.material.copy( source.material );
+
+		return this;
+
+	},
+
 	clone: function () {
 
-		return new this.constructor( this.geometry, this.material ).copy( this );
+		return new this.constructor().copy( this );
 
 	}
 
@@ -34714,7 +34662,7 @@ Object.assign( AnimationLoader.prototype, {
 
 	},
 
-	parse: function ( json ) {
+	parse: function ( json, onLoad ) {
 
 		var animations = [];
 
@@ -34726,7 +34674,7 @@ Object.assign( AnimationLoader.prototype, {
 
 		}
 
-		return animations;
+		onLoad( animations );
 
 	},
 
