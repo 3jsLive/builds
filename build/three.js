@@ -185,7 +185,7 @@
 
 	} );
 
-	var REVISION = '103dev';
+	var REVISION = '102dev';
 	var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
 	var CullFaceNone = 0;
 	var CullFaceBack = 1;
@@ -11780,59 +11780,35 @@
 
 		computeBoundingBox: function () {
 
-			var box = new Box3();
+			if ( this.boundingBox === null ) {
 
-			return function computeBoundingBox() {
+				this.boundingBox = new Box3();
 
-				if ( this.boundingBox === null ) {
+			}
 
-					this.boundingBox = new Box3();
+			var position = this.attributes.position;
 
-				}
+			if ( position !== undefined ) {
 
-				var position = this.attributes.position;
-				var morphAttributesPosition = this.morphAttributes.position;
+				this.boundingBox.setFromBufferAttribute( position );
 
-				if ( position !== undefined ) {
+			} else {
 
-					this.boundingBox.setFromBufferAttribute( position );
+				this.boundingBox.makeEmpty();
 
-					// process morph attributes if present
+			}
 
-					if ( morphAttributesPosition ) {
+			if ( isNaN( this.boundingBox.min.x ) || isNaN( this.boundingBox.min.y ) || isNaN( this.boundingBox.min.z ) ) {
 
-						for ( var i = 0, il = morphAttributesPosition.length; i < il; i ++ ) {
+				console.error( 'THREE.BufferGeometry.computeBoundingBox: Computed min/max have NaN values. The "position" attribute is likely to have NaN values.', this );
 
-							var morphAttribute = morphAttributesPosition[ i ];
-							box.setFromBufferAttribute( morphAttribute );
+			}
 
-							this.boundingBox.expandByPoint( box.min );
-							this.boundingBox.expandByPoint( box.max );
-
-						}
-
-					}
-
-				} else {
-
-					this.boundingBox.makeEmpty();
-
-				}
-
-				if ( isNaN( this.boundingBox.min.x ) || isNaN( this.boundingBox.min.y ) || isNaN( this.boundingBox.min.z ) ) {
-
-					console.error( 'THREE.BufferGeometry.computeBoundingBox: Computed min/max have NaN values. The "position" attribute is likely to have NaN values.', this );
-
-				}
-
-			};
-
-		}(),
+		},
 
 		computeBoundingSphere: function () {
 
 			var box = new Box3();
-			var boxMorphTargets = new Box3();
 			var vector = new Vector3();
 
 			return function computeBoundingSphere() {
@@ -11844,64 +11820,25 @@
 				}
 
 				var position = this.attributes.position;
-				var morphAttributesPosition = this.morphAttributes.position;
 
 				if ( position ) {
-
-					// first, find the center of the bounding sphere
 
 					var center = this.boundingSphere.center;
 
 					box.setFromBufferAttribute( position );
-
-					// process morph attributes if present
-
-					if ( morphAttributesPosition ) {
-
-						for ( var i = 0, il = morphAttributesPosition.length; i < il; i ++ ) {
-
-							var morphAttribute = morphAttributesPosition[ i ];
-							boxMorphTargets.setFromBufferAttribute( morphAttribute );
-
-							box.expandByPoint( boxMorphTargets.min );
-							box.expandByPoint( boxMorphTargets.max );
-
-						}
-
-					}
-
 					box.getCenter( center );
 
-					// second, try to find a boundingSphere with a radius smaller than the
+					// hoping to find a boundingSphere with a radius smaller than the
 					// boundingSphere of the boundingBox: sqrt(3) smaller in the best case
 
 					var maxRadiusSq = 0;
 
 					for ( var i = 0, il = position.count; i < il; i ++ ) {
 
-						vector.fromBufferAttribute( position, i );
-
+						vector.x = position.getX( i );
+						vector.y = position.getY( i );
+						vector.z = position.getZ( i );
 						maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( vector ) );
-
-					}
-
-					// process morph attributes if present
-
-					if ( morphAttributesPosition ) {
-
-						for ( var i = 0, il = morphAttributesPosition.length; i < il; i ++ ) {
-
-							var morphAttribute = morphAttributesPosition[ i ];
-
-							for ( var j = 0, jl = morphAttribute.count; j < jl; j ++ ) {
-
-								vector.fromBufferAttribute( morphAttribute, i );
-
-								maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( vector ) );
-
-							}
-
-						}
 
 					}
 
@@ -14469,10 +14406,6 @@
 			var tempB = new Vector3();
 			var tempC = new Vector3();
 
-			var morphA = new Vector3();
-			var morphB = new Vector3();
-			var morphC = new Vector3();
-
 			var uvA = new Vector2();
 			var uvB = new Vector2();
 			var uvC = new Vector2();
@@ -14511,42 +14444,11 @@
 
 			}
 
-			function checkBufferGeometryIntersection( object, material, raycaster, ray, position, morphPosition, uv, a, b, c ) {
+			function checkBufferGeometryIntersection( object, material, raycaster, ray, position, uv, a, b, c ) {
 
 				vA.fromBufferAttribute( position, a );
 				vB.fromBufferAttribute( position, b );
 				vC.fromBufferAttribute( position, c );
-
-				var morphInfluences = object.morphTargetInfluences;
-
-				if ( material.morphTargets && morphPosition && morphInfluences ) {
-
-					morphA.set( 0, 0, 0 );
-					morphB.set( 0, 0, 0 );
-					morphC.set( 0, 0, 0 );
-
-					for ( var i = 0, il = morphPosition.length; i < il; i ++ ) {
-
-						var influence = morphInfluences[ i ];
-						var morphAttribute = morphPosition[ i ];
-
-						if ( influence === 0 ) continue;
-
-						tempA.fromBufferAttribute( morphAttribute, a );
-						tempB.fromBufferAttribute( morphAttribute, b );
-						tempC.fromBufferAttribute( morphAttribute, c );
-
-						morphA.addScaledVector( tempA.sub( vA ), influence );
-						morphB.addScaledVector( tempB.sub( vB ), influence );
-						morphC.addScaledVector( tempC.sub( vC ), influence );
-
-					}
-
-					vA.add( morphA );
-					vB.add( morphB );
-					vC.add( morphC );
-
-				}
 
 				var intersection = checkIntersection( object, material, raycaster, ray, vA, vB, vC, intersectionPoint );
 
@@ -14610,7 +14512,6 @@
 					var a, b, c;
 					var index = geometry.index;
 					var position = geometry.attributes.position;
-					var morphPosition = geometry.morphAttributes.position;
 					var uv = geometry.attributes.uv;
 					var groups = geometry.groups;
 					var drawRange = geometry.drawRange;
@@ -14638,7 +14539,7 @@
 									b = index.getX( j + 1 );
 									c = index.getX( j + 2 );
 
-									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, morphPosition, uv, a, b, c );
+									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, uv, a, b, c );
 
 									if ( intersection ) {
 
@@ -14663,7 +14564,7 @@
 								b = index.getX( i + 1 );
 								c = index.getX( i + 2 );
 
-								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, morphPosition, uv, a, b, c );
+								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, uv, a, b, c );
 
 								if ( intersection ) {
 
@@ -14696,7 +14597,7 @@
 									b = j + 1;
 									c = j + 2;
 
-									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, morphPosition, uv, a, b, c );
+									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, uv, a, b, c );
 
 									if ( intersection ) {
 
@@ -14721,7 +14622,7 @@
 								b = i + 1;
 								c = i + 2;
 
-								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, morphPosition, uv, a, b, c );
+								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, uv, a, b, c );
 
 								if ( intersection ) {
 
@@ -14758,6 +14659,39 @@
 						fvA = vertices[ face.a ];
 						fvB = vertices[ face.b ];
 						fvC = vertices[ face.c ];
+
+						if ( faceMaterial.morphTargets === true ) {
+
+							var morphTargets = geometry.morphTargets;
+							var morphInfluences = this.morphTargetInfluences;
+
+							vA.set( 0, 0, 0 );
+							vB.set( 0, 0, 0 );
+							vC.set( 0, 0, 0 );
+
+							for ( var t = 0, tl = morphTargets.length; t < tl; t ++ ) {
+
+								var influence = morphInfluences[ t ];
+
+								if ( influence === 0 ) continue;
+
+								var targets = morphTargets[ t ].vertices;
+
+								vA.addScaledVector( tempA.subVectors( targets[ face.a ], fvA ), influence );
+								vB.addScaledVector( tempB.subVectors( targets[ face.b ], fvB ), influence );
+								vC.addScaledVector( tempC.subVectors( targets[ face.c ], fvC ), influence );
+
+							}
+
+							vA.add( fvA );
+							vB.add( fvB );
+							vC.add( fvC );
+
+							fvA = vA;
+							fvB = vB;
+							fvC = vC;
+
+						}
 
 						intersection = checkIntersection( this, faceMaterial, raycaster, ray, fvA, fvB, fvC, intersectionPoint );
 
@@ -14815,18 +14749,6 @@
 		function render( renderList, scene, camera, forceClear ) {
 
 			var background = scene.background;
-
-			// Ignore background in AR
-			// TODO: Reconsider this.
-
-			var vr = renderer.vr;
-			var session = vr.getSession && vr.getSession();
-
-			if ( session && session.environmentBlendMode === 'additive' ) {
-
-				background = null;
-
-			}
 
 			if ( background === null ) {
 
@@ -15924,30 +15846,6 @@
 	} );
 
 	/**
-	 * @author Takahiro https://github.com/takahirox
-	 */
-
-	function DataTexture2DArray( data, width, height, depth ) {
-
-		Texture.call( this, null );
-
-		this.image = { data: data, width: width, height: height, depth: depth };
-
-		this.magFilter = NearestFilter;
-		this.minFilter = NearestFilter;
-
-		this.wrapR = ClampToEdgeWrapping;
-
-		this.generateMipmaps = false;
-		this.flipY = false;
-
-	}
-
-	DataTexture2DArray.prototype = Object.create( Texture.prototype );
-	DataTexture2DArray.prototype.constructor = DataTexture2DArray;
-	DataTexture2DArray.prototype.isDataTexture2DArray = true;
-
-	/**
 	 * @author Artur Trzesiok
 	 */
 
@@ -16031,7 +15929,6 @@
 	 */
 
 	var emptyTexture = new Texture();
-	var emptyTexture2dArray = new DataTexture2DArray();
 	var emptyTexture3d = new DataTexture3D();
 	var emptyCubeTexture = new CubeTexture();
 
@@ -16368,22 +16265,6 @@
 
 	}
 
-	function setValueT2DArray1( gl, v, renderer ) {
-
-		var cache = this.cache;
-		var unit = renderer.allocTextureUnit();
-
-		if ( cache[ 0 ] !== unit ) {
-
-			gl.uniform1i( this.addr, unit );
-			cache[ 0 ] = unit;
-
-		}
-
-		renderer.setTexture2DArray( v || emptyTexture2dArray, unit );
-
-	}
-
 	function setValueT3D1( gl, v, renderer ) {
 
 		var cache = this.cache;
@@ -16470,9 +16351,8 @@
 			case 0x8b5c: return setValue4fm; // _MAT4
 
 			case 0x8b5e: case 0x8d66: return setValueT1; // SAMPLER_2D, SAMPLER_EXTERNAL_OES
-			case 0x8b5f: return setValueT3D1; // SAMPLER_3D
+			case 0x8B5F: return setValueT3D1; // SAMPLER_3D
 			case 0x8b60: return setValueT6; // SAMPLER_CUBE
-			case 0x8DC1: return setValueT2DArray1; // SAMPLER_2D_ARRAY
 
 			case 0x1404: case 0x8b56: return setValue1i; // INT, BOOL
 			case 0x8b53: case 0x8b57: return setValue2iv; // _VEC2
@@ -17813,7 +17693,7 @@
 
 				combine: material.combine,
 
-				vertexTangents: ( material.normalMap && material.vertexTangents ),
+				vertexTangents: material.vertexTangents,
 				vertexColors: material.vertexColors,
 
 				fog: !! fog,
@@ -20258,9 +20138,7 @@
 
 				// only perform resize for certain image types
 
-				if ( ( typeof HTMLImageElement !== 'undefined' && image instanceof HTMLImageElement ) ||
-					( typeof HTMLCanvasElement !== 'undefined' && image instanceof HTMLCanvasElement ) ||
-					( typeof ImageBitmap !== 'undefined' && image instanceof ImageBitmap ) ) {
+				if ( image instanceof ImageBitmap || image instanceof HTMLImageElement || image instanceof HTMLCanvasElement ) {
 
 					var floor = needsPowerOfTwo ? _Math.floorPowerOfTwo : Math.floor;
 
@@ -20281,7 +20159,7 @@
 
 					console.warn( 'THREE.WebGLRenderer: Texture has been resized from (' + image.width + 'x' + image.height + ') to (' + width + 'x' + height + ').' );
 
-					return canvas;
+					return useOffscreenCanvas ? canvas.transferToImageBitmap() : canvas;
 
 				} else {
 
@@ -20515,22 +20393,6 @@
 
 		}
 
-		function setTexture2DArray( texture, slot ) {
-
-			var textureProperties = properties.get( texture );
-
-			if ( texture.version > 0 && textureProperties.__version !== texture.version ) {
-
-				uploadTexture( textureProperties, texture, slot );
-				return;
-
-			}
-
-			state.activeTexture( 33984 + slot );
-			state.bindTexture( 35866, textureProperties.__webglTexture );
-
-		}
-
 		function setTexture3D( texture, slot ) {
 
 			var textureProperties = properties.get( texture );
@@ -20683,7 +20545,7 @@
 				_gl.texParameteri( textureType, 10242, utils.convert( texture.wrapS ) );
 				_gl.texParameteri( textureType, 10243, utils.convert( texture.wrapT ) );
 
-				if ( textureType === 32879 || textureType === 35866 ) {
+				if ( textureType === 32879 ) {
 
 					_gl.texParameteri( textureType, 32882, utils.convert( texture.wrapR ) );
 
@@ -20697,7 +20559,7 @@
 				_gl.texParameteri( textureType, 10242, 33071 );
 				_gl.texParameteri( textureType, 10243, 33071 );
 
-				if ( textureType === 32879 || textureType === 35866 ) {
+				if ( textureType === 32879 ) {
 
 					_gl.texParameteri( textureType, 32882, 33071 );
 
@@ -20756,10 +20618,7 @@
 
 		function uploadTexture( textureProperties, texture, slot ) {
 
-			var textureType = 3553;
-
-			if ( texture.isDataTexture2DArray ) textureType = 35866;
-			if ( texture.isDataTexture3D ) textureType = 32879;
+			var textureType = ( texture.isDataTexture3D ) ? 32879 : 3553;
 
 			initTexture( textureProperties, texture );
 
@@ -20890,11 +20749,6 @@
 				}
 
 				textureProperties.__maxMipLevel = mipmaps.length - 1;
-
-			} else if ( texture.isDataTexture2DArray ) {
-
-				state.texImage3D( 35866, 0, glInternalFormat, image.width, image.height, image.depth, 0, glFormat, glType, image.data );
-				textureProperties.__maxMipLevel = 0;
 
 			} else if ( texture.isDataTexture3D ) {
 
@@ -21294,7 +21148,6 @@
 		}
 
 		this.setTexture2D = setTexture2D;
-		this.setTexture2DArray = setTexture2DArray;
 		this.setTexture3D = setTexture3D;
 		this.setTextureCube = setTextureCube;
 		this.setTextureCubeDynamic = setTextureCubeDynamic;
@@ -21687,17 +21540,17 @@
 		 *   var fullHeight = h * 2;
 		 *
 		 *   --A--
-		 *   camera.setViewOffset( fullWidth, fullHeight, w * 0, h * 0, w, h );
+		 *   camera.setOffset( fullWidth, fullHeight, w * 0, h * 0, w, h );
 		 *   --B--
-		 *   camera.setViewOffset( fullWidth, fullHeight, w * 1, h * 0, w, h );
+		 *   camera.setOffset( fullWidth, fullHeight, w * 1, h * 0, w, h );
 		 *   --C--
-		 *   camera.setViewOffset( fullWidth, fullHeight, w * 2, h * 0, w, h );
+		 *   camera.setOffset( fullWidth, fullHeight, w * 2, h * 0, w, h );
 		 *   --D--
-		 *   camera.setViewOffset( fullWidth, fullHeight, w * 0, h * 1, w, h );
+		 *   camera.setOffset( fullWidth, fullHeight, w * 0, h * 1, w, h );
 		 *   --E--
-		 *   camera.setViewOffset( fullWidth, fullHeight, w * 1, h * 1, w, h );
+		 *   camera.setOffset( fullWidth, fullHeight, w * 1, h * 1, w, h );
 		 *   --F--
-		 *   camera.setViewOffset( fullWidth, fullHeight, w * 2, h * 1, w, h );
+		 *   camera.setOffset( fullWidth, fullHeight, w * 2, h * 1, w, h );
 		 *
 		 *   Note there is no reason monitors have to be the same size or in a grid.
 		 */
@@ -22105,11 +21958,9 @@
 
 			var userHeight = frameOfReferenceType === 'stage' ? 1.6 : 0;
 
-			if ( isPresenting() === false ) {
+			if ( device === null ) {
 
 				camera.position.set( 0, userHeight, 0 );
-				camera.rotation.set( 0, 0, 0 );
-
 				return camera;
 
 			}
@@ -22162,6 +22013,8 @@
 			}
 
 			poseObject.updateMatrixWorld();
+
+			if ( device.isPresenting === false ) return camera;
 
 			//
 
@@ -22249,8 +22102,6 @@
 		this.setAnimationLoop = function ( callback ) {
 
 			animation.setAnimationLoop( callback );
-
-			if ( isPresenting() ) animation.start();
 
 		};
 
@@ -22360,7 +22211,6 @@
 		function onSessionEnd() {
 
 			renderer.setFramebuffer( null );
-			renderer.setRenderTarget( renderer.getRenderTarget() ); // Hack #15830
 			animation.stop();
 
 		}
@@ -22570,7 +22420,7 @@
 		this.getStandingMatrix = function () {
 
 			console.warn( 'THREE.WebXRManager: getStandingMatrix() is no longer needed.' );
-			return new Matrix4();
+			return new THREE.Matrix4();
 
 		};
 
@@ -23240,7 +23090,7 @@
 
 		this.renderBufferDirect = function ( camera, fog, geometry, material, object, group ) {
 
-			var frontFaceCW = ( object.isMesh && object.matrixWorld.determinant() < 0 );
+			var frontFaceCW = ( object.isMesh && object.normalMatrix.determinant() < 0 );
 
 			state.setMaterial( material, frontFaceCW );
 
@@ -23810,11 +23660,7 @@
 						var geometry = objects.update( object );
 						var material = object.material;
 
-						if ( material.visible ) {
-
-							currentRenderList.push( object, geometry, material, groupOrder, _vector3.z, null );
-
-						}
+						currentRenderList.push( object, geometry, material, groupOrder, _vector3.z, null );
 
 					}
 
@@ -25000,17 +24846,16 @@
 
 		}() );
 
-		this.setTexture2DArray = function ( texture, slot ) {
+		this.setTexture3D = ( function () {
 
-			textures.setTexture2DArray( texture, slot );
+			// backwards compatibility: peel texture.texture
+			return function setTexture3D( texture, slot ) {
 
-		};
+				textures.setTexture3D( texture, slot );
 
-		this.setTexture3D = function ( texture, slot ) {
+			};
 
-			textures.setTexture3D( texture, slot );
-
-		};
+		}() );
 
 		this.setTexture = ( function () {
 
@@ -25145,7 +24990,7 @@
 			if ( isCube ) {
 
 				var textureProperties = properties.get( renderTarget.texture );
-				_gl.framebufferTexture2D( 36160, 36064, 34069 + ( activeCubeFace || 0 ), textureProperties.__webglTexture, activeMipMapLevel || 0 );
+				_gl.framebufferTexture2D( 36160, 36064, 34069 + activeCubeFace || 0, textureProperties.__webglTexture, activeMipMapLevel || 0 );
 
 			}
 
@@ -25275,27 +25120,23 @@
 
 	}
 
-	Object.assign( FogExp2.prototype, {
+	FogExp2.prototype.isFogExp2 = true;
 
-		isFogExp2: true,
+	FogExp2.prototype.clone = function () {
 
-		clone: function () {
+		return new FogExp2( this.color, this.density );
 
-			return new FogExp2( this.color, this.density );
+	};
 
-		},
+	FogExp2.prototype.toJSON = function ( /* meta */ ) {
 
-		toJSON: function ( /* meta */ ) {
+		return {
+			type: 'FogExp2',
+			color: this.color.getHex(),
+			density: this.density
+		};
 
-			return {
-				type: 'FogExp2',
-				color: this.color.getHex(),
-				density: this.density
-			};
-
-		}
-
-	} );
+	};
 
 	/**
 	 * @author mrdoob / http://mrdoob.com/
@@ -25313,28 +25154,24 @@
 
 	}
 
-	Object.assign( Fog.prototype, {
+	Fog.prototype.isFog = true;
 
-		isFog: true,
+	Fog.prototype.clone = function () {
 
-		clone: function () {
+		return new Fog( this.color, this.near, this.far );
 
-			return new Fog( this.color, this.near, this.far );
+	};
 
-		},
+	Fog.prototype.toJSON = function ( /* meta */ ) {
 
-		toJSON: function ( /* meta */ ) {
+		return {
+			type: 'Fog',
+			color: this.color.getHex(),
+			near: this.near,
+			far: this.far
+		};
 
-			return {
-				type: 'Fog',
-				color: this.color.getHex(),
-				near: this.near,
-				far: this.far
-			};
-
-		}
-
-	} );
+	};
 
 	/**
 	 * @author mrdoob / http://mrdoob.com/
@@ -26627,9 +26464,20 @@
 
 		}() ),
 
+		copy: function ( source ) {
+
+			Object3D.prototype.copy.call( this, source );
+
+			this.geometry.copy( source.geometry );
+			this.material.copy( source.material );
+
+			return this;
+
+		},
+
 		clone: function () {
 
-			return new this.constructor( this.geometry, this.material ).copy( this );
+			return new this.constructor().copy( this );
 
 		}
 
@@ -34725,7 +34573,7 @@
 
 		},
 
-		parse: function ( json ) {
+		parse: function ( json, onLoad ) {
 
 			var animations = [];
 
@@ -34737,7 +34585,7 @@
 
 			}
 
-			return animations;
+			onLoad( animations );
 
 		},
 
@@ -39243,16 +39091,7 @@
 
 			} ).then( function ( blob ) {
 
-				if ( scope.options === undefined ) {
-
-					// Workaround for FireFox. It causes an error if you pass options.
-					return createImageBitmap( blob );
-
-				} else {
-
-					return createImageBitmap( blob, scope.options );
-
-				}
+				return createImageBitmap( blob, scope.options );
 
 			} ).then( function ( imageBitmap ) {
 
@@ -40342,7 +40181,8 @@
 
 			for ( var i = 0; i < 6; i ++ ) {
 
-				renderer.setRenderTarget( renderTarget, i );
+				renderTarget.activeCubeFace = i;
+				renderer.setRenderTarget( renderTarget );
 
 				renderer.clear( color, depth, stencil );
 
@@ -47727,27 +47567,6 @@
 
 	//
 
-	Object.defineProperties( WebGLRenderTargetCube.prototype, {
-
-		activeCubeFace: {
-			set: function ( /* value */ ) {
-
-				console.warn( 'THREE.WebGLRenderTargetCube: .activeCubeFace has been removed. It is now the second parameter of WebGLRenderer.setRenderTarget().' );
-
-			}
-		},
-		activeMipMapLevel: {
-			set: function ( /* value */ ) {
-
-				console.warn( 'THREE.WebGLRenderTargetCube: .activeMipMapLevel has been removed. It is now the third parameter of WebGLRenderer.setRenderTarget().' );
-
-			}
-		}
-
-	} );
-
-	//
-
 	Object.defineProperties( WebGLRenderTarget.prototype, {
 
 		wrapS: {
@@ -48121,7 +47940,6 @@
 	exports.Group = Group;
 	exports.VideoTexture = VideoTexture;
 	exports.DataTexture = DataTexture;
-	exports.DataTexture2DArray = DataTexture2DArray;
 	exports.DataTexture3D = DataTexture3D;
 	exports.CompressedTexture = CompressedTexture;
 	exports.CubeTexture = CubeTexture;
