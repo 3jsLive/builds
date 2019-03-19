@@ -23739,6 +23739,10 @@
 
 			//
 
+			scene.onAfterRender( _this, scene, camera );
+
+			//
+
 			if ( _currentRenderTarget !== null ) {
 
 				// Generate mipmap if we're using any kind of mipmap filtering
@@ -23758,8 +23762,6 @@
 			state.buffers.color.setMask( true );
 
 			state.setPolygonOffset( false );
-
-			scene.onAfterRender( _this, scene, camera );
 
 			if ( vr.enabled ) {
 
