@@ -1327,48 +1327,54 @@
 
 		},
 
-		setFromUnitVectors: function ( vFrom, vTo ) {
+		setFromUnitVectors: function () {
 
 			// assumes direction vectors vFrom and vTo are normalized
 
+			var r;
+
 			var EPS = 0.000001;
 
-			var r = vFrom.dot( vTo ) + 1;
+			return function setFromUnitVectors( vFrom, vTo ) {
 
-			if ( r < EPS ) {
+				r = vFrom.dot( vTo ) + 1;
 
-				r = 0;
+				if ( r < EPS ) {
 
-				if ( Math.abs( vFrom.x ) > Math.abs( vFrom.z ) ) {
+					r = 0;
 
-					this._x = - vFrom.y;
-					this._y = vFrom.x;
-					this._z = 0;
-					this._w = r;
+					if ( Math.abs( vFrom.x ) > Math.abs( vFrom.z ) ) {
+
+						this._x = - vFrom.y;
+						this._y = vFrom.x;
+						this._z = 0;
+						this._w = r;
+
+					} else {
+
+						this._x = 0;
+						this._y = - vFrom.z;
+						this._z = vFrom.y;
+						this._w = r;
+
+					}
 
 				} else {
 
-					this._x = 0;
-					this._y = - vFrom.z;
-					this._z = vFrom.y;
+					// crossVectors( vFrom, vTo ); // inlined to avoid cyclic dependency on Vector3
+
+					this._x = vFrom.y * vTo.z - vFrom.z * vTo.y;
+					this._y = vFrom.z * vTo.x - vFrom.x * vTo.z;
+					this._z = vFrom.x * vTo.y - vFrom.y * vTo.x;
 					this._w = r;
 
 				}
 
-			} else {
+				return this.normalize();
 
-				// crossVectors( vFrom, vTo ); // inlined to avoid cyclic dependency on Vector3
+			};
 
-				this._x = vFrom.y * vTo.z - vFrom.z * vTo.y;
-				this._y = vFrom.z * vTo.x - vFrom.x * vTo.z;
-				this._z = vFrom.x * vTo.y - vFrom.y * vTo.x;
-				this._w = r;
-
-			}
-
-			return this.normalize();
-
-		},
+		}(),
 
 		angleTo: function ( q ) {
 
@@ -18014,7 +18020,7 @@
 
 			return a.renderOrder - b.renderOrder;
 
-		} else if ( a.program !== b.program ) {
+		} else if ( a.program && b.program && a.program !== b.program ) {
 
 			return a.program.id - b.program.id;
 
@@ -18065,8 +18071,6 @@
 		var opaque = [];
 		var transparent = [];
 
-		var defaultProgram = { id: - 1 };
-
 		function init() {
 
 			renderItemsIndex = 0;
@@ -18087,7 +18091,7 @@
 					object: object,
 					geometry: geometry,
 					material: material,
-					program: material.program || defaultProgram,
+					program: material.program,
 					groupOrder: groupOrder,
 					renderOrder: object.renderOrder,
 					z: z,
@@ -18102,7 +18106,7 @@
 				renderItem.object = object;
 				renderItem.geometry = geometry;
 				renderItem.material = material;
-				renderItem.program = material.program || defaultProgram;
+				renderItem.program = material.program;
 				renderItem.groupOrder = groupOrder;
 				renderItem.renderOrder = object.renderOrder;
 				renderItem.z = z;
