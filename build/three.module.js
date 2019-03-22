@@ -30380,10 +30380,6 @@ function SphereBufferGeometry( radius, widthSegments, heightSegments, phiStart, 
 
 		var v = iy / heightSegments;
 
-		// special case for the poles
-
-		var uOffset = ( iy == 0 ) ? 0.5 / widthSegments : ( ( iy == heightSegments ) ? - 0.5 / widthSegments : 0 );
-
 		for ( ix = 0; ix <= widthSegments; ix ++ ) {
 
 			var u = ix / widthSegments;
@@ -30398,12 +30394,12 @@ function SphereBufferGeometry( radius, widthSegments, heightSegments, phiStart, 
 
 			// normal
 
-			normal.copy( vertex ).normalize();
+			normal.set( vertex.x, vertex.y, vertex.z ).normalize();
 			normals.push( normal.x, normal.y, normal.z );
 
 			// uv
 
-			uvs.push( u + uOffset, 1 - v );
+			uvs.push( u, 1 - v );
 
 			verticesRow.push( index ++ );
 
