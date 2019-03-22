@@ -4397,8 +4397,8 @@
 
 				if ( target === undefined ) {
 
-					console.warn( 'THREE.Box3: .getBoundingSphere() target is now required' );
-					target = new Sphere();
+					console.error( 'THREE.Box3: .getBoundingSphere() target is now required' );
+					//target = new Sphere(); // removed to avoid cyclic dependency
 
 				}
 
