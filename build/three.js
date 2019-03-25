@@ -1327,54 +1327,48 @@
 
 		},
 
-		setFromUnitVectors: function () {
+		setFromUnitVectors: function ( vFrom, vTo ) {
 
 			// assumes direction vectors vFrom and vTo are normalized
 
-			var r;
-
 			var EPS = 0.000001;
 
-			return function setFromUnitVectors( vFrom, vTo ) {
+			var r = vFrom.dot( vTo ) + 1;
 
-				r = vFrom.dot( vTo ) + 1;
+			if ( r < EPS ) {
 
-				if ( r < EPS ) {
+				r = 0;
 
-					r = 0;
+				if ( Math.abs( vFrom.x ) > Math.abs( vFrom.z ) ) {
 
-					if ( Math.abs( vFrom.x ) > Math.abs( vFrom.z ) ) {
-
-						this._x = - vFrom.y;
-						this._y = vFrom.x;
-						this._z = 0;
-						this._w = r;
-
-					} else {
-
-						this._x = 0;
-						this._y = - vFrom.z;
-						this._z = vFrom.y;
-						this._w = r;
-
-					}
+					this._x = - vFrom.y;
+					this._y = vFrom.x;
+					this._z = 0;
+					this._w = r;
 
 				} else {
 
-					// crossVectors( vFrom, vTo ); // inlined to avoid cyclic dependency on Vector3
-
-					this._x = vFrom.y * vTo.z - vFrom.z * vTo.y;
-					this._y = vFrom.z * vTo.x - vFrom.x * vTo.z;
-					this._z = vFrom.x * vTo.y - vFrom.y * vTo.x;
+					this._x = 0;
+					this._y = - vFrom.z;
+					this._z = vFrom.y;
 					this._w = r;
 
 				}
 
-				return this.normalize();
+			} else {
 
-			};
+				// crossVectors( vFrom, vTo ); // inlined to avoid cyclic dependency on Vector3
 
-		}(),
+				this._x = vFrom.y * vTo.z - vFrom.z * vTo.y;
+				this._y = vFrom.z * vTo.x - vFrom.x * vTo.z;
+				this._z = vFrom.x * vTo.y - vFrom.y * vTo.x;
+				this._w = r;
+
+			}
+
+			return this.normalize();
+
+		},
 
 		angleTo: function ( q ) {
 
@@ -18020,7 +18014,7 @@
 
 			return a.renderOrder - b.renderOrder;
 
-		} else if ( a.program && b.program && a.program !== b.program ) {
+		} else if ( a.program !== b.program ) {
 
 			return a.program.id - b.program.id;
 
@@ -18071,6 +18065,8 @@
 		var opaque = [];
 		var transparent = [];
 
+		var defaultProgram = { id: - 1 };
+
 		function init() {
 
 			renderItemsIndex = 0;
@@ -18091,7 +18087,7 @@
 					object: object,
 					geometry: geometry,
 					material: material,
-					program: material.program,
+					program: material.program || defaultProgram,
 					groupOrder: groupOrder,
 					renderOrder: object.renderOrder,
 					z: z,
@@ -18106,7 +18102,7 @@
 				renderItem.object = object;
 				renderItem.geometry = geometry;
 				renderItem.material = material;
-				renderItem.program = material.program;
+				renderItem.program = material.program || defaultProgram;
 				renderItem.groupOrder = groupOrder;
 				renderItem.renderOrder = object.renderOrder;
 				renderItem.z = z;
@@ -30390,6 +30386,10 @@
 
 			var v = iy / heightSegments;
 
+			// special case for the poles
+
+			var uOffset = ( iy == 0 ) ? 0.5 / widthSegments : ( ( iy == heightSegments ) ? - 0.5 / widthSegments : 0 );
+
 			for ( ix = 0; ix <= widthSegments; ix ++ ) {
 
 				var u = ix / widthSegments;
@@ -30404,12 +30404,12 @@
 
 				// normal
 
-				normal.set( vertex.x, vertex.y, vertex.z ).normalize();
+				normal.copy( vertex ).normalize();
 				normals.push( normal.x, normal.y, normal.z );
 
 				// uv
 
-				uvs.push( u, 1 - v );
+				uvs.push( u + uOffset, 1 - v );
 
 				verticesRow.push( index ++ );
 
