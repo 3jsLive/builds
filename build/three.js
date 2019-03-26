@@ -45229,13 +45229,6 @@
 
 	function GridHelper( size, divisions, color1, color2 ) {
 
-		this.parameters = {
-			size: size,
-			divisions: divisions,
-			color1: color1,
-			color2: color2
-		};
-
 		size = size || 10;
 		divisions = divisions || 10;
 		color1 = new Color( color1 !== undefined ? color1 : 0x444444 );
@@ -45271,29 +45264,8 @@
 
 	}
 
-	GridHelper.prototype = Object.assign( Object.create( LineSegments.prototype ), {
-
-		constructor: GridHelper,
-
-		copy( source ) {
-
-			LineSegments.prototype.copy.call( this, source );
-
-			Object.assign( this.parameters, source.parameters );
-
-			return this;
-
-		},
-
-		clone() {
-
-			var paramters = this.parameters;
-
-			return new this.constructor( paramters.size, paramters.divisions, paramters.color1, paramters.color2 );
-
-		}
-
-	} );
+	GridHelper.prototype = Object.create( LineSegments.prototype );
+	GridHelper.prototype.constructor = GridHelper;
 
 	/**
 	 * @author mrdoob / http://mrdoob.com/
