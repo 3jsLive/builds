@@ -45281,6 +45281,9 @@
 
 			Object.assign( this.parameters, source.parameters );
 
+			this.geometry.copy( source.geometry );
+			this.material.copy( source.material );
+
 			return this;
 
 		},
