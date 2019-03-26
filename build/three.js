@@ -45275,7 +45275,7 @@
 
 		constructor: GridHelper,
 
-		copy: function ( source ) {
+		copy( source ) {
 
 			LineSegments.prototype.copy.call( this, source );
 
@@ -45285,7 +45285,7 @@
 
 		},
 
-		clone: function () {
+		clone() {
 
 			var parameters = this.parameters;
 
