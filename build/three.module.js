@@ -15971,7 +15971,7 @@ DataTexture3D.prototype.isDataTexture3D = true;
  *
  * Uniforms of a program.
  * Those form a tree structure with a special top-level container for the root,
- * which you get by calling 'new WebGLUniforms( gl, program )'.
+ * which you get by calling 'new WebGLUniforms( gl, program, renderer )'.
  *
  *
  * Properties of inner nodes including the top-level container:
@@ -15982,15 +15982,15 @@ DataTexture3D.prototype.isDataTexture3D = true;
  *
  * Methods of all nodes except the top-level container:
  *
- * .setValue( gl, value, [textures] )
+ * .setValue( gl, value, [renderer] )
  *
  * 		uploads a uniform value(s)
- *  	the 'textures' parameter is needed for sampler uniforms
+ *  	the 'renderer' parameter is needed for sampler uniforms
  *
  *
- * Static methods of the top-level container (textures factorizations):
+ * Static methods of the top-level container (renderer factorizations):
  *
- * .upload( gl, seq, values, textures )
+ * .upload( gl, seq, values, renderer )
  *
  * 		sets uniforms in 'seq' to 'values[id].value'
  *
@@ -15999,11 +15999,15 @@ DataTexture3D.prototype.isDataTexture3D = true;
  * 		filters 'seq' entries with corresponding entry in values
  *
  *
- * Methods of the top-level container (textures factorizations):
+ * Methods of the top-level container (renderer factorizations):
  *
- * .setValue( gl, name, value, textures )
+ * .setValue( gl, name, value )
  *
  * 		sets uniform with  name 'name' to 'value'
+ *
+ * .set( gl, obj, prop )
+ *
+ * 		sets uniform from object and property with same name than uniform
  *
  * .setOptional( gl, obj, prop )
  *
@@ -16015,6 +16019,15 @@ var emptyTexture = new Texture();
 var emptyTexture2dArray = new DataTexture2DArray();
 var emptyTexture3d = new DataTexture3D();
 var emptyCubeTexture = new CubeTexture();
+
+// --- Base for inner nodes (including the root) ---
+
+function UniformContainer() {
+
+	this.seq = [];
+	this.map = {};
+
+}
 
 // --- Utilities ---
 
@@ -16092,7 +16105,7 @@ function copyArray( a, b ) {
 
 // Texture unit allocation
 
-function allocTexUnits( textures, n ) {
+function allocTexUnits( renderer, n ) {
 
 	var r = arrayCacheI32[ n ];
 
@@ -16104,7 +16117,7 @@ function allocTexUnits( textures, n ) {
 	}
 
 	for ( var i = 0; i !== n; ++ i )
-		r[ i ] = textures.allocateTextureUnit();
+		r[ i ] = renderer.allocTextureUnit();
 
 	return r;
 
@@ -16324,10 +16337,10 @@ function setValue4fm( gl, v ) {
 
 // Single texture (2D / Cube)
 
-function setValueT1( gl, v, textures ) {
+function setValueT1( gl, v, renderer ) {
 
 	var cache = this.cache;
-	var unit = textures.allocateTextureUnit();
+	var unit = renderer.allocTextureUnit();
 
 	if ( cache[ 0 ] !== unit ) {
 
@@ -16336,14 +16349,14 @@ function setValueT1( gl, v, textures ) {
 
 	}
 
-	textures.safeSetTexture2D( v || emptyTexture, unit );
+	renderer.setTexture2D( v || emptyTexture, unit );
 
 }
 
-function setValueT2DArray1( gl, v, textures ) {
+function setValueT2DArray1( gl, v, renderer ) {
 
 	var cache = this.cache;
-	var unit = textures.allocateTextureUnit();
+	var unit = renderer.allocTextureUnit();
 
 	if ( cache[ 0 ] !== unit ) {
 
@@ -16352,14 +16365,14 @@ function setValueT2DArray1( gl, v, textures ) {
 
 	}
 
-	textures.setTexture2DArray( v || emptyTexture2dArray, unit );
+	renderer.setTexture2DArray( v || emptyTexture2dArray, unit );
 
 }
 
-function setValueT3D1( gl, v, textures ) {
+function setValueT3D1( gl, v, renderer ) {
 
 	var cache = this.cache;
-	var unit = textures.allocateTextureUnit();
+	var unit = renderer.allocTextureUnit();
 
 	if ( cache[ 0 ] !== unit ) {
 
@@ -16368,14 +16381,14 @@ function setValueT3D1( gl, v, textures ) {
 
 	}
 
-	textures.setTexture3D( v || emptyTexture3d, unit );
+	renderer.setTexture3D( v || emptyTexture3d, unit );
 
 }
 
-function setValueT6( gl, v, textures ) {
+function setValueT6( gl, v, renderer ) {
 
 	var cache = this.cache;
-	var unit = textures.allocateTextureUnit();
+	var unit = renderer.allocTextureUnit();
 
 	if ( cache[ 0 ] !== unit ) {
 
@@ -16384,7 +16397,7 @@ function setValueT6( gl, v, textures ) {
 
 	}
 
-	textures.safeSetTextureCube( v || emptyCubeTexture, unit );
+	renderer.setTextureCube( v || emptyCubeTexture, unit );
 
 }
 
@@ -16564,12 +16577,12 @@ function setValueM4a( gl, v ) {
 
 // Array of textures (2D / Cube)
 
-function setValueT1a( gl, v, textures ) {
+function setValueT1a( gl, v, renderer ) {
 
 	var cache = this.cache;
 	var n = v.length;
 
-	var units = allocTexUnits( textures, n );
+	var units = allocTexUnits( renderer, n );
 
 	if ( arraysEqual( cache, units ) === false ) {
 
@@ -16580,18 +16593,18 @@ function setValueT1a( gl, v, textures ) {
 
 	for ( var i = 0; i !== n; ++ i ) {
 
-		textures.safeSetTexture2D( v[ i ] || emptyTexture, units[ i ] );
+		renderer.setTexture2D( v[ i ] || emptyTexture, units[ i ] );
 
 	}
 
 }
 
-function setValueT6a( gl, v, textures ) {
+function setValueT6a( gl, v, renderer ) {
 
 	var cache = this.cache;
 	var n = v.length;
 
-	var units = allocTexUnits( textures, n );
+	var units = allocTexUnits( renderer, n );
 
 	if ( arraysEqual( cache, units ) === false ) {
 
@@ -16602,7 +16615,7 @@ function setValueT6a( gl, v, textures ) {
 
 	for ( var i = 0; i !== n; ++ i ) {
 
-		textures.safeSetTextureCube( v[ i ] || emptyCubeTexture, units[ i ] );
+		renderer.setTextureCube( v[ i ] || emptyCubeTexture, units[ i ] );
 
 	}
 
@@ -16678,19 +16691,18 @@ function StructuredUniform( id ) {
 
 	this.id = id;
 
-	this.seq = [];
-	this.map = {};
+	UniformContainer.call( this ); // mix-in
 
 }
 
-StructuredUniform.prototype.setValue = function ( gl, value, textures ) {
+StructuredUniform.prototype.setValue = function ( gl, value, renderer ) {
 
 	var seq = this.seq;
 
 	for ( var i = 0, n = seq.length; i !== n; ++ i ) {
 
 		var u = seq[ i ];
-		u.setValue( gl, value[ u.id ], textures );
+		u.setValue( gl, value[ u.id ], renderer );
 
 	}
 
@@ -16770,10 +16782,11 @@ function parseUniform( activeInfo, addr, container ) {
 
 // Root Container
 
-function WebGLUniforms( gl, program ) {
+function WebGLUniforms( gl, program, renderer ) {
 
-	this.seq = [];
-	this.map = {};
+	UniformContainer.call( this );
+
+	this.renderer = renderer;
 
 	var n = gl.getProgramParameter( program, 35718 );
 
@@ -16788,11 +16801,11 @@ function WebGLUniforms( gl, program ) {
 
 }
 
-WebGLUniforms.prototype.setValue = function ( gl, name, value, textures ) {
+WebGLUniforms.prototype.setValue = function ( gl, name, value ) {
 
 	var u = this.map[ name ];
 
-	if ( u !== undefined ) u.setValue( gl, value, textures );
+	if ( u !== undefined ) u.setValue( gl, value, this.renderer );
 
 };
 
@@ -16807,7 +16820,7 @@ WebGLUniforms.prototype.setOptional = function ( gl, object, name ) {
 
 // Static interface
 
-WebGLUniforms.upload = function ( gl, seq, values, textures ) {
+WebGLUniforms.upload = function ( gl, seq, values, renderer ) {
 
 	for ( var i = 0, n = seq.length; i !== n; ++ i ) {
 
@@ -16817,7 +16830,7 @@ WebGLUniforms.upload = function ( gl, seq, values, textures ) {
 		if ( v.needsUpdate !== false ) {
 
 			// note: always updating when .needsUpdate is undefined
-			u.setValue( gl, v.value, textures );
+			u.setValue( gl, v.value, renderer );
 
 		}
 
@@ -17087,7 +17100,7 @@ function unrollLoops( string ) {
 
 }
 
-function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities, textures ) {
+function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities ) {
 
 	var gl = renderer.context;
 
@@ -17551,7 +17564,7 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 
 		if ( cachedUniforms === undefined ) {
 
-			cachedUniforms = new WebGLUniforms( gl, program, textures );
+			cachedUniforms = new WebGLUniforms( gl, program, renderer );
 
 		}
 
@@ -17627,7 +17640,7 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
  * @author mrdoob / http://mrdoob.com/
  */
 
-function WebGLPrograms( renderer, extensions, capabilities, textures ) {
+function WebGLPrograms( renderer, extensions, capabilities ) {
 
 	var programs = [];
 
@@ -17901,7 +17914,7 @@ function WebGLPrograms( renderer, extensions, capabilities, textures ) {
 
 		if ( program === undefined ) {
 
-			program = new WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities, textures );
+			program = new WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities );
 			programs.push( program );
 
 		}
@@ -20455,31 +20468,7 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 	//
 
-	var textureUnits = 0;
 
-	function resetTextureUnits() {
-
-		textureUnits = 0;
-
-	}
-
-	function allocateTextureUnit() {
-
-		var textureUnit = textureUnits;
-
-		if ( textureUnit >= capabilities.maxTextures ) {
-
-			console.warn( 'THREE.WebGLTextures: Trying to use ' + textureUnit + ' texture units while this GPU supports only ' + capabilities.maxTextures );
-
-		}
-
-		textureUnits += 1;
-
-		return textureUnit;
-
-	}
-
-	//
 
 	function setTexture2D( texture, slot ) {
 
@@ -21291,69 +21280,6 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 	}
 
-	// backwards compatibility
-
-	var warnedTexture2D = false;
-	var warnedTextureCube = false;
-
-	function safeSetTexture2D( texture, slot ) {
-
-		if ( texture && texture.isWebGLRenderTarget ) {
-
-			if ( warnedTexture2D === false ) {
-
-				console.warn( "THREE.WebGLTextures.safeSetTexture2D: don't use render targets as textures. Use their .texture property instead." );
-				warnedTexture2D = true;
-
-			}
-
-			texture = texture.texture;
-
-		}
-
-		setTexture2D( texture, slot );
-
-	}
-
-	function safeSetTextureCube( texture, slot ) {
-
-		if ( texture && texture.isWebGLRenderTargetCube ) {
-
-			if ( warnedTextureCube === false ) {
-
-				console.warn( "THREE.WebGLTextures.safeSetTextureCube: don't use cube render targets as textures. Use their .texture property instead." );
-				warnedTextureCube = true;
-
-			}
-
-			texture = texture.texture;
-
-		}
-
-		// currently relying on the fact that WebGLRenderTargetCube.texture is a Texture and NOT a CubeTexture
-		// TODO: unify these code paths
-		if ( ( texture && texture.isCubeTexture ) ||
-			( Array.isArray( texture.image ) && texture.image.length === 6 ) ) {
-
-			// CompressedTexture can have Array in image :/
-
-			// this function alone should take care of cube textures
-			setTextureCube( texture, slot );
-
-		} else {
-
-			// assumed: texture property of THREE.WebGLRenderTargetCube
-			setTextureCubeDynamic( texture, slot );
-
-		}
-
-	}
-
-	//
-
-	this.allocateTextureUnit = allocateTextureUnit;
-	this.resetTextureUnits = resetTextureUnits;
-
 	this.setTexture2D = setTexture2D;
 	this.setTexture2DArray = setTexture2DArray;
 	this.setTexture3D = setTexture3D;
@@ -21362,9 +21288,6 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 	this.setupRenderTarget = setupRenderTarget;
 	this.updateRenderTargetMipmap = updateRenderTargetMipmap;
 	this.updateMultisampleRenderTarget = updateMultisampleRenderTarget;
-
-	this.safeSetTexture2D = safeSetTexture2D;
-	this.safeSetTextureCube = safeSetTextureCube;
 
 }
 
@@ -22743,6 +22666,10 @@ function WebGLRenderer( parameters ) {
 
 		//
 
+		_usedTextureUnits = 0,
+
+		//
+
 		_width = _canvas.width,
 		_height = _canvas.height,
 
@@ -22871,7 +22798,7 @@ function WebGLRenderer( parameters ) {
 		geometries = new WebGLGeometries( _gl, attributes, info );
 		objects = new WebGLObjects( geometries, info );
 		morphtargets = new WebGLMorphtargets( _gl );
-		programCache = new WebGLPrograms( _this, extensions, capabilities, textures );
+		programCache = new WebGLPrograms( _this, extensions, capabilities );
 		renderLists = new WebGLRenderLists();
 		renderStates = new WebGLRenderStates();
 
@@ -24229,7 +24156,7 @@ function WebGLRenderer( parameters ) {
 
 	function setProgram( camera, fog, material, object ) {
 
-		textures.resetTextureUnits();
+		_usedTextureUnits = 0;
 
 		var materialProperties = properties.get( material );
 		var lights = currentRenderState.state.lights;
@@ -24416,7 +24343,7 @@ function WebGLRenderer( parameters ) {
 
 					}
 
-					p_uniforms.setValue( _gl, 'boneTexture', skeleton.boneTexture, textures );
+					p_uniforms.setValue( _gl, 'boneTexture', skeleton.boneTexture );
 					p_uniforms.setValue( _gl, 'boneTextureSize', skeleton.boneTextureSize );
 
 				} else {
@@ -24546,13 +24473,13 @@ function WebGLRenderer( parameters ) {
 			if ( m_uniforms.ltc_1 !== undefined ) m_uniforms.ltc_1.value = UniformsLib.LTC_1;
 			if ( m_uniforms.ltc_2 !== undefined ) m_uniforms.ltc_2.value = UniformsLib.LTC_2;
 
-			WebGLUniforms.upload( _gl, materialProperties.uniformsList, m_uniforms, textures );
+			WebGLUniforms.upload( _gl, materialProperties.uniformsList, m_uniforms, _this );
 
 		}
 
 		if ( material.isShaderMaterial && material.uniformsNeedUpdate === true ) {
 
-			WebGLUniforms.upload( _gl, materialProperties.uniformsList, m_uniforms, textures );
+			WebGLUniforms.upload( _gl, materialProperties.uniformsList, m_uniforms, _this );
 			material.uniformsNeedUpdate = false;
 
 		}
@@ -25015,6 +24942,126 @@ function WebGLRenderer( parameters ) {
 
 	}
 
+	// Textures
+
+	function allocTextureUnit() {
+
+		var textureUnit = _usedTextureUnits;
+
+		if ( textureUnit >= capabilities.maxTextures ) {
+
+			console.warn( 'THREE.WebGLRenderer: Trying to use ' + textureUnit + ' texture units while this GPU supports only ' + capabilities.maxTextures );
+
+		}
+
+		_usedTextureUnits += 1;
+
+		return textureUnit;
+
+	}
+
+	this.allocTextureUnit = allocTextureUnit;
+
+	// this.setTexture2D = setTexture2D;
+	this.setTexture2D = ( function () {
+
+		var warned = false;
+
+		// backwards compatibility: peel texture.texture
+		return function setTexture2D( texture, slot ) {
+
+			if ( texture && texture.isWebGLRenderTarget ) {
+
+				if ( ! warned ) {
+
+					console.warn( "THREE.WebGLRenderer.setTexture2D: don't use render targets as textures. Use their .texture property instead." );
+					warned = true;
+
+				}
+
+				texture = texture.texture;
+
+			}
+
+			textures.setTexture2D( texture, slot );
+
+		};
+
+	}() );
+
+	this.setTexture2DArray = function ( texture, slot ) {
+
+		textures.setTexture2DArray( texture, slot );
+
+	};
+
+	this.setTexture3D = function ( texture, slot ) {
+
+		textures.setTexture3D( texture, slot );
+
+	};
+
+	this.setTexture = ( function () {
+
+		var warned = false;
+
+		return function setTexture( texture, slot ) {
+
+			if ( ! warned ) {
+
+				console.warn( "THREE.WebGLRenderer: .setTexture is deprecated, use setTexture2D instead." );
+				warned = true;
+
+			}
+
+			textures.setTexture2D( texture, slot );
+
+		};
+
+	}() );
+
+	this.setTextureCube = ( function () {
+
+		var warned = false;
+
+		return function setTextureCube( texture, slot ) {
+
+			// backwards compatibility: peel texture.texture
+			if ( texture && texture.isWebGLRenderTargetCube ) {
+
+				if ( ! warned ) {
+
+					console.warn( "THREE.WebGLRenderer.setTextureCube: don't use cube render targets as textures. Use their .texture property instead." );
+					warned = true;
+
+				}
+
+				texture = texture.texture;
+
+			}
+
+			// currently relying on the fact that WebGLRenderTargetCube.texture is a Texture and NOT a CubeTexture
+			// TODO: unify these code paths
+			if ( ( texture && texture.isCubeTexture ) ||
+				( Array.isArray( texture.image ) && texture.image.length === 6 ) ) {
+
+				// CompressedTexture can have Array in image :/
+
+				// this function alone should take care of cube textures
+				textures.setTextureCube( texture, slot );
+
+			} else {
+
+				// assumed: texture property of THREE.WebGLRenderTargetCube
+
+				textures.setTextureCubeDynamic( texture, slot );
+
+			}
+
+		};
+
+	}() );
+
 	//
 
 	this.setFramebuffer = function ( value ) {
@@ -25174,7 +25221,7 @@ function WebGLRenderer( parameters ) {
 		var height = texture.image.height;
 		var glFormat = utils.convert( texture.format );
 
-		textures.setTexture2D( texture, 0 );
+		this.setTexture2D( texture, 0 );
 
 		_gl.copyTexImage2D( 3553, level || 0, glFormat, position.x, position.y, width, height, 0 );
 
@@ -25187,7 +25234,7 @@ function WebGLRenderer( parameters ) {
 		var glFormat = utils.convert( dstTexture.format );
 		var glType = utils.convert( dstTexture.type );
 
-		textures.setTexture2D( dstTexture, 0 );
+		this.setTexture2D( dstTexture, 0 );
 
 		if ( srcTexture.isDataTexture ) {
 
@@ -45227,9 +45274,6 @@ GridHelper.prototype = Object.assign( Object.create( LineSegments.prototype ), {
 		LineSegments.prototype.copy.call( this, source );
 
 		Object.assign( this.parameters, source.parameters );
-
-		this.geometry.copy( source.geometry );
-		this.material.copy( source.material );
 
 		return this;
 
