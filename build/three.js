@@ -45243,7 +45243,9 @@
 
 		clone: function () {
 
-			return new this.constructor().copy( this );
+			var parameters = this.parameters;
+
+			return new this.constructor( parameters.size, parameters.divisions, parameters.color1, parameters.color2 );
 
 		}
 
