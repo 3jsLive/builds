@@ -185,7 +185,7 @@
 
 	} );
 
-	var REVISION = '104dev';
+	var REVISION = '103';
 	var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
 	var CullFaceNone = 0;
 	var CullFaceBack = 1;
@@ -22353,7 +22353,10 @@
 		var device = null;
 		var session = null;
 
+		var framebufferScaleFactor = 1.0;
+
 		var frameOfReference = null;
+		var frameOfReferenceType = 'stage';
 
 		var pose = null;
 
@@ -22411,6 +22414,7 @@
 		this.setDevice = function ( value ) {
 
 			if ( value !== undefined ) device = value;
+			if ( value instanceof XRDevice ) gl.setCompatibleXRDevice( value );
 
 		};
 
@@ -22431,20 +22435,15 @@
 
 		}
 
-		function onRequestFrameOfReference( value ) {
-
-			frameOfReference = value;
-
-			animation.setContext( session );
-			animation.start();
-
-		}
-
 		this.setFramebufferScaleFactor = function ( value ) {
+
+			framebufferScaleFactor = value;
 
 		};
 
 		this.setFrameOfReferenceType = function ( value ) {
+
+			frameOfReferenceType = value;
 
 		};
 
@@ -22459,9 +22458,17 @@
 				session.addEventListener( 'selectend', onSessionEvent );
 				session.addEventListener( 'end', onSessionEnd );
 
-				session.updateRenderState( {  baseLayer:  new XRWebGLLayer( session, gl ) } );
+				session.baseLayer = new XRWebGLLayer( session, gl, { framebufferScaleFactor: framebufferScaleFactor } );
+				session.requestFrameOfReference( frameOfReferenceType ).then( function ( value ) {
 
-				session.requestReferenceSpace( { type: 'stationary', subtype: 'eye-level' } ).then( onRequestFrameOfReference );
+					frameOfReference = value;
+
+					renderer.setFramebuffer( session.baseLayer.framebuffer );
+
+					animation.setContext( session );
+					animation.start();
+
+				} );
 
 				//
 
@@ -22546,22 +22553,18 @@
 
 		function onAnimationFrame( time, frame ) {
 
-			let session = frame.session;
-
-			pose = frame.getViewerPose( frameOfReference );
+			pose = frame.getDevicePose( frameOfReference );
 
 			if ( pose !== null ) {
 
-				var layer = session.renderState.baseLayer;
-				var views = pose.views;
-
-				renderer.setFramebuffer( session.renderState.baseLayer.framebuffer );
+				var layer = session.baseLayer;
+				var views = frame.views;
 
 				for ( var i = 0; i < views.length; i ++ ) {
 
 					var view = views[ i ];
 					var viewport = layer.getViewport( view );
-					var viewMatrix = view.transform.inverse().matrix;
+					var viewMatrix = pose.getViewMatrix( view );
 
 					var camera = cameraVR.cameras[ i ];
 					camera.matrix.fromArray( viewMatrix ).getInverse( camera.matrix );
@@ -22588,12 +22591,21 @@
 
 				if ( inputSource ) {
 
-					var inputPose = frame.getPose( inputSource.targetRaySpace, frameOfReference );
+					var inputPose = frame.getInputPose( inputSource, frameOfReference );
 
 					if ( inputPose !== null ) {
 
-						let targetRay = new XRRay(inputPose.transform);
-						controller.matrix.elements = targetRay.matrix;
+						if ( 'targetRay' in inputPose ) {
+
+							controller.matrix.elements = inputPose.targetRay.transformMatrix;
+
+						} else if ( 'pointerMatrix' in inputPose ) {
+
+							// DEPRECATED
+
+							controller.matrix.elements = inputPose.pointerMatrix;
+
+						}
 
 						controller.matrix.decompose( controller.position, controller.rotation, controller.scale );
 						controller.visible = true;
@@ -22781,8 +22793,7 @@
 				antialias: _antialias,
 				premultipliedAlpha: _premultipliedAlpha,
 				preserveDrawingBuffer: _preserveDrawingBuffer,
-				powerPreference: _powerPreference,
-				xrCompatible: true
+				powerPreference: _powerPreference
 			};
 
 			// event listeners must be registered before WebGL context is created, see #12753
@@ -25011,9 +25022,8 @@
 		}
 
 		//
-		this.setFramebuffer = function ( value ) {
 
-			if (_framebuffer !== value ) _gl.bindFramebuffer( 36160, value );
+		this.setFramebuffer = function ( value ) {
 
 			_framebuffer = value;
 
