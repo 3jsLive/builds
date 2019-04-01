@@ -26743,7 +26743,6 @@
 
 	/**
 	 * @author alteredq / http://alteredqualia.com/
-	 * @author Lewy Blue / https://discoverthreejs.com/
 	 */
 
 	function Points( geometry, material ) {
@@ -26881,7 +26880,7 @@
 
 			if ( ! geometry.isBufferGeometry && geometry.morphTargets !== undefined && geometry.morphTargets.length > 0 ) {
 
-				console.error( 'THREE.Mesh.updateMorphTargets() no longer supports THREE.Geometry. Use THREE.BufferGeometry instead.' );
+				console.error( 'THREE.Points.updateMorphTargets() does not support THREE.Geometry. Use THREE.BufferGeometry instead.' );
 
 				return;
 
