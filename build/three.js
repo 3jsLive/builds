@@ -25866,7 +25866,7 @@
 
 			levels.splice( l, 0, { distance: distance, object: object } );
 
-			return this.add( object );
+			this.add( object );
 
 		},
 
