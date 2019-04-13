@@ -11886,7 +11886,7 @@
 
 							for ( var j = 0, jl = morphAttribute.count; j < jl; j ++ ) {
 
-								vector.fromBufferAttribute( morphAttribute, j );
+								vector.fromBufferAttribute( morphAttribute, i );
 
 								maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( vector ) );
 
