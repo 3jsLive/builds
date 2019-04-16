@@ -755,21 +755,14 @@ Object.assign( Vector2.prototype, {
 
 	},
 
-	clampScalar: function () {
+	clampScalar: function ( minVal, maxVal ) {
 
-		var min = new Vector2();
-		var max = new Vector2();
+		this.x = Math.max( minVal, Math.min( maxVal, this.x ) );
+		this.y = Math.max( minVal, Math.min( maxVal, this.y ) );
 
-		return function clampScalar( minVal, maxVal ) {
+		return this;
 
-			min.set( minVal, minVal );
-			max.set( maxVal, maxVal );
-
-			return this.clamp( min, max );
-
-		};
-
-	}(),
+	},
 
 	clampLength: function ( min, max ) {
 
@@ -1987,21 +1980,15 @@ Object.assign( Vector3.prototype, {
 
 	},
 
-	clampScalar: function () {
+	clampScalar: function ( minVal, maxVal ) {
 
-		var min = new Vector3();
-		var max = new Vector3();
+		this.x = Math.max( minVal, Math.min( maxVal, this.x ) );
+		this.y = Math.max( minVal, Math.min( maxVal, this.y ) );
+		this.z = Math.max( minVal, Math.min( maxVal, this.z ) );
 
-		return function clampScalar( minVal, maxVal ) {
+		return this;
 
-			min.set( minVal, minVal, minVal );
-			max.set( maxVal, maxVal, maxVal );
-
-			return this.clamp( min, max );
-
-		};
-
-	}(),
+	},
 
 	clampLength: function ( min, max ) {
 
@@ -8274,7 +8261,9 @@ Object3D.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 	applyMatrix: function ( matrix ) {
 
-		this.matrix.multiplyMatrices( matrix, this.matrix );
+		if ( this.matrixAutoUpdate ) this.updateMatrix();
+
+		this.matrix.premultiply( matrix );
 
 		this.matrix.decompose( this.position, this.quaternion, this.scale );
 
