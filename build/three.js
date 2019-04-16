@@ -16871,17 +16871,17 @@
 		gl.shaderSource( shader, string );
 		gl.compileShader( shader );
 
-		if(check === true) {
+		if ( check === true ) {
 
-			if (gl.getShaderParameter(shader, 35713) === false) {
+			if ( gl.getShaderParameter( shader, 35713 ) === false ) {
 
-				console.error('THREE.WebGLShader: Shader couldn\'t compile.');
+				console.error( 'THREE.WebGLShader: Shader couldn\'t compile.' );
 
 			}
 
-			if (gl.getShaderInfoLog(shader) !== '') {
+			if ( gl.getShaderInfoLog( shader ) !== '' ) {
 
-				console.warn('THREE.WebGLShader: gl.getShaderInfoLog()', type === 35633 ? 'vertex' : 'fragment', gl.getShaderInfoLog(shader), addLineNumbers(string));
+				console.warn( 'THREE.WebGLShader: gl.getShaderInfoLog()', type === 35633 ? 'vertex' : 'fragment', gl.getShaderInfoLog( shader ), addLineNumbers( string ) );
 
 			}
 
