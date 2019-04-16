@@ -25884,6 +25884,8 @@ LOD.prototype = Object.assign( Object.create( Object3D.prototype ), {
 
 		this.add( object );
 
+		return this;
+
 	},
 
 	getObjectForDistance: function ( distance ) {

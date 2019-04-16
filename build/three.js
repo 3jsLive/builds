@@ -25890,6 +25890,8 @@
 
 			this.add( object );
 
+			return this;
+
 		},
 
 		getObjectForDistance: function ( distance ) {
