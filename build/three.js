@@ -761,21 +761,14 @@
 
 		},
 
-		clampScalar: function () {
+		clampScalar: function ( minVal, maxVal ) {
 
-			var min = new Vector2();
-			var max = new Vector2();
+			this.x = Math.max( minVal, Math.min( maxVal, this.x ) );
+			this.y = Math.max( minVal, Math.min( maxVal, this.y ) );
 
-			return function clampScalar( minVal, maxVal ) {
+			return this;
 
-				min.set( minVal, minVal );
-				max.set( maxVal, maxVal );
-
-				return this.clamp( min, max );
-
-			};
-
-		}(),
+		},
 
 		clampLength: function ( min, max ) {
 
@@ -1993,21 +1986,15 @@
 
 		},
 
-		clampScalar: function () {
+		clampScalar: function ( minVal, maxVal ) {
 
-			var min = new Vector3();
-			var max = new Vector3();
+			this.x = Math.max( minVal, Math.min( maxVal, this.x ) );
+			this.y = Math.max( minVal, Math.min( maxVal, this.y ) );
+			this.z = Math.max( minVal, Math.min( maxVal, this.z ) );
 
-			return function clampScalar( minVal, maxVal ) {
+			return this;
 
-				min.set( minVal, minVal, minVal );
-				max.set( maxVal, maxVal, maxVal );
-
-				return this.clamp( min, max );
-
-			};
-
-		}(),
+		},
 
 		clampLength: function ( min, max ) {
 
@@ -8280,7 +8267,9 @@
 
 		applyMatrix: function ( matrix ) {
 
-			this.matrix.multiplyMatrices( matrix, this.matrix );
+			if ( this.matrixAutoUpdate ) this.updateMatrix();
+
+			this.matrix.premultiply( matrix );
 
 			this.matrix.decompose( this.position, this.quaternion, this.scale );
 
@@ -16867,22 +16856,26 @@
 
 	}
 
-	function WebGLShader( gl, type, string ) {
+	function WebGLShader( gl, type, string, debug ) {
 
 		var shader = gl.createShader( type );
 
 		gl.shaderSource( shader, string );
 		gl.compileShader( shader );
 
-		if ( gl.getShaderParameter( shader, 35713 ) === false ) {
+		if ( debug === true ) {
 
-			console.error( 'THREE.WebGLShader: Shader couldn\'t compile.' );
+			if ( gl.getShaderParameter( shader, 35713 ) === false ) {
 
-		}
+				console.error( 'THREE.WebGLShader: Shader couldn\'t compile.' );
 
-		if ( gl.getShaderInfoLog( shader ) !== '' ) {
+			}
 
-			console.warn( 'THREE.WebGLShader: gl.getShaderInfoLog()', type === 35633 ? 'vertex' : 'fragment', gl.getShaderInfoLog( shader ), addLineNumbers( string ) );
+			if ( gl.getShaderInfoLog( shader ) !== '' ) {
+
+				console.warn( 'THREE.WebGLShader: gl.getShaderInfoLog()', type === 35633 ? 'vertex' : 'fragment', gl.getShaderInfoLog( shader ), addLineNumbers( string ) );
+
+			}
 
 		}
 
@@ -17473,8 +17466,8 @@
 		// console.log( '*VERTEX*', vertexGlsl );
 		// console.log( '*FRAGMENT*', fragmentGlsl );
 
-		var glVertexShader = WebGLShader( gl, 35633, vertexGlsl );
-		var glFragmentShader = WebGLShader( gl, 35632, fragmentGlsl );
+		var glVertexShader = WebGLShader( gl, 35633, vertexGlsl, renderer.debug.checkShaderErrors );
+		var glFragmentShader = WebGLShader( gl, 35632, fragmentGlsl, renderer.debug.checkShaderErrors );
 
 		gl.attachShader( program, glVertexShader );
 		gl.attachShader( program, glFragmentShader );
@@ -17494,56 +17487,61 @@
 
 		gl.linkProgram( program );
 
-		var programLog = gl.getProgramInfoLog( program ).trim();
-		var vertexLog = gl.getShaderInfoLog( glVertexShader ).trim();
-		var fragmentLog = gl.getShaderInfoLog( glFragmentShader ).trim();
+		// check for link errors
+		if ( renderer.debug.checkShaderErrors ) {
 
-		var runnable = true;
-		var haveDiagnostics = true;
+			var programLog = gl.getProgramInfoLog( program ).trim();
+			var vertexLog = gl.getShaderInfoLog( glVertexShader ).trim();
+			var fragmentLog = gl.getShaderInfoLog( glFragmentShader ).trim();
 
-		// console.log( '**VERTEX**', gl.getExtension( 'WEBGL_debug_shaders' ).getTranslatedShaderSource( glVertexShader ) );
-		// console.log( '**FRAGMENT**', gl.getExtension( 'WEBGL_debug_shaders' ).getTranslatedShaderSource( glFragmentShader ) );
+			var runnable = true;
+			var haveDiagnostics = true;
 
-		if ( gl.getProgramParameter( program, 35714 ) === false ) {
+			// console.log( '**VERTEX**', gl.getExtension( 'WEBGL_debug_shaders' ).getTranslatedShaderSource( glVertexShader ) );
+			// console.log( '**FRAGMENT**', gl.getExtension( 'WEBGL_debug_shaders' ).getTranslatedShaderSource( glFragmentShader ) );
 
-			runnable = false;
+			if ( gl.getProgramParameter( program, 35714 ) === false ) {
 
-			console.error( 'THREE.WebGLProgram: shader error: ', gl.getError(), '35715', gl.getProgramParameter( program, 35715 ), 'gl.getProgramInfoLog', programLog, vertexLog, fragmentLog );
+				runnable = false;
 
-		} else if ( programLog !== '' ) {
+				console.error( 'THREE.WebGLProgram: shader error: ', gl.getError(), '35715', gl.getProgramParameter( program, 35715 ), 'gl.getProgramInfoLog', programLog, vertexLog, fragmentLog );
 
-			console.warn( 'THREE.WebGLProgram: gl.getProgramInfoLog()', programLog );
+			} else if ( programLog !== '' ) {
 
-		} else if ( vertexLog === '' || fragmentLog === '' ) {
+				console.warn( 'THREE.WebGLProgram: gl.getProgramInfoLog()', programLog );
 
-			haveDiagnostics = false;
+			} else if ( vertexLog === '' || fragmentLog === '' ) {
 
-		}
+				haveDiagnostics = false;
 
-		if ( haveDiagnostics ) {
+			}
 
-			this.diagnostics = {
+			if ( haveDiagnostics ) {
 
-				runnable: runnable,
-				material: material,
+				this.diagnostics = {
 
-				programLog: programLog,
+					runnable: runnable,
+					material: material,
 
-				vertexShader: {
+					programLog: programLog,
 
-					log: vertexLog,
-					prefix: prefixVertex
+					vertexShader: {
 
-				},
+						log: vertexLog,
+						prefix: prefixVertex
 
-				fragmentShader: {
+					},
 
-					log: fragmentLog,
-					prefix: prefixFragment
+					fragmentShader: {
 
-				}
+						log: fragmentLog,
+						prefix: prefixFragment
 
-			};
+					}
+
+				};
+
+			}
 
 		}
 
@@ -18370,7 +18368,12 @@
 
 					for ( var j = 0; j < 9; j ++ ) {
 
-						state.probe[ j ].addScaledVector( light.sh.coefficients[ j ], intensity );
+						var probe = state.probe[ j ];
+						var coeff = light.sh.coefficients[ j ];
+
+						probe.x += coeff.x * color.r * intensity;
+						probe.y += coeff.y * color.g * intensity;
+						probe.z += coeff.z * color.b * intensity;
 
 					}
 
@@ -22697,6 +22700,16 @@
 		this.domElement = _canvas;
 		this.context = null;
 
+		// Debug configuration container
+		this.debug = {
+
+			/**
+			 * Enables error checking and reporting when shader programs are being compiled
+			 * @type {boolean}
+			 */
+			checkShaderErrors: false
+		};
+
 		// clearing
 
 		this.autoClear = true;
@@ -25884,6 +25897,8 @@
 			levels.splice( l, 0, { distance: distance, object: object } );
 
 			this.add( object );
+
+			return this;
 
 		},
 
@@ -40299,6 +40314,35 @@
 
 			return new this.constructor().copy( this );
 
+		},
+
+		fromArray: function ( array ) {
+
+			var coefficients = this.coefficients;
+
+			for ( var i = 0; i < 9; i ++ ) {
+
+				coefficients[ i ].fromArray( array, i * 3 );
+
+			}
+
+			return this;
+
+		},
+
+		toArray: function () {
+
+			var array = [];
+			var coefficients = this.coefficients;
+
+			for ( var i = 0; i < 9; i ++ ) {
+
+				coefficients[ i ].toArray( array, i * 3 );
+
+			}
+
+			return array;
+
 		}
 
 	} );
@@ -40344,7 +40388,7 @@
 
 		this.sh = new SphericalHarmonics3();
 
-		this.sh.coefficients[ 0 ].set( this.color.r, this.color.g, this.color.b );
+		this.sh.coefficients[ 0 ].set( 1, 1, 1 );
 
 		this.type = 'LightProbe';
 
@@ -40355,6 +40399,45 @@
 		constructor: LightProbe,
 
 		isLightProbe: true,
+
+		setAmbientProbe: function ( color, intensity ) {
+
+			this.color.set( color );
+
+			this.intensity = intensity !== undefined ? intensity : 1;
+
+			this.sh.zero();
+
+			// without extra factor of PI in the shader, would be 2 / Math.sqrt( Math.PI );
+			this.sh.coefficients[ 0 ].set( 1, 1, 1 ).multiplyScalar( 2 * Math.sqrt( Math.PI ) );
+
+		},
+
+		setHemisphereProbe: function ( skyColor, groundColor, intensity ) {
+
+			// up-direction hardwired
+
+			this.color.setHex( 0xffffff );
+
+			this.intensity = intensity !== undefined ? intensity : 1;
+
+			var sky = new Color( skyColor );
+			var ground = new Color( groundColor );
+
+			/* cough */
+			sky = new Vector3( sky.r, sky.g, sky.b );
+			ground = new Vector3( ground.r, ground.g, ground.b );
+
+			// without extra factor of PI in the shader, should = 1 / Math.sqrt( Math.PI );
+			var c0 = Math.sqrt( Math.PI );
+			var c1 = c0 * Math.sqrt( 0.75 );
+
+			this.sh.zero();
+
+			this.sh.coefficients[ 0 ].copy( sky ).add( ground ).multiplyScalar( c0 );
+			this.sh.coefficients[ 1 ].copy( sky ).sub( ground ).multiplyScalar( c1 );
+
+		},
 
 		// https://www.ppsloan.org/publications/StupidSH36.pdf
 		setFromCubeTexture: function ( cubeTexture ) {
@@ -45557,6 +45640,153 @@
 	}();
 
 	/**
+	 * @author WestLangley / http://github.com/WestLangley
+	 */
+
+	function LightProbeHelper( lightProbe, size ) {
+
+		this.lightProbe = lightProbe;
+
+		this.size = size;
+
+		var defines = {};
+		defines[ 'GAMMA_OUTPUT' ] = "";
+
+		// material
+		var material = new ShaderMaterial( {
+
+			defines: defines,
+
+			uniforms: {
+
+				sh: { value: this.lightProbe.sh.coefficients }, // by reference
+
+				intensity: { value: this.lightProbe.intensity }
+
+			},
+
+			vertexShader: `
+
+			varying vec3 vNormal;
+
+			void main() {
+
+				vNormal = normalize( normalMatrix * normal );
+
+				gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+			}`,
+
+			fragmentShader: `
+
+			#define RECIPROCAL_PI 0.318309886
+
+			vec3 inverseTransformDirection( in vec3 normal, in mat4 matrix ) {
+
+				// matrix is assumed to be orthogonal
+
+				return normalize( ( vec4( normal, 0.0 ) * matrix ).xyz );
+
+			}
+
+			vec3 linearToOutput( in vec3 a ) {
+
+				#ifdef GAMMA_OUTPUT
+
+					return pow( a, vec3( 1.0 / float( GAMMA_FACTOR ) ) );
+
+				#else
+
+					return a;
+
+				#endif
+
+			}
+
+			// get the irradiance (radiance convolved with cosine lobe) at the point 'normal' on the unit sphere
+			// source: https://graphics.stanford.edu/papers/envmap/envmap.pdf
+			vec3 shGetIrradianceAt( in vec3 normal, in vec3 shCoefficients[ 9 ] ) {
+
+				// normal is assumed to have unit length
+
+				float x = normal.x, y = normal.y, z = normal.z;
+
+				// band 0
+				vec3 result = shCoefficients[ 0 ] * 0.886227;
+
+				// band 1
+				result += shCoefficients[ 1 ] * 2.0 * 0.511664 * y;
+				result += shCoefficients[ 2 ] * 2.0 * 0.511664 * z;
+				result += shCoefficients[ 3 ] * 2.0 * 0.511664 * x;
+
+				// band 2
+				result += shCoefficients[ 4 ] * 2.0 * 0.429043 * x * y;
+				result += shCoefficients[ 5 ] * 2.0 * 0.429043 * y * z;
+				result += shCoefficients[ 6 ] * ( 0.743125 * z * z - 0.247708 );
+				result += shCoefficients[ 7 ] * 2.0 * 0.429043 * x * z;
+				result += shCoefficients[ 8 ] * 0.429043 * ( x * x - y * y );
+
+				return result;
+
+			}
+
+			uniform vec3 sh[ 9 ]; // sh coefficients
+
+			uniform float intensity; // light probe intensity
+
+			varying vec3 vNormal;
+
+			void main() {
+
+				vec3 normal = normalize( vNormal );
+
+				vec3 worldNormal = inverseTransformDirection( normal, viewMatrix );
+
+				vec3 irradiance = shGetIrradianceAt( worldNormal, sh );
+
+				vec3 outgoingLight = RECIPROCAL_PI * irradiance * intensity;
+
+				outgoingLight = linearToOutput( outgoingLight );
+
+				gl_FragColor = vec4( outgoingLight, 1.0 );
+
+			}`
+
+		} );
+
+		var geometry = new SphereBufferGeometry( 1, 32, 16 );
+
+		Mesh.call( this, geometry, material );
+
+		this.onBeforeRender();
+
+	}
+
+	LightProbeHelper.prototype = Object.create( Mesh.prototype );
+	LightProbeHelper.prototype.constructor = LightProbeHelper;
+
+	LightProbeHelper.prototype.dispose = function () {
+
+		this.geometry.dispose();
+		this.material.dispose();
+
+	};
+
+	LightProbeHelper.prototype.onBeforeRender = function () {
+
+		return function update() {
+
+			this.position.copy( this.lightProbe.position );
+
+			this.scale.set( 1, 1, 1 ).multiplyScalar( this.size );
+
+			this.material.uniforms.intensity.value = this.lightProbe.intensity;
+
+		};
+
+	}();
+
+	/**
 	 * @author mrdoob / http://mrdoob.com/
 	 */
 
@@ -48593,6 +48823,7 @@
 	exports.PointLightHelper = PointLightHelper;
 	exports.RectAreaLightHelper = RectAreaLightHelper;
 	exports.HemisphereLightHelper = HemisphereLightHelper;
+	exports.LightProbeHelper = LightProbeHelper;
 	exports.GridHelper = GridHelper;
 	exports.PolarGridHelper = PolarGridHelper;
 	exports.PositionalAudioHelper = PositionalAudioHelper;
