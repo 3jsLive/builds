@@ -29174,7 +29174,6 @@
 
 			}
 
-
 			// Loop bevelSegments, 1 for the front, 1 for the back
 
 			for ( b = 0; b < bevelSegments; b ++ ) {
