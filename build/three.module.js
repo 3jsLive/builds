@@ -16850,26 +16850,22 @@ function addLineNumbers( string ) {
 
 }
 
-function WebGLShader( gl, type, string, debug ) {
+function WebGLShader( gl, type, string ) {
 
 	var shader = gl.createShader( type );
 
 	gl.shaderSource( shader, string );
 	gl.compileShader( shader );
 
-	if ( debug === true ) {
+	if ( gl.getShaderParameter( shader, 35713 ) === false ) {
 
-		if ( gl.getShaderParameter( shader, 35713 ) === false ) {
+		console.error( 'THREE.WebGLShader: Shader couldn\'t compile.' );
 
-			console.error( 'THREE.WebGLShader: Shader couldn\'t compile.' );
+	}
 
-		}
+	if ( gl.getShaderInfoLog( shader ) !== '' ) {
 
-		if ( gl.getShaderInfoLog( shader ) !== '' ) {
-
-			console.warn( 'THREE.WebGLShader: gl.getShaderInfoLog()', type === 35633 ? 'vertex' : 'fragment', gl.getShaderInfoLog( shader ), addLineNumbers( string ) );
-
-		}
+		console.warn( 'THREE.WebGLShader: gl.getShaderInfoLog()', type === 35633 ? 'vertex' : 'fragment', gl.getShaderInfoLog( shader ), addLineNumbers( string ) );
 
 	}
 
@@ -17460,8 +17456,8 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 	// console.log( '*VERTEX*', vertexGlsl );
 	// console.log( '*FRAGMENT*', fragmentGlsl );
 
-	var glVertexShader = WebGLShader( gl, 35633, vertexGlsl, renderer.debug.checkShaderErrors );
-	var glFragmentShader = WebGLShader( gl, 35632, fragmentGlsl, renderer.debug.checkShaderErrors );
+	var glVertexShader = WebGLShader( gl, 35633, vertexGlsl );
+	var glFragmentShader = WebGLShader( gl, 35632, fragmentGlsl );
 
 	gl.attachShader( program, glVertexShader );
 	gl.attachShader( program, glFragmentShader );
@@ -17481,61 +17477,56 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 
 	gl.linkProgram( program );
 
-	// check for link errors
-	if ( renderer.debug.checkShaderErrors ) {
+	var programLog = gl.getProgramInfoLog( program ).trim();
+	var vertexLog = gl.getShaderInfoLog( glVertexShader ).trim();
+	var fragmentLog = gl.getShaderInfoLog( glFragmentShader ).trim();
 
-		var programLog = gl.getProgramInfoLog( program ).trim();
-		var vertexLog = gl.getShaderInfoLog( glVertexShader ).trim();
-		var fragmentLog = gl.getShaderInfoLog( glFragmentShader ).trim();
+	var runnable = true;
+	var haveDiagnostics = true;
 
-		var runnable = true;
-		var haveDiagnostics = true;
+	// console.log( '**VERTEX**', gl.getExtension( 'WEBGL_debug_shaders' ).getTranslatedShaderSource( glVertexShader ) );
+	// console.log( '**FRAGMENT**', gl.getExtension( 'WEBGL_debug_shaders' ).getTranslatedShaderSource( glFragmentShader ) );
 
-		// console.log( '**VERTEX**', gl.getExtension( 'WEBGL_debug_shaders' ).getTranslatedShaderSource( glVertexShader ) );
-		// console.log( '**FRAGMENT**', gl.getExtension( 'WEBGL_debug_shaders' ).getTranslatedShaderSource( glFragmentShader ) );
+	if ( gl.getProgramParameter( program, 35714 ) === false ) {
 
-		if ( gl.getProgramParameter( program, 35714 ) === false ) {
+		runnable = false;
 
-			runnable = false;
+		console.error( 'THREE.WebGLProgram: shader error: ', gl.getError(), '35715', gl.getProgramParameter( program, 35715 ), 'gl.getProgramInfoLog', programLog, vertexLog, fragmentLog );
 
-			console.error( 'THREE.WebGLProgram: shader error: ', gl.getError(), '35715', gl.getProgramParameter( program, 35715 ), 'gl.getProgramInfoLog', programLog, vertexLog, fragmentLog );
+	} else if ( programLog !== '' ) {
 
-		} else if ( programLog !== '' ) {
+		console.warn( 'THREE.WebGLProgram: gl.getProgramInfoLog()', programLog );
 
-			console.warn( 'THREE.WebGLProgram: gl.getProgramInfoLog()', programLog );
+	} else if ( vertexLog === '' || fragmentLog === '' ) {
 
-		} else if ( vertexLog === '' || fragmentLog === '' ) {
+		haveDiagnostics = false;
 
-			haveDiagnostics = false;
+	}
 
-		}
+	if ( haveDiagnostics ) {
 
-		if ( haveDiagnostics ) {
+		this.diagnostics = {
 
-			this.diagnostics = {
+			runnable: runnable,
+			material: material,
 
-				runnable: runnable,
-				material: material,
+			programLog: programLog,
 
-				programLog: programLog,
+			vertexShader: {
 
-				vertexShader: {
+				log: vertexLog,
+				prefix: prefixVertex
 
-					log: vertexLog,
-					prefix: prefixVertex
+			},
 
-				},
+			fragmentShader: {
 
-				fragmentShader: {
+				log: fragmentLog,
+				prefix: prefixFragment
 
-					log: fragmentLog,
-					prefix: prefixFragment
+			}
 
-				}
-
-			};
-
-		}
+		};
 
 	}
 
@@ -22693,16 +22684,6 @@ function WebGLRenderer( parameters ) {
 
 	this.domElement = _canvas;
 	this.context = null;
-
-	// Debug configuration container
-	this.debug = {
-
-		/**
-		 * Enables error checking and reporting when shader programs are being compiled
-		 * @type {boolean}
-		 */
-		checkShaderErrors: false
-	};
 
 	// clearing
 
