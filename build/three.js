@@ -40415,6 +40415,96 @@
 	} );
 
 	/**
+	 * @author WestLangley / http://github.com/WestLangley
+	 */
+
+	function HemisphereLightProbe( skyColor, groundColor, intensity ) {
+
+		LightProbe.call( this, undefined, intensity );
+
+		var color1 = new Color().set( skyColor );
+		var color2 = new Color().set( groundColor );
+
+		var sky = new THREE.Vector3( color1.r, color1.g, color1.b );
+		var ground = new THREE.Vector3( color2.r, color2.g, color2.b );
+
+		// without extra factor of PI in the shader, should = 1 / Math.sqrt( Math.PI );
+		var c0 = Math.sqrt( Math.PI );
+		var c1 = c0 * Math.sqrt( 0.75 );
+
+		this.sh.coefficients[ 0 ].copy( sky ).add( ground ).multiplyScalar( c0 );
+		this.sh.coefficients[ 1 ].copy( sky ).sub( ground ).multiplyScalar( c1 );
+
+	}
+
+	HemisphereLightProbe.prototype = Object.assign( Object.create( LightProbe.prototype ), {
+
+		constructor: HemisphereLightProbe,
+
+		isHemisphereLightProbe: true,
+
+		copy: function ( source ) { // modifying colors not currently supported
+
+			LightProbe.prototype.copy.call( this, source );
+
+			return this;
+
+		},
+
+		toJSON: function ( meta ) {
+
+			var data = LightProbe.prototype.toJSON.call( this, meta );
+
+			// data.sh = this.sh.toArray(); // todo
+
+			return data;
+
+		}
+
+	} );
+
+	/**
+	 * @author WestLangley / http://github.com/WestLangley
+	 */
+
+	function AmbientLightProbe( color, intensity ) {
+
+		LightProbe.call( this, undefined, intensity );
+
+		var color1 = new Color().set( color );
+
+		// without extra factor of PI in the shader, would be 2 / Math.sqrt( Math.PI );
+		this.sh.coefficients[ 0 ].set( color1.r, color1.g, color1.b ).multiplyScalar(  2 * Math.sqrt( Math.PI ) );
+
+	}
+
+	AmbientLightProbe.prototype = Object.assign( Object.create( LightProbe.prototype ), {
+
+		constructor: AmbientLightProbe,
+
+		isAmbientLightProbe: true,
+
+		copy: function ( source ) { // modifying color not currently supported
+
+			LightProbe.prototype.copy.call( this, source );
+
+			return this;
+
+		},
+
+		toJSON: function ( meta ) {
+
+			var data = LightProbe.prototype.toJSON.call( this, meta );
+
+			// data.sh = this.sh.toArray(); // todo
+
+			return data;
+
+		}
+
+	} );
+
+	/**
 	 * @author mrdoob / http://mrdoob.com/
 	 */
 
@@ -48592,9 +48682,11 @@
 	exports.PointLight = PointLight;
 	exports.RectAreaLight = RectAreaLight;
 	exports.HemisphereLight = HemisphereLight;
+	exports.HemisphereLightProbe = HemisphereLightProbe;
 	exports.DirectionalLightShadow = DirectionalLightShadow;
 	exports.DirectionalLight = DirectionalLight;
 	exports.AmbientLight = AmbientLight;
+	exports.AmbientLightProbe = AmbientLightProbe;
 	exports.LightShadow = LightShadow;
 	exports.Light = Light;
 	exports.LightProbe = LightProbe;
