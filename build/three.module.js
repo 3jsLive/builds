@@ -45513,7 +45513,7 @@ function LightProbeHelper( lightProbe, size ) {
 
 			'}',
 
-		].join( '\n' ),
+			].join( '\n' ),
 
 		fragmentShader: [
 
@@ -45589,7 +45589,7 @@ function LightProbeHelper( lightProbe, size ) {
 
 			'}'
 
-		].join( '\n' )
+			].join( '\n' )
 
 	} );
 
