@@ -22329,7 +22329,7 @@ function WebGLUtils( gl, extensions, capabilities ) {
  * @author fernandojsg / http://fernandojsg.com
  */
 
-function WebGLMultiview( requested, gl, canvas, extensions, capabilities ) {
+function WebGLMultiview( requested, gl, canvas, extensions, capabilities, properties ) {
 
 	this.isAvailable = function () {
 
@@ -22408,9 +22408,14 @@ function WebGLMultiview( requested, gl, canvas, extensions, capabilities ) {
 		framebufferWidth = halfWidth;
 		framebufferHeight = canvas.height;
 
+		this.renderTarget = new WebGLRenderTarget( framebufferWidth, framebufferHeight );
+
+		// @hack This should be done in WebGLTextures?
+		properties.get( this.renderTarget ).__webglFramebuffer = framebuffer;
+
 	};
 
-	this.bindMultiviewFrameBuffer = function ( camera ) {
+	this.bindFramebuffer = function ( camera ) {
 
 		var width = canvas.width;
 		var height = canvas.height;
@@ -22435,13 +22440,15 @@ function WebGLMultiview( requested, gl, canvas, extensions, capabilities ) {
 			framebufferWidth = width;
 			framebufferHeight = height;
 
+			this.renderTarget.setSize( width, height );
+
 		}
 
 		gl.bindFramebuffer( 36009, framebuffer );
 
 	};
 
-	this.unbindMultiviewFrameBuffer = function ( camera ) {
+	this.unbindFramebuffer = function ( camera ) {
 
 		gl.bindFramebuffer( 36009, null );
 
@@ -23586,7 +23593,7 @@ function WebGLRenderer( parameters ) {
 
 	this.vr = vr;
 
-	var multiview = this.multiview = new WebGLMultiview( _multiviewRequested, _gl, _canvas, extensions, capabilities );
+	var multiview = this.multiview = new WebGLMultiview( _multiviewRequested, _gl, _canvas, extensions, capabilities, properties );
 
 	// shadow map
 
@@ -24449,7 +24456,13 @@ function WebGLRenderer( parameters ) {
 
 			this.setRenderTarget( renderTarget );
 
+		} else if ( this.multiview.isEnabled() ) {
+
+			this.setRenderTarget( this.multiview.renderTarget );
+			this.multiview.bindFramebuffer( camera );
+
 		}
+
 
 		//
 
@@ -24494,6 +24507,12 @@ function WebGLRenderer( parameters ) {
 			// resolve multisample renderbuffers to a single-sample texture if necessary
 
 			textures.updateMultisampleRenderTarget( _currentRenderTarget );
+
+			if ( this.multiview.isEnabled() ) {
+
+				this.multiview.unbindFramebuffer( camera );
+
+			}
 
 		}
 
@@ -24640,25 +24659,6 @@ function WebGLRenderer( parameters ) {
 
 		if ( multiview.isEnabled() ) {
 
-			multiview.bindMultiviewFrameBuffer( camera );
-
-			_gl.disable( 3089 );
-
-			if ( camera.isArrayCamera ) {
-
-				var height = _canvas.height;
-				var width = Math.floor( _canvas.width * 0.5 );
-
-			} else {
-
-				var width = _canvas.width;
-				var height = _canvas.height;
-
-			}
-			_gl.viewport( 0, 0, width, height );
-
-			_gl.clear( 16384 | 256 | 1024 );
-
 			for ( var i = 0, l = renderList.length; i < l; i ++ ) {
 
 				var renderItem = renderList[ i ];
@@ -24671,8 +24671,6 @@ function WebGLRenderer( parameters ) {
 				renderObject(	object, scene, camera, geometry, material, group );
 
 			}
-
-			multiview.unbindMultiviewFrameBuffer( camera );
 
 		} else {
 
