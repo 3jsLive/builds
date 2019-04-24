@@ -24554,7 +24554,7 @@ function WebGLRenderer( parameters ) {
 
 			} else if ( material.isShadowMaterial ) {
 
-				m_uniforms.color.value = material.color;
+				m_uniforms.color.value.copy( material.color );
 				m_uniforms.opacity.value = material.opacity;
 
 			}
@@ -24600,7 +24600,7 @@ function WebGLRenderer( parameters ) {
 
 		if ( material.color ) {
 
-			uniforms.diffuse.value = material.color;
+			uniforms.diffuse.value.copy( material.color );
 
 		}
 
@@ -24730,7 +24730,7 @@ function WebGLRenderer( parameters ) {
 
 	function refreshUniformsLine( uniforms, material ) {
 
-		uniforms.diffuse.value = material.color;
+		uniforms.diffuse.value.copy( material.color );
 		uniforms.opacity.value = material.opacity;
 
 	}
@@ -24745,7 +24745,7 @@ function WebGLRenderer( parameters ) {
 
 	function refreshUniformsPoints( uniforms, material ) {
 
-		uniforms.diffuse.value = material.color;
+		uniforms.diffuse.value.copy( material.color );
 		uniforms.opacity.value = material.opacity;
 		uniforms.size.value = material.size * _pixelRatio;
 		uniforms.scale.value = _height * 0.5;
@@ -24768,7 +24768,7 @@ function WebGLRenderer( parameters ) {
 
 	function refreshUniformsSprites( uniforms, material ) {
 
-		uniforms.diffuse.value = material.color;
+		uniforms.diffuse.value.copy( material.color );
 		uniforms.opacity.value = material.opacity;
 		uniforms.rotation.value = material.rotation;
 		uniforms.map.value = material.map;
@@ -24789,7 +24789,7 @@ function WebGLRenderer( parameters ) {
 
 	function refreshUniformsFog( uniforms, fog ) {
 
-		uniforms.fogColor.value = fog.color;
+		uniforms.fogColor.value.copy( fog.color );
 
 		if ( fog.isFog ) {
 
@@ -24816,7 +24816,7 @@ function WebGLRenderer( parameters ) {
 
 	function refreshUniformsPhong( uniforms, material ) {
 
-		uniforms.specular.value = material.specular;
+		uniforms.specular.value.copy( material.specular );
 		uniforms.shininess.value = Math.max( material.shininess, 1e-4 ); // to prevent pow( 0.0, 0.0 )
 
 		if ( material.emissiveMap ) {
