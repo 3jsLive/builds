@@ -17627,8 +17627,6 @@
 
 		} else {
 
-			var numMultiviewViews = renderer.multiview.getNumViews();
-
 			prefixVertex = [
 
 				'precision ' + parameters.precision + ' float;',
@@ -17691,13 +17689,11 @@
 				'uniform vec3 cameraPosition;',
 
 				material.supportsMultiview && renderer.multiview.isEnabled() ? [
-					'uniform mat4 modelViewMatrices[' + numMultiviewViews + '];',
-					'uniform mat3 normalMatrices[' + numMultiviewViews + '];',
-					'uniform mat4 viewMatrices[' + numMultiviewViews + '];',
-					'uniform mat4 projectionMatrices[' + numMultiviewViews + '];',
+					'uniform mat4 modelViewMatrix;',
+					'uniform mat3 normalMatrix;',
+					'uniform mat4 viewMatrices[2];',
+					'uniform mat4 projectionMatrices[2];',
 
-					'#define modelViewMatrix modelViewMatrices[VIEW_ID]',
-					'#define normalMatrix normalMatrices[VIEW_ID]',
 					'#define viewMatrix viewMatrices[VIEW_ID]',
 					'#define projectionMatrix projectionMatrices[VIEW_ID]'
 
@@ -17830,7 +17826,7 @@
 
 				material.supportsMultiview && renderer.multiview.isEnabled() ? [
 
-					'uniform mat4 viewMatrices[' + numMultiviewViews + '];',
+					'uniform mat4 viewMatrices[2];',
 					'#define viewMatrix viewMatrices[VIEW_ID]'
 
 				].join( '\n' ) : 'uniform mat4 viewMatrix;',
@@ -22105,12 +22101,6 @@
 
 		};
 
-		this.getNumViews = function () {
-
-			return numViews;
-
-		};
-
 		this.getMaxViews = function () {
 
 			return capabilities.maxMultiviewViews;
@@ -22123,6 +22113,7 @@
 
 		};
 
+
 		if ( requested && ! this.isAvailable() ) {
 
 			console.warn( 'WebGLRenderer: Multiview requested but not supported by the browser' );
@@ -22133,7 +22124,7 @@
 
 		}
 
-		var numViews = 2;
+		var numViews = 2; // @todo Based on arrayCamera
 		var framebuffer; // multiview framebuffer.
 		var viewFramebuffer; // single views inside the multiview framebuffer.
 		var framebufferWidth = 0;
@@ -22144,85 +22135,6 @@
 			depthStencil: null
 		};
 
-		this.computeCameraMatrices = function ( camera ) {
-
-			if ( ! camera.projectionMatrices ) {
-
-				camera.projectionMatrices = new Array( numViews );
-				camera.viewMatrices = new Array( numViews );
-
-				for ( var i = 0; i < numViews; i ++ ) {
-
-					camera.projectionMatrices[ i ] = new Matrix4();
-					camera.viewMatrices[ i ] = new Matrix4();
-
-				}
-
-			}
-
-			if ( camera.isArrayCamera ) {
-
-				for ( var i = 0; i < numViews; i ++ ) {
-
-					camera.projectionMatrices[ i ].copy( camera.cameras[ i ].projectionMatrix );
-					camera.viewMatrices[ i ].copy( camera.cameras[ i ].matrixWorldInverse );
-
-				}
-
-			} else {
-
-				for ( var i = 0; i < numViews; i ++ ) {
-
-					camera.projectionMatrices[ i ].copy( camera.projectionMatrix );
-					camera.viewMatrices[ i ].copy( camera.matrixWorldInverse );
-
-				}
-
-			}
-
-		};
-
-		this.computeObjectMatrices = function ( object, camera ) {
-
-			if ( ! object.modelViewMatrices ) {
-
-				object.modelViewMatrices = new Array( numViews );
-				object.normalMatrices = new Array( numViews );
-
-				for ( var i = 0; i < numViews; i ++ ) {
-
-					object.modelViewMatrices[ i ] = new Matrix4();
-					object.normalMatrices[ i ] = new Matrix3();
-
-				}
-
-			}
-
-			if ( camera.isArrayCamera ) {
-
-				for ( var i = 0; i < numViews; i ++ ) {
-
-					object.modelViewMatrices[ i ].multiplyMatrices( camera.cameras[ i ].matrixWorldInverse, object.matrixWorld );
-					object.normalMatrices[ i ].getNormalMatrix( object.modelViewMatrices[ i ] );
-
-				}
-
-			} else {
-
-				// In this case we still need to provide an array of matrices but just the first one will be used
-				object.modelViewMatrices[ 0 ].multiplyMatrices( camera.matrixWorldInverse, object.matrixWorld );
-				object.normalMatrices[ 0 ].getNormalMatrix( object.modelViewMatrices[ 0 ] );
-
-				for ( var i = 1; i < numViews; i ++ ) {
-
-					object.modelViewMatrices[ i ].copy( object.modelViewMatrices[ 0 ] );
-					object.normalMatrices[ i ].copy( object.normalMatrices[ 0 ] );
-
-				}
-
-			}
-
-		};
 
 		// @todo Get ArrayCamera
 		this.createMultiviewRenderTargetTexture = function () {
@@ -24589,16 +24501,8 @@
 			object.onBeforeRender( _this, scene, camera, geometry, material, group );
 			currentRenderState = renderStates.get( scene, _currentArrayCamera || camera );
 
-			if ( multiview.isEnabled() ) {
-
-				multiview.computeObjectMatrices( object, camera );
-
-			} else {
-
-				object.modelViewMatrix.multiplyMatrices( camera.matrixWorldInverse, object.matrixWorld );
-				object.normalMatrix.getNormalMatrix( object.modelViewMatrix );
-
-			}
+			object.modelViewMatrix.multiplyMatrices( camera.matrixWorldInverse, object.matrixWorld );
+			object.normalMatrix.getNormalMatrix( object.modelViewMatrix );
 
 			if ( object.isImmediateRenderObject ) {
 
@@ -24871,8 +24775,16 @@
 
 				if ( material.supportsMultiview && multiview.isEnabled() ) {
 
-					multiview.computeCameraMatrices( camera );
-					p_uniforms.setValue( _gl, 'projectionMatrices', camera.projectionMatrices );
+					if ( camera.isArrayCamera ) {
+
+						// @todo Obviously remove the map :)
+						p_uniforms.setValue( _gl, 'projectionMatrices', camera.cameras.map( c => c.projectionMatrix ) );
+
+					} else {
+
+						p_uniforms.setValue( _gl, 'projectionMatrices', [ camera.projectionMatrix, camera.projectionMatrix ] );
+
+					}
 
 				} else {
 
@@ -24928,7 +24840,16 @@
 
 					if ( material.supportsMultiview && multiview.isEnabled() ) {
 
-						p_uniforms.setValue( _gl, 'viewMatrices', camera.viewMatrices );
+						if ( camera.isArrayCamera ) {
+
+							// @todo Obviously remove the map :)
+							p_uniforms.setValue( _gl, 'viewMatrix', camera.cameras.map( c => c.matrixWorldInverse ) );
+
+						} else {
+
+							p_uniforms.setValue( _gl, 'viewMatrices', [ camera.matrixWorldInverse, camera.matrixWorldInverse ] );
+
+						}
 
 					} else {
 
@@ -25132,18 +25053,8 @@
 
 			// common matrices
 
-			if ( material.supportsMultiview && multiview.isEnabled() ) {
-
-				p_uniforms.setValue( _gl, 'modelViewMatrices', object.modelViewMatrices );
-				p_uniforms.setValue( _gl, 'normalMatrices', object.normalMatrices );
-
-			} else {
-
-				p_uniforms.setValue( _gl, 'modelViewMatrix', object.modelViewMatrix );
-				p_uniforms.setValue( _gl, 'normalMatrix', object.normalMatrix );
-
-			}
-
+			p_uniforms.setValue( _gl, 'modelViewMatrix', object.modelViewMatrix );
+			p_uniforms.setValue( _gl, 'normalMatrix', object.normalMatrix );
 			p_uniforms.setValue( _gl, 'modelMatrix', object.matrixWorld );
 
 			return program;
