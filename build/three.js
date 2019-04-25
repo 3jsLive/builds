@@ -18020,11 +18020,13 @@
 				'uniform vec3 cameraPosition;',
 
 				material.supportsMultiview && renderer.multiview.isEnabled() ? [
-					'uniform mat4 modelViewMatrix;',
-					'uniform mat3 normalMatrix;',
+					'uniform mat4 modelViewMatrices[2];',
+					'uniform mat3 normalMatrices[2];',
 					'uniform mat4 viewMatrices[2];',
 					'uniform mat4 projectionMatrices[2];',
 
+					'#define modelViewMatrix modelViewMatrices[VIEW_ID]',
+					'#define normalMatrix normalMatrices[VIEW_ID]',
 					'#define viewMatrix viewMatrices[VIEW_ID]',
 					'#define projectionMatrix projectionMatrices[VIEW_ID]'
 
@@ -22359,7 +22361,6 @@
 
 		};
 
-
 		if ( requested && ! this.isAvailable() ) {
 
 			console.warn( 'WebGLRenderer: Multiview requested but not supported by the browser' );
@@ -22381,6 +22382,47 @@
 			depthStencil: null
 		};
 
+		this.computeObjectMatrices = function ( object, camera ) {
+
+			if ( ! object.modelViewMatrices ) {
+
+				object.modelViewMatrices = new Array( numViews );
+				object.normalMatrices = new Array( numViews );
+
+				for ( var i = 0; i < numViews; i ++ ) {
+
+					object.modelViewMatrices[ i ] = new Matrix4();
+					object.normalMatrices[ i ] = new Matrix3();
+
+				}
+
+			}
+
+			if ( camera.isArrayCamera ) {
+
+				for ( var i = 0; i < numViews; i ++ ) {
+
+					object.modelViewMatrices[ i ].multiplyMatrices( camera.cameras[ i ].matrixWorldInverse, object.matrixWorld );
+					object.normalMatrices[ i ].getNormalMatrix( object.modelViewMatrices[ i ] );
+
+				}
+
+			} else {
+
+				// In this case we still need to provide an array of matrices but just the first one will be used
+				object.modelViewMatrices[ 0 ].multiplyMatrices( camera.matrixWorldInverse, object.matrixWorld );
+				object.normalMatrices[ 0 ].getNormalMatrix( object.modelViewMatrices[ 0 ] );
+
+				for ( var i = 0; i < numViews; i ++ ) {
+
+					object.modelViewMatrices[ i ].copy( object.modelViewMatrices[ 0 ] );
+					object.normalMatrices[ i ].copy( object.normalMatrices[ 0 ] );
+
+				}
+
+			}
+
+		};
 
 		// @todo Get ArrayCamera
 		this.createMultiviewRenderTargetTexture = function () {
@@ -24749,8 +24791,16 @@
 			object.onBeforeRender( _this, scene, camera, geometry, material, group );
 			currentRenderState = renderStates.get( scene, _currentArrayCamera || camera );
 
-			object.modelViewMatrix.multiplyMatrices( camera.matrixWorldInverse, object.matrixWorld );
-			object.normalMatrix.getNormalMatrix( object.modelViewMatrix );
+			if ( multiview.isEnabled() ) {
+
+				multiview.computeObjectMatrices( object, camera );
+
+			} else {
+
+				object.modelViewMatrix.multiplyMatrices( camera.matrixWorldInverse, object.matrixWorld );
+				object.normalMatrix.getNormalMatrix( object.modelViewMatrix );
+
+			}
 
 			if ( object.isImmediateRenderObject ) {
 
@@ -25301,8 +25351,18 @@
 
 			// common matrices
 
-			p_uniforms.setValue( _gl, 'modelViewMatrix', object.modelViewMatrix );
-			p_uniforms.setValue( _gl, 'normalMatrix', object.normalMatrix );
+			if ( material.supportsMultiview && multiview.isEnabled() ) {
+
+				p_uniforms.setValue( _gl, 'modelViewMatrices', object.modelViewMatrices );
+				p_uniforms.setValue( _gl, 'normalMatrices', object.normalMatrices );
+
+			} else {
+
+				p_uniforms.setValue( _gl, 'modelViewMatrix', object.modelViewMatrix );
+				p_uniforms.setValue( _gl, 'normalMatrix', object.normalMatrix );
+
+			}
+
 			p_uniforms.setValue( _gl, 'modelMatrix', object.matrixWorld );
 
 			return program;
