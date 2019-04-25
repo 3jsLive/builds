@@ -8614,6 +8614,8 @@
 
 		this.visible = true;
 
+		this.supportsMultiview = true;
+
 		this.userData = {};
 
 		this.needsUpdate = true;
@@ -18017,7 +18019,7 @@
 				'uniform mat4 modelMatrix;',
 				'uniform vec3 cameraPosition;',
 
-				renderer.multiview.isEnabled() ? [
+				material.supportsMultiview && renderer.multiview.isEnabled() ? [
 					'uniform mat4 modelViewMatrix;',
 					'uniform mat3 normalMatrix;',
 					'uniform mat4 viewMatrices[2];',
@@ -18146,7 +18148,7 @@
 
 				'uniform vec3 cameraPosition;',
 
-				renderer.multiview.isEnabled() ? [
+				material.supportsMultiview && renderer.multiview.isEnabled() ? [
 
 					'uniform mat4 viewMatrices[2];',
 					'#define viewMatrix viewMatrices[VIEW_ID]'
@@ -18207,7 +18209,7 @@
 			prefixVertex = [
 				'#version 300 es\n',
 
-				renderer.multiview.isEnabled() ? [
+				material.supportsMultiview && renderer.multiview.isEnabled() ? [
 
 					'#extension GL_OVR_multiview2 : require',
 					'layout(num_views = 2) in;',
@@ -18222,7 +18224,7 @@
 
 			prefixFragment = [
 				'#version 300 es\n',
-				renderer.multiview.isEnabled() ? [
+				material.supportsMultiview && renderer.multiview.isEnabled() ? [
 
 					'#extension GL_OVR_multiview2 : require',
 					'#define VIEW_ID gl_ViewID_OVR'
@@ -19637,6 +19639,8 @@
 			var useSkinning = ( i & _SkinningFlag ) !== 0;
 
 			var depthMaterial = new MeshDepthMaterial( {
+
+				supportsMultiview: false,
 
 				depthPacking: RGBADepthPacking,
 
@@ -25017,7 +25021,7 @@
 
 			if ( refreshProgram || _currentCamera !== camera ) {
 
-				if ( multiview.isEnabled() ) {
+				if ( material.supportsMultiview && multiview.isEnabled() ) {
 
 					if ( camera.isArrayCamera ) {
 
@@ -25082,7 +25086,7 @@
 					material.isShaderMaterial ||
 					material.skinning ) {
 
-					if ( multiview.isEnabled() ) {
+					if ( material.supportsMultiview && multiview.isEnabled() ) {
 
 						if ( camera.isArrayCamera ) {
 

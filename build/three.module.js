@@ -8608,6 +8608,8 @@ function Material() {
 
 	this.visible = true;
 
+	this.supportsMultiview = true;
+
 	this.userData = {};
 
 	this.needsUpdate = true;
@@ -18011,7 +18013,7 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 			'uniform mat4 modelMatrix;',
 			'uniform vec3 cameraPosition;',
 
-			renderer.multiview.isEnabled() ? [
+			material.supportsMultiview && renderer.multiview.isEnabled() ? [
 				'uniform mat4 modelViewMatrix;',
 				'uniform mat3 normalMatrix;',
 				'uniform mat4 viewMatrices[2];',
@@ -18140,7 +18142,7 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 
 			'uniform vec3 cameraPosition;',
 
-			renderer.multiview.isEnabled() ? [
+			material.supportsMultiview && renderer.multiview.isEnabled() ? [
 
 				'uniform mat4 viewMatrices[2];',
 				'#define viewMatrix viewMatrices[VIEW_ID]'
@@ -18201,7 +18203,7 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 		prefixVertex = [
 			'#version 300 es\n',
 
-			renderer.multiview.isEnabled() ? [
+			material.supportsMultiview && renderer.multiview.isEnabled() ? [
 
 				'#extension GL_OVR_multiview2 : require',
 				'layout(num_views = 2) in;',
@@ -18216,7 +18218,7 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 
 		prefixFragment = [
 			'#version 300 es\n',
-			renderer.multiview.isEnabled() ? [
+			material.supportsMultiview && renderer.multiview.isEnabled() ? [
 
 				'#extension GL_OVR_multiview2 : require',
 				'#define VIEW_ID gl_ViewID_OVR'
@@ -19631,6 +19633,8 @@ function WebGLShadowMap( _renderer, _objects, maxTextureSize ) {
 		var useSkinning = ( i & _SkinningFlag ) !== 0;
 
 		var depthMaterial = new MeshDepthMaterial( {
+
+			supportsMultiview: false,
 
 			depthPacking: RGBADepthPacking,
 
@@ -25011,7 +25015,7 @@ function WebGLRenderer( parameters ) {
 
 		if ( refreshProgram || _currentCamera !== camera ) {
 
-			if ( multiview.isEnabled() ) {
+			if ( material.supportsMultiview && multiview.isEnabled() ) {
 
 				if ( camera.isArrayCamera ) {
 
@@ -25076,7 +25080,7 @@ function WebGLRenderer( parameters ) {
 				material.isShaderMaterial ||
 				material.skinning ) {
 
-				if ( multiview.isEnabled() ) {
+				if ( material.supportsMultiview && multiview.isEnabled() ) {
 
 					if ( camera.isArrayCamera ) {
 
