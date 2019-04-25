@@ -22130,6 +22130,44 @@ function WebGLMultiview( requested, gl, canvas, extensions, capabilities, proper
 		depthStencil: null
 	};
 
+	this.computeCameraMatrices = function ( camera ) {
+
+		if ( ! camera.projectionMatrices ) {
+
+			camera.projectionMatrices = new Array( numViews );
+			camera.viewMatrices = new Array( numViews );
+
+			for ( var i = 0; i < numViews; i ++ ) {
+
+				camera.projectionMatrices[ i ] = new Matrix4();
+				camera.viewMatrices[ i ] = new Matrix4();
+
+			}
+
+			if ( camera.isArrayCamera ) {
+
+				for ( var i = 0; i < numViews; i ++ ) {
+
+					camera.projectionMatrices[ i ].copy( camera.cameras[ i ].projectionMatrix );
+					camera.viewMatrices[ i ].copy( camera.cameras[ i ].matrixWorldInverse );
+
+				}
+
+			} else {
+
+				for ( var i = 0; i < numViews; i ++ ) {
+
+					camera.projectionMatrices[ i ].copy( camera.projectionMatrix );
+					camera.viewMatrices[ i ].copy( camera.matrixWorldInverse );
+
+				}
+
+			}
+
+		}
+
+	};
+
 	this.computeObjectMatrices = function ( object, camera ) {
 
 		if ( ! object.modelViewMatrices ) {
@@ -22161,7 +22199,7 @@ function WebGLMultiview( requested, gl, canvas, extensions, capabilities, proper
 			object.modelViewMatrices[ 0 ].multiplyMatrices( camera.matrixWorldInverse, object.matrixWorld );
 			object.normalMatrices[ 0 ].getNormalMatrix( object.modelViewMatrices[ 0 ] );
 
-			for ( var i = 0; i < numViews; i ++ ) {
+			for ( var i = 1; i < numViews; i ++ ) {
 
 				object.modelViewMatrices[ i ].copy( object.modelViewMatrices[ 0 ] );
 				object.normalMatrices[ i ].copy( object.normalMatrices[ 0 ] );
@@ -24819,16 +24857,8 @@ function WebGLRenderer( parameters ) {
 
 			if ( material.supportsMultiview && multiview.isEnabled() ) {
 
-				if ( camera.isArrayCamera ) {
-
-					// @todo Obviously remove the map :)
-					p_uniforms.setValue( _gl, 'projectionMatrices', camera.cameras.map( c => c.projectionMatrix ) );
-
-				} else {
-
-					p_uniforms.setValue( _gl, 'projectionMatrices', [ camera.projectionMatrix, camera.projectionMatrix ] );
-
-				}
+				multiview.computeCameraMatrices( camera );
+				p_uniforms.setValue( _gl, 'projectionMatrices', camera.projectionMatrices );
 
 			} else {
 
@@ -24884,16 +24914,7 @@ function WebGLRenderer( parameters ) {
 
 				if ( material.supportsMultiview && multiview.isEnabled() ) {
 
-					if ( camera.isArrayCamera ) {
-
-						// @todo Obviously remove the map :)
-						p_uniforms.setValue( _gl, 'viewMatrix', camera.cameras.map( c => c.matrixWorldInverse ) );
-
-					} else {
-
-						p_uniforms.setValue( _gl, 'viewMatrices', [ camera.matrixWorldInverse, camera.matrixWorldInverse ] );
-
-					}
+					p_uniforms.setValue( _gl, 'viewMatrices', camera.viewMatrices );
 
 				} else {
 
