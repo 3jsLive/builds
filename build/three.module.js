@@ -17958,6 +17958,8 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 
 	} else {
 
+		var numMultiviewViews = renderer.multiview.getNumViews();
+
 		prefixVertex = [
 
 			'precision ' + parameters.precision + ' float;',
@@ -18014,10 +18016,10 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 			'uniform vec3 cameraPosition;',
 
 			material.supportsMultiview && renderer.multiview.isEnabled() ? [
-				'uniform mat4 modelViewMatrices[2];',
-				'uniform mat3 normalMatrices[2];',
-				'uniform mat4 viewMatrices[2];',
-				'uniform mat4 projectionMatrices[2];',
+				'uniform mat4 modelViewMatrices[' + numMultiviewViews + '];',
+				'uniform mat3 normalMatrices[' + numMultiviewViews + '];',
+				'uniform mat4 viewMatrices[' + numMultiviewViews + '];',
+				'uniform mat4 projectionMatrices[' + numMultiviewViews + '];',
 
 				'#define modelViewMatrix modelViewMatrices[VIEW_ID]',
 				'#define normalMatrix normalMatrices[VIEW_ID]',
@@ -18146,7 +18148,7 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 
 			material.supportsMultiview && renderer.multiview.isEnabled() ? [
 
-				'uniform mat4 viewMatrices[2];',
+				'uniform mat4 viewMatrices[' + numMultiviewViews + '];',
 				'#define viewMatrix viewMatrices[VIEW_ID]'
 
 			].join( '\n' ) : 'uniform mat4 viewMatrix;',
@@ -22343,6 +22345,12 @@ function WebGLMultiview( requested, gl, canvas, extensions, capabilities, proper
 
 	};
 
+	this.getNumViews = function () {
+
+		return numViews;
+
+	};
+
 	this.getMaxViews = function () {
 
 		return capabilities.maxMultiviewViews;
@@ -22365,7 +22373,7 @@ function WebGLMultiview( requested, gl, canvas, extensions, capabilities, proper
 
 	}
 
-	var numViews = 2; // @todo Based on arrayCamera
+	var numViews = 2;
 	var framebuffer; // multiview framebuffer.
 	var viewFramebuffer; // single views inside the multiview framebuffer.
 	var framebufferWidth = 0;
@@ -22390,23 +22398,23 @@ function WebGLMultiview( requested, gl, canvas, extensions, capabilities, proper
 
 			}
 
-			if ( camera.isArrayCamera ) {
+		}
 
-				for ( var i = 0; i < numViews; i ++ ) {
+		if ( camera.isArrayCamera ) {
 
-					camera.projectionMatrices[ i ].copy( camera.cameras[ i ].projectionMatrix );
-					camera.viewMatrices[ i ].copy( camera.cameras[ i ].matrixWorldInverse );
+			for ( var i = 0; i < numViews; i ++ ) {
 
-				}
+				camera.projectionMatrices[ i ].copy( camera.cameras[ i ].projectionMatrix );
+				camera.viewMatrices[ i ].copy( camera.cameras[ i ].matrixWorldInverse );
 
-			} else {
+			}
 
-				for ( var i = 0; i < numViews; i ++ ) {
+		} else {
 
-					camera.projectionMatrices[ i ].copy( camera.projectionMatrix );
-					camera.viewMatrices[ i ].copy( camera.matrixWorldInverse );
+			for ( var i = 0; i < numViews; i ++ ) {
 
-				}
+				camera.projectionMatrices[ i ].copy( camera.projectionMatrix );
+				camera.viewMatrices[ i ].copy( camera.matrixWorldInverse );
 
 			}
 
