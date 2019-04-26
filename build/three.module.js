@@ -17958,8 +17958,6 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 
 	} else {
 
-		var numMultiviewViews = renderer.multiview.getNumViews();
-
 		prefixVertex = [
 
 			'precision ' + parameters.precision + ' float;',
@@ -18016,10 +18014,10 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 			'uniform vec3 cameraPosition;',
 
 			material.supportsMultiview && renderer.multiview.isEnabled() ? [
-				'uniform mat4 modelViewMatrices[' + numMultiviewViews + '];',
-				'uniform mat3 normalMatrices[' + numMultiviewViews + '];',
-				'uniform mat4 viewMatrices[' + numMultiviewViews + '];',
-				'uniform mat4 projectionMatrices[' + numMultiviewViews + '];',
+				'uniform mat4 modelViewMatrices[2];',
+				'uniform mat3 normalMatrices[2];',
+				'uniform mat4 viewMatrices[2];',
+				'uniform mat4 projectionMatrices[2];',
 
 				'#define modelViewMatrix modelViewMatrices[VIEW_ID]',
 				'#define normalMatrix normalMatrices[VIEW_ID]',
@@ -18148,7 +18146,7 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 
 			material.supportsMultiview && renderer.multiview.isEnabled() ? [
 
-				'uniform mat4 viewMatrices[' + numMultiviewViews + '];',
+				'uniform mat4 viewMatrices[2];',
 				'#define viewMatrix viewMatrices[VIEW_ID]'
 
 			].join( '\n' ) : 'uniform mat4 viewMatrix;',
@@ -18210,7 +18208,7 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 			material.supportsMultiview && renderer.multiview.isEnabled() ? [
 
 				'#extension GL_OVR_multiview2 : require',
-				'layout(num_views = ' + numMultiviewViews + ') in;',
+				'layout(num_views = 2) in;',
 				'#define VIEW_ID gl_ViewID_OVR'
 
 			].join( '\n' ) : '',
@@ -21918,7 +21916,6 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 		var isCube = ( renderTarget.isWebGLRenderTargetCube === true );
 		var isMultisample = ( renderTarget.isWebGLMultisampleRenderTarget === true );
-		var isMultiview = ( renderTarget.isWebGLMultiviewRenderTarget === true );
 		var supportsMips = isPowerOfTwo( renderTarget ) || capabilities.isWebGL2;
 
 		// Setup framebuffer
@@ -21971,54 +21968,6 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 				}
 
-			} else if ( isMultiview ) {
-
-				if ( capabilities.multiview ) {
-
-					var width = renderTarget.width;
-					var height = renderTarget.height;
-					var numViews = renderTarget.numViews;
-
-					_gl.bindFramebuffer( 36160, renderTargetProperties.__webglFramebuffer );
-
-					var ext = extensions.get( 'OVR_multiview2' );
-
-					var colorTexture = _gl.createTexture();
-					_gl.bindTexture( 35866, colorTexture );
-					_gl.texParameteri( 35866, 10240, 9728 );
-					_gl.texParameteri( 35866, 10241, 9728 );
-					_gl.texImage3D( 35866, 0, 32856, width, height, numViews, 0, 6408, 5121, null );
-					ext.framebufferTextureMultiviewOVR( 36160, 36064, colorTexture, 0, 0, numViews );
-
-					var depthStencilTexture = _gl.createTexture();
-					_gl.bindTexture( 35866, depthStencilTexture );
-					_gl.texParameteri( 35866, 10240, 9728 );
-					_gl.texParameteri( 35866, 10241, 9728 );
-					_gl.texImage3D( 35866, 0, 35056, width, height, numViews, 0, 34041, 34042, null );
-					ext.framebufferTextureMultiviewOVR( 36160, 33306, depthStencilTexture, 0, 0, numViews );
-
-					var viewFramebuffers = new Array( numViews );
-					for ( var viewIndex = 0; viewIndex < numViews; ++ viewIndex ) {
-
-						viewFramebuffers[ viewIndex ] = _gl.createFramebuffer();
-						_gl.bindFramebuffer( 36160, viewFramebuffers[ viewIndex ] );
-						_gl.framebufferTextureLayer( 36160, 36064, colorTexture, 0, viewIndex );
-
-					}
-
-					renderTargetProperties.__webglColorTexture = colorTexture;
-					renderTargetProperties.__webglDepthStencilTexture = depthStencilTexture;
-					renderTargetProperties.__webglViewFramebuffers = viewFramebuffers;
-
-					_gl.bindFramebuffer( 36160, null );
-					_gl.bindTexture( 35866, null );
-
-				}
-
-			} else {
-
-				console.warn( 'THREE.WebGLRenderer: WebGLMultiviewRenderTarget can only be used with WebGL2 and Multiview extension support.' );
-
 			}
 
 		}
@@ -22044,7 +21993,7 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 			state.bindTexture( 34067, null );
 
-		} else if ( ! isMultiview ) {
+		} else {
 
 			state.bindTexture( 3553, textureProperties.__webglTexture );
 			setTextureParameters( 3553, renderTarget.texture, supportsMips );
@@ -22384,49 +22333,9 @@ function WebGLUtils( gl, extensions, capabilities ) {
 
 /**
  * @author fernandojsg / http://fernandojsg.com
- * @author Takahiro https://github.com/takahirox
  */
 
-function WebGLMultiviewRenderTarget( width, height, numViews, options ) {
-
-	WebGLRenderTarget.call( this, width, height, options );
-
-	this.depthBuffer = false;
-	this.stencilBuffer = false;
-
-	this.numViews = numViews;
-
-}
-
-WebGLMultiviewRenderTarget.prototype = Object.assign( Object.create( WebGLRenderTarget.prototype ), {
-
-	constructor: WebGLMultiviewRenderTarget,
-
-	isWebGLMultiviewRenderTarget: true,
-
-	copy: function ( source ) {
-
-		WebGLRenderTarget.prototype.copy.call( this, source );
-
-		this.numViews = source.numViews;
-
-		return this;
-
-	}
-
-} );
-
-/**
- * @author fernandojsg / http://fernandojsg.com
- * @author Takahiro https://github.com/takahirox
- */
-
-function WebGLMultiview( renderer, requested ) {
-
-	var gl = renderer.context;
-	var canvas = renderer.domElement;
-	var capabilities = renderer.capabilities;
-	var properties = renderer.properties;
+function WebGLMultiview( requested, gl, canvas, extensions, capabilities, properties ) {
 
 	this.isAvailable = function () {
 
@@ -22463,7 +22372,15 @@ function WebGLMultiview( renderer, requested ) {
 	}
 
 	var numViews = 2;
-	var renderTarget, currentRenderTarget;
+	var framebuffer; // multiview framebuffer.
+	var viewFramebuffer; // single views inside the multiview framebuffer.
+	var framebufferWidth = 0;
+	var framebufferHeight = 0;
+
+	var texture = {
+		color: null,
+		depthStencil: null
+	};
 
 	this.computeCameraMatrices = function ( camera ) {
 
@@ -22545,11 +22462,51 @@ function WebGLMultiview( renderer, requested ) {
 
 	};
 
-	this.attachRenderTarget = function ( camera ) {
+	// @todo Get ArrayCamera
+	this.createMultiviewRenderTargetTexture = function () {
 
-		currentRenderTarget = renderer.getRenderTarget();
+		var halfWidth = Math.floor( canvas.width * 0.5 );
 
-		// Resize if needed
+		framebuffer = gl.createFramebuffer();
+		gl.bindFramebuffer( 36160, framebuffer );
+
+		var ext = extensions.get( 'OVR_multiview2' );
+
+		texture.color = gl.createTexture();
+		gl.bindTexture( 35866, texture.color );
+		gl.texParameteri( 35866, 10240, 9728 );
+		gl.texParameteri( 35866, 10241, 9728 );
+		gl.texImage3D( 35866, 0, 32856, halfWidth, canvas.height, numViews, 0, 6408, 5121, null );
+		ext.framebufferTextureMultiviewOVR( 36160, 36064, texture.color, 0, 0, numViews );
+
+		texture.depthStencil = gl.createTexture();
+		gl.bindTexture( 35866, texture.depthStencil );
+		gl.texParameteri( 35866, 10240, 9728 );
+		gl.texParameteri( 35866, 10241, 9728 );
+		gl.texImage3D( 35866, 0, 35056, halfWidth, canvas.height, numViews, 0, 34041, 34042, null );
+		ext.framebufferTextureMultiviewOVR( 36160, 33306, texture.depthStencil, 0, 0, numViews );
+
+		viewFramebuffer = new Array( numViews );
+		for ( var viewIndex = 0; viewIndex < numViews; ++ viewIndex ) {
+
+			viewFramebuffer[ viewIndex ] = gl.createFramebuffer();
+			gl.bindFramebuffer( 36160, viewFramebuffer[ viewIndex ] );
+			gl.framebufferTextureLayer( 36160, 36064, texture.color, 0, viewIndex );
+
+		}
+
+		framebufferWidth = halfWidth;
+		framebufferHeight = canvas.height;
+
+		this.renderTarget = new WebGLRenderTarget( framebufferWidth, framebufferHeight );
+
+		// @hack This should be done in WebGLTextures?
+		properties.get( this.renderTarget ).__webglFramebuffer = framebuffer;
+
+	};
+
+	this.bindFramebuffer = function ( camera ) {
+
 		var width = canvas.width;
 		var height = canvas.height;
 
@@ -22563,18 +22520,27 @@ function WebGLMultiview( renderer, requested ) {
 
 		}
 
-		renderTarget.setSize( width, height );
+		if ( framebufferWidth < width || framebufferHeight < height ) {
 
-		renderer.setRenderTarget( renderTarget );
+			console.log( 'WebGLMultiview: Updating multiview FBO with dimensions: ', width, height );
+			gl.bindTexture( 35866, texture.color );
+			gl.texImage3D( 35866, 0, 32856, width, height, numViews, 0, 6408, 5121, null );
+			gl.bindTexture( 35866, texture.depthStencil );
+			gl.texImage3D( 35866, 0, 35056, width, height, numViews, 0, 34041, 34042, null );
+			framebufferWidth = width;
+			framebufferHeight = height;
+
+			this.renderTarget.setSize( width, height );
+
+		}
+
+		gl.bindFramebuffer( 36009, framebuffer );
 
 	};
 
-	this.detachRenderTarget = function ( camera ) {
+	this.unbindFramebuffer = function ( camera ) {
 
-		var viewFramebuffers = properties.get( renderTarget ).__webglViewFramebuffers;
-
-		// @todo Use actual framebuffer
-		gl.bindFramebuffer( 36160, null );
+		gl.bindFramebuffer( 36009, null );
 
 		if ( camera.isArrayCamera ) {
 
@@ -22587,27 +22553,24 @@ function WebGLMultiview( renderer, requested ) {
 				var width = bounds.z * canvas.width;
 				var height = bounds.w * canvas.height;
 
-				gl.bindFramebuffer( 36008, viewFramebuffers[ i ] );
+				gl.bindFramebuffer( 36008, viewFramebuffer[ i ] );
 				gl.blitFramebuffer( 0, 0, width, height, x, y, x + width, y + height, 16384, 9728 );
 
 			}
 
 		} else {
 
-			// If no array camera, blit just one view
-			gl.bindFramebuffer( 36008, viewFramebuffers[ 0 ] );
+			gl.bindFramebuffer( 36008, viewFramebuffer[ 0 ] );
 			gl.blitFramebuffer( 0, 0, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height, 16384, 9728 );
 
 		}
-
-		renderer.setRenderTarget( currentRenderTarget );
 
 	};
 
 
 	if ( this.isEnabled() ) {
 
-		renderTarget = new WebGLMultiviewRenderTarget( canvas.width, canvas.height, numViews );
+		this.createMultiviewRenderTargetTexture();
 
 	}
 
@@ -23720,9 +23683,7 @@ function WebGLRenderer( parameters ) {
 
 	this.vr = vr;
 
-	var multiview = new WebGLMultiview( _this, _multiviewRequested );
-
-	this.multiview = multiview;
+	var multiview = this.multiview = new WebGLMultiview( _multiviewRequested, _gl, _canvas, extensions, capabilities, properties );
 
 	// shadow map
 
@@ -24585,13 +24546,13 @@ function WebGLRenderer( parameters ) {
 
 			this.setRenderTarget( renderTarget );
 
+		} else if ( this.multiview.isEnabled() ) {
+
+			this.setRenderTarget( this.multiview.renderTarget );
+			this.multiview.bindFramebuffer( camera );
+
 		}
 
-		if ( multiview.isEnabled() ) {
-
-			multiview.attachRenderTarget( camera );
-
-		}
 
 		//
 
@@ -24637,6 +24598,12 @@ function WebGLRenderer( parameters ) {
 
 			textures.updateMultisampleRenderTarget( _currentRenderTarget );
 
+			if ( this.multiview.isEnabled() ) {
+
+				this.multiview.unbindFramebuffer( camera );
+
+			}
+
 		}
 
 		// Ensure depth buffer writing is enabled so it can be cleared on next render
@@ -24646,12 +24613,6 @@ function WebGLRenderer( parameters ) {
 		state.buffers.color.setMask( true );
 
 		state.setPolygonOffset( false );
-
-		if ( this.multiview.isEnabled() ) {
-
-			this.multiview.detachRenderTarget( camera );
-
-		}
 
 		if ( vr.enabled ) {
 
