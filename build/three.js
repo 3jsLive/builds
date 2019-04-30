@@ -8361,7 +8361,6 @@
 
 		this.toneMapped = true;
 		this.supportsMultiview = true;
-
 		this.userData = {};
 
 		this.needsUpdate = true;
@@ -17598,6 +17597,8 @@
 
 		var prefixVertex, prefixFragment;
 
+		var numMultiviewViews = renderer.multiview.getNumViews();
+
 		if ( material.isRawShaderMaterial ) {
 
 			prefixVertex = [
@@ -17626,8 +17627,6 @@
 			}
 
 		} else {
-
-			var numMultiviewViews = renderer.multiview.getNumViews();
 
 			prefixVertex = [
 
@@ -17690,7 +17689,7 @@
 				'uniform mat4 modelMatrix;',
 				'uniform vec3 cameraPosition;',
 
-				material.supportsMultiview && renderer.multiview.isEnabled() ? [
+				numMultiviewViews > 0 ? [
 					'uniform mat4 modelViewMatrices[' + numMultiviewViews + '];',
 					'uniform mat3 normalMatrices[' + numMultiviewViews + '];',
 					'uniform mat4 viewMatrices[' + numMultiviewViews + '];',
@@ -17828,7 +17827,7 @@
 
 				'uniform vec3 cameraPosition;',
 
-				material.supportsMultiview && renderer.multiview.isEnabled() ? [
+				numMultiviewViews > 0 ? [
 
 					'uniform mat4 viewMatrices[' + numMultiviewViews + '];',
 					'#define viewMatrix viewMatrices[VIEW_ID]'
@@ -17889,7 +17888,7 @@
 			prefixVertex = [
 				'#version 300 es\n',
 
-				material.supportsMultiview && renderer.multiview.isEnabled() ? [
+				numMultiviewViews > 0 ? [
 
 					'#extension GL_OVR_multiview2 : require',
 					'layout(num_views = ' + numMultiviewViews + ') in;',
@@ -17904,7 +17903,7 @@
 
 			prefixFragment = [
 				'#version 300 es\n',
-				material.supportsMultiview && renderer.multiview.isEnabled() ? [
+				numMultiviewViews > 0 ? [
 
 					'#extension GL_OVR_multiview2 : require',
 					'#define VIEW_ID gl_ViewID_OVR'
@@ -18064,6 +18063,7 @@
 		this.program = program;
 		this.vertexShader = glVertexShader;
 		this.fragmentShader = glFragmentShader;
+		this.numMultiviewViews = numMultiviewViews;
 
 		return this;
 
@@ -19389,8 +19389,6 @@
 			var useSkinning = ( i & _SkinningFlag ) !== 0;
 
 			var depthMaterial = new MeshDepthMaterial( {
-
-				supportsMultiview: false,
 
 				depthPacking: RGBADepthPacking,
 
@@ -22214,7 +22212,7 @@
 
 		this.getNumViews = function () {
 
-			return renderTarget ? renderTarget.numViews : 1;
+			return renderTarget ? renderTarget.numViews : 0;
 
 		};
 
@@ -24941,7 +24939,7 @@
 
 			if ( refreshProgram || _currentCamera !== camera ) {
 
-				if ( material.supportsMultiview && multiview.isEnabled() ) {
+				if ( program.numMultiviewViews > 0 ) {
 
 					multiview.updateCameraProjectionMatrices( camera, p_uniforms );
 
@@ -24997,7 +24995,7 @@
 					material.isShaderMaterial ||
 					material.skinning ) {
 
-					if ( material.supportsMultiview && multiview.isEnabled() ) {
+					if ( program.numMultiviewViews > 0 ) {
 
 						multiview.updateCameraViewMatrices( camera, p_uniforms );
 
@@ -25203,7 +25201,7 @@
 
 			// common matrices
 
-			if ( material.supportsMultiview && multiview.isEnabled() ) {
+			if ( program.numMultiviewViews > 0 ) {
 
 				multiview.updateObjectMatrices( object, camera, p_uniforms );
 
