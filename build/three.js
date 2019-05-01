@@ -22215,6 +22215,9 @@
 
 		var DEFAULT_NUMVIEWS = 2;
 		var gl = renderer.context;
+
+		var maxNumViews = capabilities.maxMultiviewViews;
+
 		var capabilities = renderer.capabilities;
 		var properties = renderer.properties;
 
@@ -22277,7 +22280,6 @@
 
 		}
 
-
 		function updateCameraProjectionMatricesUniform( camera, uniforms ) {
 
 			var cameras = getCameraArray( camera );
@@ -22322,6 +22324,24 @@
 
 		}
 
+		function isMultiviewCompatible( camera ) {
+
+			if ( ! camera.isArrayCamera ) return true;
+
+			var cameras = camera.cameras;
+
+			if ( cameras.length > maxNumViews ) return false;
+
+			for ( var i = 1, il = cameras.length; i < il; i ++ ) {
+
+				if ( cameras[ 0 ].bounds.z !== cameras[ i ].bounds.z ||
+					cameras[ 0 ].bounds.w !== cameras[ i ].bounds.w ) return false;
+
+			}
+
+			return true;
+
+		}
 
 		function resizeRenderTarget( camera ) {
 
@@ -22353,6 +22373,8 @@
 
 		function attachRenderTarget( camera ) {
 
+			if ( ! isMultiviewCompatible( camera ) ) return;
+
 			currentRenderTarget = renderer.getRenderTarget();
 			resizeRenderTarget( camera );
 			renderer.setRenderTarget( renderTarget );
@@ -22360,6 +22382,8 @@
 		}
 
 		function detachRenderTarget( camera ) {
+
+			if ( renderTarget !== renderer.getRenderTarget() ) return false;
 
 			renderer.setRenderTarget( currentRenderTarget );
 			flush( camera );
