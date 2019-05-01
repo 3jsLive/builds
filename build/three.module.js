@@ -22378,7 +22378,7 @@ function WebGLMultiview( renderer, requested, options ) {
 
 	function detachRenderTarget( camera ) {
 
-		if ( renderTarget !== renderer.getRenderTarget() ) return;
+		if ( renderTarget !== renderer.getRenderTarget() ) return false;
 
 		renderer.setRenderTarget( currentRenderTarget );
 		flush( camera );
