@@ -16550,17 +16550,11 @@
 
 	function setValueT1a( gl, v, textures ) {
 
-		var cache = this.cache;
 		var n = v.length;
 
 		var units = allocTexUnits( textures, n );
 
-		if ( arraysEqual( cache, units ) === false ) {
-
-			gl.uniform1iv( this.addr, units );
-			copyArray( cache, units );
-
-		}
+		gl.uniform1iv( this.addr, units );
 
 		for ( var i = 0; i !== n; ++ i ) {
 
@@ -16572,17 +16566,11 @@
 
 	function setValueT6a( gl, v, textures ) {
 
-		var cache = this.cache;
 		var n = v.length;
 
 		var units = allocTexUnits( textures, n );
 
-		if ( arraysEqual( cache, units ) === false ) {
-
-			gl.uniform1iv( this.addr, units );
-			copyArray( cache, units );
-
-		}
+		gl.uniform1iv( this.addr, units );
 
 		for ( var i = 0; i !== n; ++ i ) {
 
