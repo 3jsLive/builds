@@ -21965,7 +21965,6 @@ function setProjectionFromUnion( camera, cameraL, cameraR ) {
 
 function WebVRManager( renderer ) {
 
-	var renderWidth, renderHeight;
 	var scope = this;
 
 	var device = null;
@@ -21993,11 +21992,11 @@ function WebVRManager( renderer ) {
 	var tempPosition = new Vector3();
 
 	var cameraL = new PerspectiveCamera();
-	cameraL.viewport = new Vector4();
+	cameraL.bounds = new Vector4( 0.0, 0.0, 0.5, 1.0 );
 	cameraL.layers.enable( 1 );
 
 	var cameraR = new PerspectiveCamera();
-	cameraR.viewport = new Vector4();
+	cameraR.bounds = new Vector4( 0.5, 0.0, 0.5, 1.0 );
 	cameraR.layers.enable( 2 );
 
 	var cameraVR = new ArrayCamera( [ cameraL, cameraR ] );
@@ -22019,16 +22018,13 @@ function WebVRManager( renderer ) {
 		if ( isPresenting() ) {
 
 			var eyeParameters = device.getEyeParameters( 'left' );
-			renderWidth = eyeParameters.renderWidth * framebufferScaleFactor;
-			renderHeight = eyeParameters.renderHeight * framebufferScaleFactor;
+			var renderWidth = eyeParameters.renderWidth * framebufferScaleFactor;
+			var renderHeight = eyeParameters.renderHeight * framebufferScaleFactor;
 
 			currentPixelRatio = renderer.getPixelRatio();
 			renderer.getSize( currentSize );
 
 			renderer.setDrawingBufferSize( renderWidth * 2, renderHeight, 1 );
-
-			cameraL.viewport.set( 0, 0, renderWidth, renderHeight );
-			cameraR.viewport.set( renderWidth, 0, renderWidth, renderHeight );
 
 			animation.start();
 
@@ -22125,16 +22121,6 @@ function WebVRManager( renderer ) {
 				controller.visible = false;
 
 			}
-
-		}
-
-	}
-
-	function updateViewportFromBounds( viewport, bounds ) {
-
-		if ( bounds !== null && bounds.length === 4 ) {
-
-			viewport.set( bounds[ 0 ] * renderWidth, bounds[ 1 ] * renderHeight, bounds[ 2 ] * renderWidth, bounds[ 3 ] * renderHeight );
 
 		}
 
@@ -22307,8 +22293,17 @@ function WebVRManager( renderer ) {
 
 			var layer = layers[ 0 ];
 
-			updateViewportFromBounds( cameraL.viewport, layer.leftBounds );
-			updateViewportFromBounds( cameraR.viewport, layer.rightBounds );
+			if ( layer.leftBounds !== null && layer.leftBounds.length === 4 ) {
+
+				cameraL.bounds.fromArray( layer.leftBounds );
+
+			}
+
+			if ( layer.rightBounds !== null && layer.rightBounds.length === 4 ) {
+
+				cameraR.bounds.fromArray( layer.rightBounds );
+
+			}
 
 		}
 
@@ -23997,7 +23992,22 @@ function WebGLRenderer( parameters ) {
 
 					if ( object.layers.test( camera2.layers ) ) {
 
-						state.viewport( _currentViewport.copy( camera2.viewport ) );
+						if ( 'viewport' in camera2 ) { // XR
+
+							state.viewport( _currentViewport.copy( camera2.viewport ) );
+
+						} else {
+
+							var bounds = camera2.bounds;
+
+							var x = bounds.x * _width;
+							var y = bounds.y * _height;
+							var width = bounds.z * _width;
+							var height = bounds.w * _height;
+
+							state.viewport( _currentViewport.set( x, y, width, height ).multiplyScalar( _pixelRatio ) );
+
+						}
 
 						currentRenderState.setupLights( camera2 );
 
@@ -25104,7 +25114,7 @@ function WebGLRenderer( parameters ) {
 
 	};
 
-	this.readRenderTargetPixels = function ( renderTarget, x, y, width, height, buffer ) {
+	this.readRenderTargetPixels = function ( renderTarget, x, y, width, height, buffer, activeCubeFaceIndex ) {
 
 		if ( ! ( renderTarget && renderTarget.isWebGLRenderTarget ) ) {
 
@@ -25114,6 +25124,12 @@ function WebGLRenderer( parameters ) {
 		}
 
 		var framebuffer = properties.get( renderTarget ).__webglFramebuffer;
+
+		if ( renderTarget.isWebGLRenderTargetCube && activeCubeFaceIndex !== undefined ) {
+
+			framebuffer = framebuffer[ activeCubeFaceIndex ];
+
+		}
 
 		if ( framebuffer ) {
 
@@ -41253,7 +41269,6 @@ function PositionalAudio( listener ) {
 	Audio.call( this, listener );
 
 	this.panner = this.context.createPanner();
-	this.panner.panningModel = 'HRTF';
 	this.panner.connect( this.gain );
 
 }
