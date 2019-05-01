@@ -16116,7 +16116,7 @@
 
 	// Single scalar
 
-	function setValueV1f( gl, v ) {
+	function setValue1f( gl, v ) {
 
 		var cache = this.cache;
 
@@ -16128,9 +16128,21 @@
 
 	}
 
+	function setValue1i( gl, v ) {
+
+		var cache = this.cache;
+
+		if ( cache[ 0 ] === v ) return;
+
+		gl.uniform1i( this.addr, v );
+
+		cache[ 0 ] = v;
+
+	}
+
 	// Single float vector (from flat array or THREE.VectorN)
 
-	function setValueV2f( gl, v ) {
+	function setValue2fv( gl, v ) {
 
 		var cache = this.cache;
 
@@ -16157,7 +16169,7 @@
 
 	}
 
-	function setValueV3f( gl, v ) {
+	function setValue3fv( gl, v ) {
 
 		var cache = this.cache;
 
@@ -16197,7 +16209,7 @@
 
 	}
 
-	function setValueV4f( gl, v ) {
+	function setValue4fv( gl, v ) {
 
 		var cache = this.cache;
 
@@ -16228,7 +16240,7 @@
 
 	// Single matrix (from flat array or MatrixN)
 
-	function setValueM2( gl, v ) {
+	function setValue2fm( gl, v ) {
 
 		var cache = this.cache;
 		var elements = v.elements;
@@ -16255,7 +16267,7 @@
 
 	}
 
-	function setValueM3( gl, v ) {
+	function setValue3fm( gl, v ) {
 
 		var cache = this.cache;
 		var elements = v.elements;
@@ -16282,7 +16294,7 @@
 
 	}
 
-	function setValueM4( gl, v ) {
+	function setValue4fm( gl, v ) {
 
 		var cache = this.cache;
 		var elements = v.elements;
@@ -16377,19 +16389,7 @@
 
 	// Integer / Boolean vectors or arrays thereof (always flat arrays)
 
-	function setValueV1i( gl, v ) {
-
-		var cache = this.cache;
-
-		if ( arraysEqual( cache, v ) ) return;
-
-		gl.uniform1iv( this.addr, v );
-
-		copyArray( cache, v );
-
-	}
-
-	function setValueV2i( gl, v ) {
+	function setValue2iv( gl, v ) {
 
 		var cache = this.cache;
 
@@ -16401,7 +16401,7 @@
 
 	}
 
-	function setValueV3i( gl, v ) {
+	function setValue3iv( gl, v ) {
 
 		var cache = this.cache;
 
@@ -16413,7 +16413,7 @@
 
 	}
 
-	function setValueV4i( gl, v ) {
+	function setValue4iv( gl, v ) {
 
 		var cache = this.cache;
 
@@ -16431,85 +16431,92 @@
 
 		switch ( type ) {
 
-			case 0x1406: return setValueV1f; // FLOAT
-			case 0x8b50: return setValueV2f; // _VEC2
-			case 0x8b51: return setValueV3f; // _VEC3
-			case 0x8b52: return setValueV4f; // _VEC4
+			case 0x1406: return setValue1f; // FLOAT
+			case 0x8b50: return setValue2fv; // _VEC2
+			case 0x8b51: return setValue3fv; // _VEC3
+			case 0x8b52: return setValue4fv; // _VEC4
 
-			case 0x8b5a: return setValueM2; // _MAT2
-			case 0x8b5b: return setValueM3; // _MAT3
-			case 0x8b5c: return setValueM4; // _MAT4
+			case 0x8b5a: return setValue2fm; // _MAT2
+			case 0x8b5b: return setValue3fm; // _MAT3
+			case 0x8b5c: return setValue4fm; // _MAT4
 
 			case 0x8b5e: case 0x8d66: return setValueT1; // SAMPLER_2D, SAMPLER_EXTERNAL_OES
 			case 0x8b5f: return setValueT3D1; // SAMPLER_3D
 			case 0x8b60: return setValueT6; // SAMPLER_CUBE
 			case 0x8DC1: return setValueT2DArray1; // SAMPLER_2D_ARRAY
 
-			case 0x1404: case 0x8b56: return setValueV1i; // INT, BOOL
-			case 0x8b53: case 0x8b57: return setValueV2i; // _VEC2
-			case 0x8b54: case 0x8b58: return setValueV3i; // _VEC3
-			case 0x8b55: case 0x8b59: return setValueV4i; // _VEC4
+			case 0x1404: case 0x8b56: return setValue1i; // INT, BOOL
+			case 0x8b53: case 0x8b57: return setValue2iv; // _VEC2
+			case 0x8b54: case 0x8b58: return setValue3iv; // _VEC3
+			case 0x8b55: case 0x8b59: return setValue4iv; // _VEC4
 
 		}
 
 	}
 
 	// Array of scalars
-	function setValueV1fa( gl, v ) {
+
+	function setValue1fv( gl, v ) {
+
+		var cache = this.cache;
+
+		if ( arraysEqual( cache, v ) ) return;
 
 		gl.uniform1fv( this.addr, v );
 
-	}
+		copyArray( cache, v );
 
-	// Integer / Boolean vectors or arrays thereof (always flat arrays)
-	function setValueV1ia( gl, v ) {
+	}
+	function setValue1iv( gl, v ) {
+
+		var cache = this.cache;
+
+		if ( arraysEqual( cache, v ) ) return;
 
 		gl.uniform1iv( this.addr, v );
 
-	}
-
-	function setValueV2ia( gl, v ) {
-
-		gl.uniform2iv( this.addr, v );
+		copyArray( cache, v );
 
 	}
-
-	function setValueV3ia( gl, v ) {
-
-		gl.uniform3iv( this.addr, v );
-
-	}
-
-	function setValueV4ia( gl, v ) {
-
-		gl.uniform4iv( this.addr, v );
-
-	}
-
 
 	// Array of vectors (flat or from THREE classes)
 
-	function setValueV2fa( gl, v ) {
+	function setValueV2a( gl, v ) {
 
+		var cache = this.cache;
 		var data = flatten( v, this.size, 2 );
+
+		if ( arraysEqual( cache, data ) ) return;
 
 		gl.uniform2fv( this.addr, data );
 
+		this.updateCache( data );
+
 	}
 
-	function setValueV3fa( gl, v ) {
+	function setValueV3a( gl, v ) {
 
+		var cache = this.cache;
 		var data = flatten( v, this.size, 3 );
+
+		if ( arraysEqual( cache, data ) ) return;
 
 		gl.uniform3fv( this.addr, data );
 
+		this.updateCache( data );
+
 	}
 
-	function setValueV4fa( gl, v ) {
+	function setValueV4a( gl, v ) {
 
+		var cache = this.cache;
 		var data = flatten( v, this.size, 4 );
 
+		if ( arraysEqual( cache, data ) ) return;
+
 		gl.uniform4fv( this.addr, data );
+
+		this.updateCache( data );
 
 	}
 
@@ -16517,25 +16524,40 @@
 
 	function setValueM2a( gl, v ) {
 
+		var cache = this.cache;
 		var data = flatten( v, this.size, 4 );
 
+		if ( arraysEqual( cache, data ) ) return;
+
 		gl.uniformMatrix2fv( this.addr, false, data );
+
+		this.updateCache( data );
 
 	}
 
 	function setValueM3a( gl, v ) {
 
+		var cache = this.cache;
 		var data = flatten( v, this.size, 9 );
 
+		if ( arraysEqual( cache, data ) ) return;
+
 		gl.uniformMatrix3fv( this.addr, false, data );
+
+		this.updateCache( data );
 
 	}
 
 	function setValueM4a( gl, v ) {
 
+		var cache = this.cache;
 		var data = flatten( v, this.size, 16 );
 
+		if ( arraysEqual( cache, data ) ) return;
+
 		gl.uniformMatrix4fv( this.addr, false, data );
+
+		this.updateCache( data );
 
 	}
 
@@ -16543,11 +16565,17 @@
 
 	function setValueT1a( gl, v, textures ) {
 
+		var cache = this.cache;
 		var n = v.length;
 
 		var units = allocTexUnits( textures, n );
 
-		gl.uniform1iv( this.addr, units );
+		if ( arraysEqual( cache, units ) === false ) {
+
+			gl.uniform1iv( this.addr, units );
+			copyArray( cache, units );
+
+		}
 
 		for ( var i = 0; i !== n; ++ i ) {
 
@@ -16559,11 +16587,17 @@
 
 	function setValueT6a( gl, v, textures ) {
 
+		var cache = this.cache;
 		var n = v.length;
 
 		var units = allocTexUnits( textures, n );
 
-		gl.uniform1iv( this.addr, units );
+		if ( arraysEqual( cache, units ) === false ) {
+
+			gl.uniform1iv( this.addr, units );
+			copyArray( cache, units );
+
+		}
 
 		for ( var i = 0; i !== n; ++ i ) {
 
@@ -16579,10 +16613,10 @@
 
 		switch ( type ) {
 
-			case 0x1406: return setValueV1fa; // FLOAT
-			case 0x8b50: return setValueV2fa; // _VEC2
-			case 0x8b51: return setValueV3fa; // _VEC3
-			case 0x8b52: return setValueV4fa; // _VEC4
+			case 0x1406: return setValue1fv; // FLOAT
+			case 0x8b50: return setValueV2a; // _VEC2
+			case 0x8b51: return setValueV3a; // _VEC3
+			case 0x8b52: return setValueV4a; // _VEC4
 
 			case 0x8b5a: return setValueM2a; // _MAT2
 			case 0x8b5b: return setValueM3a; // _MAT3
@@ -16591,10 +16625,10 @@
 			case 0x8b5e: return setValueT1a; // SAMPLER_2D
 			case 0x8b60: return setValueT6a; // SAMPLER_CUBE
 
-			case 0x1404: case 0x8b56: return setValueV1ia; // INT, BOOL
-			case 0x8b53: case 0x8b57: return setValueV2ia; // _VEC2
-			case 0x8b54: case 0x8b58: return setValueV3ia; // _VEC3
-			case 0x8b55: case 0x8b59: return setValueV4ia; // _VEC4
+			case 0x1404: case 0x8b56: return setValue1iv; // INT, BOOL
+			case 0x8b53: case 0x8b57: return setValue2iv; // _VEC2
+			case 0x8b54: case 0x8b58: return setValue3iv; // _VEC3
+			case 0x8b55: case 0x8b59: return setValue4iv; // _VEC4
 
 		}
 
@@ -21937,6 +21971,7 @@
 
 	function WebVRManager( renderer ) {
 
+		var renderWidth, renderHeight;
 		var scope = this;
 
 		var device = null;
@@ -21964,11 +21999,11 @@
 		var tempPosition = new Vector3();
 
 		var cameraL = new PerspectiveCamera();
-		cameraL.bounds = new Vector4( 0.0, 0.0, 0.5, 1.0 );
+		cameraL.viewport = new Vector4();
 		cameraL.layers.enable( 1 );
 
 		var cameraR = new PerspectiveCamera();
-		cameraR.bounds = new Vector4( 0.5, 0.0, 0.5, 1.0 );
+		cameraR.viewport = new Vector4();
 		cameraR.layers.enable( 2 );
 
 		var cameraVR = new ArrayCamera( [ cameraL, cameraR ] );
@@ -21990,13 +22025,16 @@
 			if ( isPresenting() ) {
 
 				var eyeParameters = device.getEyeParameters( 'left' );
-				var renderWidth = eyeParameters.renderWidth * framebufferScaleFactor;
-				var renderHeight = eyeParameters.renderHeight * framebufferScaleFactor;
+				renderWidth = eyeParameters.renderWidth * framebufferScaleFactor;
+				renderHeight = eyeParameters.renderHeight * framebufferScaleFactor;
 
 				currentPixelRatio = renderer.getPixelRatio();
 				renderer.getSize( currentSize );
 
 				renderer.setDrawingBufferSize( renderWidth * 2, renderHeight, 1 );
+
+				cameraL.viewport.set( 0, 0, renderWidth, renderHeight );
+				cameraR.viewport.set( renderWidth, 0, renderWidth, renderHeight );
 
 				animation.start();
 
@@ -22093,6 +22131,16 @@
 					controller.visible = false;
 
 				}
+
+			}
+
+		}
+
+		function updateViewportFromBounds( viewport, bounds ) {
+
+			if ( bounds !== null && bounds.length === 4 ) {
+
+				viewport.set( bounds[ 0 ] * renderWidth, bounds[ 1 ] * renderHeight, bounds[ 2 ] * renderWidth, bounds[ 3 ] * renderHeight );
 
 			}
 
@@ -22265,17 +22313,8 @@
 
 				var layer = layers[ 0 ];
 
-				if ( layer.leftBounds !== null && layer.leftBounds.length === 4 ) {
-
-					cameraL.bounds.fromArray( layer.leftBounds );
-
-				}
-
-				if ( layer.rightBounds !== null && layer.rightBounds.length === 4 ) {
-
-					cameraR.bounds.fromArray( layer.rightBounds );
-
-				}
+				updateViewportFromBounds( cameraL.viewport, layer.leftBounds );
+				updateViewportFromBounds( cameraR.viewport, layer.rightBounds );
 
 			}
 
@@ -23964,22 +24003,7 @@
 
 						if ( object.layers.test( camera2.layers ) ) {
 
-							if ( 'viewport' in camera2 ) { // XR
-
-								state.viewport( _currentViewport.copy( camera2.viewport ) );
-
-							} else {
-
-								var bounds = camera2.bounds;
-
-								var x = bounds.x * _width;
-								var y = bounds.y * _height;
-								var width = bounds.z * _width;
-								var height = bounds.w * _height;
-
-								state.viewport( _currentViewport.set( x, y, width, height ).multiplyScalar( _pixelRatio ) );
-
-							}
+							state.viewport( _currentViewport.copy( camera2.viewport ) );
 
 							currentRenderState.setupLights( camera2 );
 
