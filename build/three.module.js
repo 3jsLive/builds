@@ -16518,40 +16518,25 @@ function setValueV4a( gl, v ) {
 
 function setValueM2a( gl, v ) {
 
-	var cache = this.cache;
 	var data = flatten( v, this.size, 4 );
 
-	if ( arraysEqual( cache, data ) ) return;
-
 	gl.uniformMatrix2fv( this.addr, false, data );
-
-	this.updateCache( data );
 
 }
 
 function setValueM3a( gl, v ) {
 
-	var cache = this.cache;
 	var data = flatten( v, this.size, 9 );
 
-	if ( arraysEqual( cache, data ) ) return;
-
 	gl.uniformMatrix3fv( this.addr, false, data );
-
-	this.updateCache( data );
 
 }
 
 function setValueM4a( gl, v ) {
 
-	var cache = this.cache;
 	var data = flatten( v, this.size, 16 );
 
-	if ( arraysEqual( cache, data ) ) return;
-
 	gl.uniformMatrix4fv( this.addr, false, data );
-
-	this.updateCache( data );
 
 }
 
@@ -25114,7 +25099,7 @@ function WebGLRenderer( parameters ) {
 
 	};
 
-	this.readRenderTargetPixels = function ( renderTarget, x, y, width, height, buffer, activeCubeFaceIndex ) {
+	this.readRenderTargetPixels = function ( renderTarget, x, y, width, height, buffer ) {
 
 		if ( ! ( renderTarget && renderTarget.isWebGLRenderTarget ) ) {
 
@@ -25124,12 +25109,6 @@ function WebGLRenderer( parameters ) {
 		}
 
 		var framebuffer = properties.get( renderTarget ).__webglFramebuffer;
-
-		if ( renderTarget.isWebGLRenderTargetCube && activeCubeFaceIndex != undefined ) {
-
-			framebuffer = framebuffer[ activeCubeFaceIndex ];
-
-		}
 
 		if ( framebuffer ) {
 
@@ -41269,6 +41248,7 @@ function PositionalAudio( listener ) {
 	Audio.call( this, listener );
 
 	this.panner = this.context.createPanner();
+	this.panner.panningModel = 'HRTF';
 	this.panner.connect( this.gain );
 
 }
