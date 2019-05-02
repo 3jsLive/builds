@@ -38025,17 +38025,8 @@
 
 			}
 
-			try {
-
-				// merges multi-byte utf-8 characters.
-
-				return decodeURIComponent( escape( s ) );
-
-			} catch ( e ) { // see #16358
-
-				return s;
-
-			}
+			// Merges multi-byte utf-8 characters.
+			return decodeURIComponent( escape( s ) );
 
 		},
 
