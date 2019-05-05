@@ -10782,7 +10782,7 @@ Object.assign( BufferAttribute.prototype, {
 
 	},
 
-	toJSON: function() {
+	toJSON: function () {
 
 		return {
 			itemSize: this.itemSize,
@@ -10790,6 +10790,7 @@ Object.assign( BufferAttribute.prototype, {
 			array: Array.prototype.slice.call( this.array ),
 			normalized: this.normalized
 		};
+
 	}
 
 } );

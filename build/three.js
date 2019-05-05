@@ -10788,7 +10788,7 @@
 
 		},
 
-		toJSON: function() {
+		toJSON: function () {
 
 			return {
 				itemSize: this.itemSize,
@@ -10796,6 +10796,7 @@
 				array: Array.prototype.slice.call( this.array ),
 				normalized: this.normalized
 			};
+
 		}
 
 	} );
