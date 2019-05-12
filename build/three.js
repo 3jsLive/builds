@@ -22708,7 +22708,7 @@
 			 * Enables error checking and reporting when shader programs are being compiled
 			 * @type {boolean}
 			 */
-			checkShaderErrors: true
+			checkShaderErrors: false
 		};
 
 		// clearing
@@ -43243,18 +43243,10 @@
 
 						time = 0;
 
-					} else {
-
-						this.time = time;
-
-						break handle_stop;
-
-					}
+					} else break handle_stop;
 
 					if ( this.clampWhenFinished ) this.paused = true;
 					else this.enabled = false;
-
-					this.time = time;
 
 					this._mixer.dispatchEvent( {
 						type: 'finished', action: this,
@@ -43307,8 +43299,6 @@
 
 						time = deltaTime > 0 ? duration : 0;
 
-						this.time = time;
-
 						this._mixer.dispatchEvent( {
 							type: 'finished', action: this,
 							direction: deltaTime > 0 ? 1 : - 1
@@ -43333,17 +43323,11 @@
 
 						this._loopCount = loopCount;
 
-						this.time = time;
-
 						this._mixer.dispatchEvent( {
 							type: 'loop', action: this, loopDelta: loopDelta
 						} );
 
 					}
-
-				} else {
-
-					this.time = time;
 
 				}
 
@@ -43351,12 +43335,14 @@
 
 					// invert time for the "pong round"
 
+					this.time = time;
 					return duration - time;
 
 				}
 
 			}
 
+			this.time = time;
 			return time;
 
 		},
