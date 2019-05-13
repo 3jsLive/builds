@@ -21971,6 +21971,7 @@
 
 	function WebVRManager( renderer ) {
 
+		var renderWidth, renderHeight;
 		var scope = this;
 
 		var device = null;
@@ -21998,11 +21999,11 @@
 		var tempPosition = new Vector3();
 
 		var cameraL = new PerspectiveCamera();
-		cameraL.bounds = new Vector4( 0.0, 0.0, 0.5, 1.0 );
+		cameraL.viewport = new Vector4();
 		cameraL.layers.enable( 1 );
 
 		var cameraR = new PerspectiveCamera();
-		cameraR.bounds = new Vector4( 0.5, 0.0, 0.5, 1.0 );
+		cameraR.viewport = new Vector4();
 		cameraR.layers.enable( 2 );
 
 		var cameraVR = new ArrayCamera( [ cameraL, cameraR ] );
@@ -22024,17 +22025,18 @@
 			if ( isPresenting() ) {
 
 				var eyeParameters = device.getEyeParameters( 'left' );
-				var renderWidth = eyeParameters.renderWidth * framebufferScaleFactor;
-				var renderHeight = eyeParameters.renderHeight * framebufferScaleFactor;
+				renderWidth = eyeParameters.renderWidth * framebufferScaleFactor;
+				renderHeight = eyeParameters.renderHeight * framebufferScaleFactor;
 
 				currentPixelRatio = renderer.getPixelRatio();
 				renderer.getSize( currentSize );
 
 				renderer.setDrawingBufferSize( renderWidth * 2, renderHeight, 1 );
 
-				animation.start();
+				cameraL.viewport.set( 0, 0, renderWidth, renderHeight );
+				cameraR.viewport.set( renderWidth, 0, renderWidth, renderHeight );
 
-				scope.dispatchEvent( { type: 'startSession' } );
+				animation.start();
 
 			} else {
 
@@ -22045,8 +22047,6 @@
 				}
 
 				animation.stop();
-
-				scope.dispatchEvent( { type: 'endSession' } );
 
 			}
 
@@ -22131,6 +22131,16 @@
 					controller.visible = false;
 
 				}
+
+			}
+
+		}
+
+		function updateViewportFromBounds( viewport, bounds ) {
+
+			if ( bounds !== null && bounds.length === 4 ) {
+
+				viewport.set( bounds[ 0 ] * renderWidth, bounds[ 1 ] * renderHeight, bounds[ 2 ] * renderWidth, bounds[ 3 ] * renderHeight );
 
 			}
 
@@ -22303,17 +22313,8 @@
 
 				var layer = layers[ 0 ];
 
-				if ( layer.leftBounds !== null && layer.leftBounds.length === 4 ) {
-
-					cameraL.bounds.fromArray( layer.leftBounds );
-
-				}
-
-				if ( layer.rightBounds !== null && layer.rightBounds.length === 4 ) {
-
-					cameraR.bounds.fromArray( layer.rightBounds );
-
-				}
+				updateViewportFromBounds( cameraL.viewport, layer.leftBounds );
+				updateViewportFromBounds( cameraR.viewport, layer.rightBounds );
 
 			}
 
@@ -22361,15 +22362,11 @@
 
 	}
 
-	Object.assign( WebVRManager.prototype, EventDispatcher.prototype );
-
 	/**
 	 * @author mrdoob / http://mrdoob.com/
 	 */
 
 	function WebXRManager( renderer ) {
-
-		var scope = this;
 
 		var gl = renderer.context;
 
@@ -22456,8 +22453,6 @@
 			renderer.setRenderTarget( renderer.getRenderTarget() ); // Hack #15830
 			animation.stop();
 
-			scope.dispatchEvent( { type: 'endSession' } );
-
 		}
 
 		this.setFramebufferScaleFactor = function ( value ) {
@@ -22492,8 +22487,6 @@
 
 					animation.setContext( session );
 					animation.start();
-
-					scope.dispatchEvent( { type: 'startSession' } );
 
 				} );
 
@@ -22675,8 +22668,6 @@
 
 	}
 
-	Object.assign( WebXRManager.prototype, EventDispatcher.prototype );
-
 	/**
 	 * @author supereggbert / http://www.paulbrunt.co.uk/
 	 * @author mrdoob / http://mrdoob.com/
@@ -22717,7 +22708,7 @@
 			 * Enables error checking and reporting when shader programs are being compiled
 			 * @type {boolean}
 			 */
-			checkShaderErrors: false
+			checkShaderErrors: true
 		};
 
 		// clearing
@@ -24012,22 +24003,7 @@
 
 						if ( object.layers.test( camera2.layers ) ) {
 
-							if ( 'viewport' in camera2 ) { // XR
-
-								state.viewport( _currentViewport.copy( camera2.viewport ) );
-
-							} else {
-
-								var bounds = camera2.bounds;
-
-								var x = bounds.x * _width;
-								var y = bounds.y * _height;
-								var width = bounds.z * _width;
-								var height = bounds.w * _height;
-
-								state.viewport( _currentViewport.set( x, y, width, height ).multiplyScalar( _pixelRatio ) );
-
-							}
+							state.viewport( _currentViewport.copy( camera2.viewport ) );
 
 							currentRenderState.setupLights( camera2 );
 
@@ -25764,8 +25740,17 @@
 			return function raycast( raycaster, intersects ) {
 
 				worldScale.setFromMatrixScale( this.matrixWorld );
-				viewWorldMatrix.getInverse( this.modelViewMatrix ).premultiply( this.matrixWorld );
+
+				viewWorldMatrix.copy( raycaster.camera.matrixWorld );
+				this.modelViewMatrix.multiplyMatrices( raycaster.camera.matrixWorldInverse, this.matrixWorld );
+
 				mvPosition.setFromMatrixPosition( this.modelViewMatrix );
+
+				if ( raycaster.camera.isPerspectiveCamera && this.material.sizeAttenuation === false ) {
+
+					worldScale.multiplyScalar( - mvPosition.z );
+
+				}
 
 				var rotation = this.material.rotation;
 				var sin, cos;
@@ -38049,8 +38034,17 @@
 
 			}
 
-			// Merges multi-byte utf-8 characters.
-			return decodeURIComponent( escape( s ) );
+			try {
+
+				// merges multi-byte utf-8 characters.
+
+				return decodeURIComponent( escape( s ) );
+
+			} catch ( e ) { // see #16358
+
+				return s;
+
+			}
 
 		},
 
@@ -43258,10 +43252,18 @@
 
 						time = 0;
 
-					} else break handle_stop;
+					} else {
+
+						this.time = time;
+
+						break handle_stop;
+
+					}
 
 					if ( this.clampWhenFinished ) this.paused = true;
 					else this.enabled = false;
+
+					this.time = time;
 
 					this._mixer.dispatchEvent( {
 						type: 'finished', action: this,
@@ -43314,6 +43316,8 @@
 
 						time = deltaTime > 0 ? duration : 0;
 
+						this.time = time;
+
 						this._mixer.dispatchEvent( {
 							type: 'finished', action: this,
 							direction: deltaTime > 0 ? 1 : - 1
@@ -43338,11 +43342,17 @@
 
 						this._loopCount = loopCount;
 
+						this.time = time;
+
 						this._mixer.dispatchEvent( {
 							type: 'loop', action: this, loopDelta: loopDelta
 						} );
 
 					}
+
+				} else {
+
+					this.time = time;
 
 				}
 
@@ -43350,14 +43360,12 @@
 
 					// invert time for the "pong round"
 
-					this.time = time;
 					return duration - time;
 
 				}
 
 			}
 
-			this.time = time;
 			return time;
 
 		},
@@ -44386,11 +44394,13 @@
 
 				this.ray.origin.setFromMatrixPosition( camera.matrixWorld );
 				this.ray.direction.set( coords.x, coords.y, 0.5 ).unproject( camera ).sub( this.ray.origin ).normalize();
+				this.camera = camera;
 
 			} else if ( ( camera && camera.isOrthographicCamera ) ) {
 
 				this.ray.origin.set( coords.x, coords.y, ( camera.near + camera.far ) / ( camera.near - camera.far ) ).unproject( camera ); // set origin in plane of camera
 				this.ray.direction.set( 0, 0, - 1 ).transformDirection( camera.matrixWorld );
+				this.camera = camera;
 
 			} else {
 
