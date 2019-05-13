@@ -22109,8 +22109,6 @@
 
 					var buttonId = gamepad.id === 'Daydream Controller' ? 0 : 1;
 
-					if ( triggers[ i ] === undefined ) triggers[ i ] = false;
-
 					if ( triggers[ i ] !== gamepad.buttons[ buttonId ].pressed ) {
 
 						triggers[ i ] = gamepad.buttons[ buttonId ].pressed;
