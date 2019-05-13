@@ -22103,6 +22103,8 @@ function WebVRManager( renderer ) {
 
 				var buttonId = gamepad.id === 'Daydream Controller' ? 0 : 1;
 
+				if ( triggers[ i ] === undefined ) triggers[ i ] = false;
+
 				if ( triggers[ i ] !== gamepad.buttons[ buttonId ].pressed ) {
 
 					triggers[ i ] = gamepad.buttons[ buttonId ].pressed;
@@ -22702,7 +22704,7 @@ function WebGLRenderer( parameters ) {
 		 * Enables error checking and reporting when shader programs are being compiled
 		 * @type {boolean}
 		 */
-		checkShaderErrors: false
+		checkShaderErrors: true
 	};
 
 	// clearing
@@ -43237,10 +43239,18 @@ Object.assign( AnimationAction.prototype, {
 
 					time = 0;
 
-				} else break handle_stop;
+				} else {
+
+					this.time = time;
+
+					break handle_stop;
+
+				}
 
 				if ( this.clampWhenFinished ) this.paused = true;
 				else this.enabled = false;
+
+				this.time = time;
 
 				this._mixer.dispatchEvent( {
 					type: 'finished', action: this,
@@ -43293,6 +43303,8 @@ Object.assign( AnimationAction.prototype, {
 
 					time = deltaTime > 0 ? duration : 0;
 
+					this.time = time;
+
 					this._mixer.dispatchEvent( {
 						type: 'finished', action: this,
 						direction: deltaTime > 0 ? 1 : - 1
@@ -43317,11 +43329,17 @@ Object.assign( AnimationAction.prototype, {
 
 					this._loopCount = loopCount;
 
+					this.time = time;
+
 					this._mixer.dispatchEvent( {
 						type: 'loop', action: this, loopDelta: loopDelta
 					} );
 
 				}
+
+			} else {
+
+				this.time = time;
 
 			}
 
@@ -43329,14 +43347,12 @@ Object.assign( AnimationAction.prototype, {
 
 				// invert time for the "pong round"
 
-				this.time = time;
 				return duration - time;
 
 			}
 
 		}
 
-		this.time = time;
 		return time;
 
 	},
