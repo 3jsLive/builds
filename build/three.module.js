@@ -25735,12 +25735,12 @@ Sprite.prototype = Object.assign( Object.create( Object3D.prototype ), {
 
 			worldScale.setFromMatrixScale( this.matrixWorld );
 
-			viewWorldMatrix.copy( raycaster.camera.matrixWorld );
-			this.modelViewMatrix.multiplyMatrices( raycaster.camera.matrixWorldInverse, this.matrixWorld );
+			viewWorldMatrix.copy( raycaster._camera.matrixWorld );
+			this.modelViewMatrix.multiplyMatrices( raycaster._camera.matrixWorldInverse, this.matrixWorld );
 
 			mvPosition.setFromMatrixPosition( this.modelViewMatrix );
 
-			if ( raycaster.camera.isPerspectiveCamera && this.material.sizeAttenuation === false ) {
+			if ( raycaster._camera.isPerspectiveCamera && this.material.sizeAttenuation === false ) {
 
 				worldScale.multiplyScalar( - mvPosition.z );
 
@@ -44388,13 +44388,13 @@ Object.assign( Raycaster.prototype, {
 
 			this.ray.origin.setFromMatrixPosition( camera.matrixWorld );
 			this.ray.direction.set( coords.x, coords.y, 0.5 ).unproject( camera ).sub( this.ray.origin ).normalize();
-			this.camera = camera;
+			this._camera = camera;
 
 		} else if ( ( camera && camera.isOrthographicCamera ) ) {
 
 			this.ray.origin.set( coords.x, coords.y, ( camera.near + camera.far ) / ( camera.near - camera.far ) ).unproject( camera ); // set origin in plane of camera
 			this.ray.direction.set( 0, 0, - 1 ).transformDirection( camera.matrixWorld );
-			this.camera = camera;
+			this._camera = camera;
 
 		} else {
 
