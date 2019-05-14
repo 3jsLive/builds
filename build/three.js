@@ -10786,17 +10786,6 @@
 
 			return new this.constructor( this.array, this.itemSize ).copy( this );
 
-		},
-
-		toJSON: function () {
-
-			return {
-				itemSize: this.itemSize,
-				type: this.array.constructor.name,
-				array: Array.prototype.slice.call( this.array ),
-				normalized: this.normalized
-			};
-
 		}
 
 	} );
@@ -12235,7 +12224,12 @@
 
 				var attribute = attributes[ key ];
 
-				var attributeData = attribute.toJSON();
+				var attributeData = {
+					itemSize: attribute.itemSize,
+					type: attribute.array.constructor.name,
+					array: Array.prototype.slice.call( attribute.array ),
+					normalized: attribute.normalized
+				};
 
 				if ( attribute.name !== '' ) attributeData.name = attribute.name;
 
@@ -12256,7 +12250,12 @@
 
 					var attribute = attributeArray[ i ];
 
-					var attributeData = attribute.toJSON();
+					var attributeData = {
+						itemSize: attribute.itemSize,
+						type: attribute.array.constructor.name,
+						array: Array.prototype.slice.call( attribute.array ),
+						normalized: attribute.normalized
+					};
 
 					if ( attribute.name !== '' ) attributeData.name = attribute.name;
 
@@ -22109,8 +22108,6 @@
 					// Trigger
 
 					var buttonId = gamepad.id === 'Daydream Controller' ? 0 : 1;
-
-					if ( triggers[ i ] === undefined ) triggers[ i ] = false;
 
 					if ( triggers[ i ] !== gamepad.buttons[ buttonId ].pressed ) {
 
@@ -44304,18 +44301,6 @@
 			this.meshPerAttribute = source.meshPerAttribute;
 
 			return this;
-
-		},
-
-		toJSON: function ()	{
-
-			var data = BufferAttribute.prototype.toJSON.call( this );
-
-			data.meshPerAttribute = this.meshPerAttribute;
-
-			data.isInstancedBufferAttribute = true;
-
-			return data;
 
 		}
 
