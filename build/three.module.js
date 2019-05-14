@@ -10780,6 +10780,17 @@ Object.assign( BufferAttribute.prototype, {
 
 		return new this.constructor( this.array, this.itemSize ).copy( this );
 
+	},
+
+	toJSON: function () {
+
+		return {
+			itemSize: this.itemSize,
+			type: this.array.constructor.name,
+			array: Array.prototype.slice.call( this.array ),
+			normalized: this.normalized
+		};
+
 	}
 
 } );
@@ -12218,12 +12229,7 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 			var attribute = attributes[ key ];
 
-			var attributeData = {
-				itemSize: attribute.itemSize,
-				type: attribute.array.constructor.name,
-				array: Array.prototype.slice.call( attribute.array ),
-				normalized: attribute.normalized
-			};
+			var attributeData = attribute.toJSON();
 
 			if ( attribute.name !== '' ) attributeData.name = attribute.name;
 
@@ -12244,12 +12250,7 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 				var attribute = attributeArray[ i ];
 
-				var attributeData = {
-					itemSize: attribute.itemSize,
-					type: attribute.array.constructor.name,
-					array: Array.prototype.slice.call( attribute.array ),
-					normalized: attribute.normalized
-				};
+				var attributeData = attribute.toJSON();
 
 				if ( attribute.name !== '' ) attributeData.name = attribute.name;
 
@@ -22103,6 +22104,8 @@ function WebVRManager( renderer ) {
 
 				var buttonId = gamepad.id === 'Daydream Controller' ? 0 : 1;
 
+				if ( triggers[ i ] === undefined ) triggers[ i ] = false;
+
 				if ( triggers[ i ] !== gamepad.buttons[ buttonId ].pressed ) {
 
 					triggers[ i ] = gamepad.buttons[ buttonId ].pressed;
@@ -22702,7 +22705,7 @@ function WebGLRenderer( parameters ) {
 		 * Enables error checking and reporting when shader programs are being compiled
 		 * @type {boolean}
 		 */
-		checkShaderErrors: false
+		checkShaderErrors: true
 	};
 
 	// clearing
@@ -38046,6 +38049,105 @@ var LoaderUtils = {
 };
 
 /**
+ * @author benaadams / https://twitter.com/ben_a_adams
+ */
+
+function InstancedBufferGeometry() {
+
+	BufferGeometry.call( this );
+
+	this.type = 'InstancedBufferGeometry';
+	this.maxInstancedCount = undefined;
+
+}
+
+InstancedBufferGeometry.prototype = Object.assign( Object.create( BufferGeometry.prototype ), {
+
+	constructor: InstancedBufferGeometry,
+
+	isInstancedBufferGeometry: true,
+
+	copy: function ( source ) {
+
+		BufferGeometry.prototype.copy.call( this, source );
+
+		this.maxInstancedCount = source.maxInstancedCount;
+
+		return this;
+
+	},
+
+	clone: function () {
+
+		return new this.constructor().copy( this );
+
+	},
+
+	toJSON: function(){
+		var data = InstancedBufferGeometry.prototype.toJSON.call( this );
+
+		data.maxInstancedCount = this.maxInstancedCount;
+
+		data.isInstancedBufferGeometry = true;
+
+		return data;
+	}
+
+} );
+
+/**
+ * @author benaadams / https://twitter.com/ben_a_adams
+ */
+
+function InstancedBufferAttribute( array, itemSize, normalized, meshPerAttribute ) {
+
+	if ( typeof ( normalized ) === 'number' ) {
+
+		meshPerAttribute = normalized;
+
+		normalized = false;
+
+		console.error( 'THREE.InstancedBufferAttribute: The constructor now expects normalized as the third argument.' );
+
+	}
+
+	BufferAttribute.call( this, array, itemSize, normalized );
+
+	this.meshPerAttribute = meshPerAttribute || 1;
+
+}
+
+InstancedBufferAttribute.prototype = Object.assign( Object.create( BufferAttribute.prototype ), {
+
+	constructor: InstancedBufferAttribute,
+
+	isInstancedBufferAttribute: true,
+
+	copy: function ( source ) {
+
+		BufferAttribute.prototype.copy.call( this, source );
+
+		this.meshPerAttribute = source.meshPerAttribute;
+
+		return this;
+
+	},
+
+	toJSON: function ()	{
+
+		var data = BufferAttribute.prototype.toJSON.call( this );
+
+		data.meshPerAttribute = this.meshPerAttribute;
+
+		data.isInstancedBufferAttribute = true;
+
+		return data;
+
+	}
+
+} );
+
+/**
  * @author mrdoob / http://mrdoob.com/
  */
 
@@ -38073,7 +38175,7 @@ Object.assign( BufferGeometryLoader.prototype, {
 
 	parse: function ( json ) {
 
-		var geometry = new BufferGeometry();
+		var geometry = json.isInstancedBufferGeometry ? new InstancedBufferGeometry() : new BufferGeometry();
 
 		var index = json.data.index;
 
@@ -38090,8 +38192,8 @@ Object.assign( BufferGeometryLoader.prototype, {
 
 			var attribute = attributes[ key ];
 			var typedArray = new TYPED_ARRAYS[ attribute.type ]( attribute.array );
-
-			var bufferAttribute = new BufferAttribute( typedArray, attribute.itemSize, attribute.normalized );
+			var bufferAttributeConstr = attribute.isInstancedBufferAttribute ? InstancedBufferAttribute : BufferAttribute;
+			var bufferAttribute = new bufferAttributeConstr( typedArray, attribute.itemSize, attribute.normalized );
 			if ( attribute.name !== undefined ) bufferAttribute.name = attribute.name;
 			geometry.addAttribute( key, bufferAttribute );
 
@@ -38559,6 +38661,7 @@ Object.assign( ObjectLoader.prototype, {
 						break;
 
 					case 'BufferGeometry':
+					case 'InstancedBufferGeometry':
 
 						geometry = bufferGeometryLoader.parse( data );
 
@@ -43237,10 +43340,18 @@ Object.assign( AnimationAction.prototype, {
 
 					time = 0;
 
-				} else break handle_stop;
+				} else {
+
+					this.time = time;
+
+					break handle_stop;
+
+				}
 
 				if ( this.clampWhenFinished ) this.paused = true;
 				else this.enabled = false;
+
+				this.time = time;
 
 				this._mixer.dispatchEvent( {
 					type: 'finished', action: this,
@@ -43293,6 +43404,8 @@ Object.assign( AnimationAction.prototype, {
 
 					time = deltaTime > 0 ? duration : 0;
 
+					this.time = time;
+
 					this._mixer.dispatchEvent( {
 						type: 'finished', action: this,
 						direction: deltaTime > 0 ? 1 : - 1
@@ -43317,11 +43430,17 @@ Object.assign( AnimationAction.prototype, {
 
 					this._loopCount = loopCount;
 
+					this.time = time;
+
 					this._mixer.dispatchEvent( {
 						type: 'loop', action: this, loopDelta: loopDelta
 					} );
 
 				}
+
+			} else {
+
+				this.time = time;
 
 			}
 
@@ -43329,14 +43448,12 @@ Object.assign( AnimationAction.prototype, {
 
 				// invert time for the "pong round"
 
-				this.time = time;
 				return duration - time;
 
 			}
 
 		}
 
-		this.time = time;
 		return time;
 
 	},
@@ -44183,43 +44300,6 @@ Uniform.prototype.clone = function () {
  * @author benaadams / https://twitter.com/ben_a_adams
  */
 
-function InstancedBufferGeometry() {
-
-	BufferGeometry.call( this );
-
-	this.type = 'InstancedBufferGeometry';
-	this.maxInstancedCount = undefined;
-
-}
-
-InstancedBufferGeometry.prototype = Object.assign( Object.create( BufferGeometry.prototype ), {
-
-	constructor: InstancedBufferGeometry,
-
-	isInstancedBufferGeometry: true,
-
-	copy: function ( source ) {
-
-		BufferGeometry.prototype.copy.call( this, source );
-
-		this.maxInstancedCount = source.maxInstancedCount;
-
-		return this;
-
-	},
-
-	clone: function () {
-
-		return new this.constructor().copy( this );
-
-	}
-
-} );
-
-/**
- * @author benaadams / https://twitter.com/ben_a_adams
- */
-
 function InstancedInterleavedBuffer( array, stride, meshPerAttribute ) {
 
 	InterleavedBuffer.call( this, array, stride );
@@ -44237,46 +44317,6 @@ InstancedInterleavedBuffer.prototype = Object.assign( Object.create( Interleaved
 	copy: function ( source ) {
 
 		InterleavedBuffer.prototype.copy.call( this, source );
-
-		this.meshPerAttribute = source.meshPerAttribute;
-
-		return this;
-
-	}
-
-} );
-
-/**
- * @author benaadams / https://twitter.com/ben_a_adams
- */
-
-function InstancedBufferAttribute( array, itemSize, normalized, meshPerAttribute ) {
-
-	if ( typeof ( normalized ) === 'number' ) {
-
-		meshPerAttribute = normalized;
-
-		normalized = false;
-
-		console.error( 'THREE.InstancedBufferAttribute: The constructor now expects normalized as the third argument.' );
-
-	}
-
-	BufferAttribute.call( this, array, itemSize, normalized );
-
-	this.meshPerAttribute = meshPerAttribute || 1;
-
-}
-
-InstancedBufferAttribute.prototype = Object.assign( Object.create( BufferAttribute.prototype ), {
-
-	constructor: InstancedBufferAttribute,
-
-	isInstancedBufferAttribute: true,
-
-	copy: function ( source ) {
-
-		BufferAttribute.prototype.copy.call( this, source );
 
 		this.meshPerAttribute = source.meshPerAttribute;
 
