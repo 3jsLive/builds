@@ -10780,6 +10780,17 @@ Object.assign( BufferAttribute.prototype, {
 
 		return new this.constructor( this.array, this.itemSize ).copy( this );
 
+	},
+
+	toJSON: function () {
+
+		return {
+			itemSize: this.itemSize,
+			type: this.array.constructor.name,
+			array: Array.prototype.slice.call( this.array ),
+			normalized: this.normalized
+		};
+
 	}
 
 } );
@@ -12218,12 +12229,7 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 			var attribute = attributes[ key ];
 
-			var attributeData = {
-				itemSize: attribute.itemSize,
-				type: attribute.array.constructor.name,
-				array: Array.prototype.slice.call( attribute.array ),
-				normalized: attribute.normalized
-			};
+			var attributeData = attribute.toJSON();
 
 			if ( attribute.name !== '' ) attributeData.name = attribute.name;
 
@@ -12244,12 +12250,7 @@ BufferGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 				var attribute = attributeArray[ i ];
 
-				var attributeData = {
-					itemSize: attribute.itemSize,
-					type: attribute.array.constructor.name,
-					array: Array.prototype.slice.call( attribute.array ),
-					normalized: attribute.normalized
-				};
+				var attributeData = attribute.toJSON();
 
 				if ( attribute.name !== '' ) attributeData.name = attribute.name;
 
@@ -22102,6 +22103,8 @@ function WebVRManager( renderer ) {
 				// Trigger
 
 				var buttonId = gamepad.id === 'Daydream Controller' ? 0 : 1;
+
+				if ( triggers[ i ] === undefined ) triggers[ i ] = false;
 
 				if ( triggers[ i ] !== gamepad.buttons[ buttonId ].pressed ) {
 
@@ -44295,6 +44298,18 @@ InstancedBufferAttribute.prototype = Object.assign( Object.create( BufferAttribu
 		this.meshPerAttribute = source.meshPerAttribute;
 
 		return this;
+
+	},
+
+	toJSON: function ()	{
+
+		var data = BufferAttribute.prototype.toJSON.call( this );
+
+		data.meshPerAttribute = this.meshPerAttribute;
+
+		data.isInstancedBufferAttribute = true;
+
+		return data;
 
 	}
 
