@@ -38089,8 +38089,7 @@
 
 		},
 
-		toJSON: function () {
-
+		toJSON: function(){
 			var data = BufferGeometry.prototype.toJSON.call( this );
 
 			data.maxInstancedCount = this.maxInstancedCount;
@@ -38098,7 +38097,6 @@
 			data.isInstancedBufferGeometry = true;
 
 			return data;
-
 		}
 
 	} );
