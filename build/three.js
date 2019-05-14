@@ -10786,17 +10786,6 @@
 
 			return new this.constructor( this.array, this.itemSize ).copy( this );
 
-		},
-
-		toJSON: function () {
-
-			return {
-				itemSize: this.itemSize,
-				type: this.array.constructor.name,
-				array: Array.prototype.slice.call( this.array ),
-				normalized: this.normalized
-			};
-
 		}
 
 	} );
@@ -12235,7 +12224,12 @@
 
 				var attribute = attributes[ key ];
 
-				var attributeData = attribute.toJSON();
+				var attributeData = {
+					itemSize: attribute.itemSize,
+					type: attribute.array.constructor.name,
+					array: Array.prototype.slice.call( attribute.array ),
+					normalized: attribute.normalized
+				};
 
 				if ( attribute.name !== '' ) attributeData.name = attribute.name;
 
@@ -12256,7 +12250,12 @@
 
 					var attribute = attributeArray[ i ];
 
-					var attributeData = attribute.toJSON();
+					var attributeData = {
+						itemSize: attribute.itemSize,
+						type: attribute.array.constructor.name,
+						array: Array.prototype.slice.call( attribute.array ),
+						normalized: attribute.normalized
+					};
 
 					if ( attribute.name !== '' ) attributeData.name = attribute.name;
 
@@ -22110,8 +22109,6 @@
 
 					var buttonId = gamepad.id === 'Daydream Controller' ? 0 : 1;
 
-					if ( triggers[ i ] === undefined ) triggers[ i ] = false;
-
 					if ( triggers[ i ] !== gamepad.buttons[ buttonId ].pressed ) {
 
 						triggers[ i ] = gamepad.buttons[ buttonId ].pressed;
@@ -22711,7 +22708,7 @@
 			 * Enables error checking and reporting when shader programs are being compiled
 			 * @type {boolean}
 			 */
-			checkShaderErrors: true
+			checkShaderErrors: false
 		};
 
 		// clearing
@@ -43246,18 +43243,10 @@
 
 						time = 0;
 
-					} else {
-
-						this.time = time;
-
-						break handle_stop;
-
-					}
+					} else break handle_stop;
 
 					if ( this.clampWhenFinished ) this.paused = true;
 					else this.enabled = false;
-
-					this.time = time;
 
 					this._mixer.dispatchEvent( {
 						type: 'finished', action: this,
@@ -43310,8 +43299,6 @@
 
 						time = deltaTime > 0 ? duration : 0;
 
-						this.time = time;
-
 						this._mixer.dispatchEvent( {
 							type: 'finished', action: this,
 							direction: deltaTime > 0 ? 1 : - 1
@@ -43336,17 +43323,11 @@
 
 						this._loopCount = loopCount;
 
-						this.time = time;
-
 						this._mixer.dispatchEvent( {
 							type: 'loop', action: this, loopDelta: loopDelta
 						} );
 
 					}
-
-				} else {
-
-					this.time = time;
 
 				}
 
@@ -43354,12 +43335,14 @@
 
 					// invert time for the "pong round"
 
+					this.time = time;
 					return duration - time;
 
 				}
 
 			}
 
+			this.time = time;
 			return time;
 
 		},
@@ -44304,18 +44287,6 @@
 			this.meshPerAttribute = source.meshPerAttribute;
 
 			return this;
-
-		},
-
-		toJSON: function ()	{
-
-			var data = BufferAttribute.prototype.toJSON.call( this );
-
-			data.meshPerAttribute = this.meshPerAttribute;
-
-			data.isInstancedBufferAttribute = true;
-
-			return data;
 
 		}
 
