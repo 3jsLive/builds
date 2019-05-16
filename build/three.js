@@ -9267,7 +9267,7 @@
 
 			if ( uvs2 !== undefined ) this.faceVertexUvs[ 1 ] = [];
 
-			for ( var i = 0; i < positions.length; i += 3 ) {
+			for ( var i = 0, j = 0; i < positions.length; i += 3, j += 2 ) {
 
 				scope.vertices.push( new Vector3().fromArray( positions, i ) );
 
