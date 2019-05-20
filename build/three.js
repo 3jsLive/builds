@@ -22215,8 +22215,11 @@
 
 		var DEFAULT_NUMVIEWS = 2;
 		var gl = renderer.context;
+
 		var capabilities = renderer.capabilities;
 		var properties = renderer.properties;
+
+		var maxNumViews = capabilities.maxMultiviewViews;
 
 		var renderTarget, currentRenderTarget;
 		var mat3, mat4, cameraArray, renderSize;
@@ -22277,7 +22280,6 @@
 
 		}
 
-
 		function updateCameraProjectionMatricesUniform( camera, uniforms ) {
 
 			var cameras = getCameraArray( camera );
@@ -22322,6 +22324,24 @@
 
 		}
 
+		function isMultiviewCompatible( camera ) {
+
+			if ( ! camera.isArrayCamera ) return true;
+
+			var cameras = camera.cameras;
+
+			if ( cameras.length > maxNumViews ) return false;
+
+			for ( var i = 1, il = cameras.length; i < il; i ++ ) {
+
+				if ( cameras[ 0 ].viewport.z !== cameras[ i ].viewport.z ||
+					cameras[ 0 ].viewport.w !== cameras[ i ].viewport.w ) return false;
+
+			}
+
+			return true;
+
+		}
 
 		function resizeRenderTarget( camera ) {
 
@@ -22337,9 +22357,10 @@
 
 			if ( camera.isArrayCamera ) {
 
-				var bounds = camera.cameras[ 0 ].bounds;
+				var viewport = camera.cameras[ 0 ].viewport;
 
-				renderTarget.setSize( bounds.z * renderSize.x, bounds.w * renderSize.y );
+				renderTarget.setSize( viewport.z, viewport.w );
+
 				renderTarget.setNumViews( camera.cameras.length );
 
 			} else {
@@ -22353,6 +22374,8 @@
 
 		function attachRenderTarget( camera ) {
 
+			if ( ! isMultiviewCompatible( camera ) ) return;
+
 			currentRenderTarget = renderer.getRenderTarget();
 			resizeRenderTarget( camera );
 			renderer.setRenderTarget( renderTarget );
@@ -22360,6 +22383,8 @@
 		}
 
 		function detachRenderTarget( camera ) {
+
+			if ( renderTarget !== renderer.getRenderTarget() ) return;
 
 			renderer.setRenderTarget( currentRenderTarget );
 			flush( camera );
@@ -22380,12 +22405,12 @@
 
 				for ( var i = 0; i < numViews; i ++ ) {
 
-					var bounds = camera.cameras[ i ].bounds;
+					var viewport = camera.cameras[ i ].viewport;
 
-					var x1 = bounds.x * renderSize.x;
-					var y1 = bounds.y * renderSize.y;
-					var x2 = x1 + bounds.z * renderSize.x;
-					var y2 = y1 + bounds.w * renderSize.y;
+					var x1 = viewport.x;
+					var y1 = viewport.y;
+					var x2 = x1 + viewport.z;
+					var y2 = y1 + viewport.w;
 
 					gl.bindFramebuffer( 36008, srcFramebuffers[ i ] );
 					gl.blitFramebuffer( 0, 0, viewWidth, viewHeight, x1, y1, x2, y2, 16384, 9728 );
@@ -24630,22 +24655,7 @@
 
 						if ( object.layers.test( camera2.layers ) ) {
 
-							if ( 'viewport' in camera2 ) { // XR
-
-								state.viewport( _currentViewport.copy( camera2.viewport ) );
-
-							} else {
-
-								var bounds = camera2.bounds;
-
-								var x = bounds.x * _width;
-								var y = bounds.y * _height;
-								var width = bounds.z * _width;
-								var height = bounds.w * _height;
-
-								state.viewport( _currentViewport.set( x, y, width, height ).multiplyScalar( _pixelRatio ) );
-
-							}
+							state.viewport( _currentViewport.copy( camera2.viewport ) );
 
 							currentRenderState.setupLights( camera2 );
 
