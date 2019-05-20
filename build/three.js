@@ -22629,7 +22629,7 @@
 
 		function detachRenderTarget( camera ) {
 
-			if ( renderTarget !== renderer.getRenderTarget() ) return false;
+			if ( renderTarget !== renderer.getRenderTarget() ) return;
 
 			renderer.setRenderTarget( currentRenderTarget );
 			flush( camera );
