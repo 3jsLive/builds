@@ -5589,23 +5589,13 @@
 
 		},
 
-		setPosition: function ( x, y, z ) {
+		setPosition: function ( v ) {
 
 			var te = this.elements;
 
-			if ( x.isVector3 ) {
-
-				te[ 12 ] = x.x;
-				te[ 13 ] = x.y;
-				te[ 14 ] = x.z;
-
-			} else {
-
-				te[ 12 ] = x;
-				te[ 13 ] = y;
-				te[ 14 ] = z;
-
-			}
+			te[ 12 ] = v.x;
+			te[ 13 ] = v.y;
+			te[ 14 ] = v.z;
 
 			return this;
 
