@@ -48611,6 +48611,34 @@
 
 	//
 
+	function Projector() {
+
+		console.error( 'THREE.Projector has been moved to /examples/js/renderers/Projector.js.' );
+
+		this.projectVector = function ( vector, camera ) {
+
+			console.warn( 'THREE.Projector: .projectVector() is now vector.project().' );
+			vector.project( camera );
+
+		};
+
+		this.unprojectVector = function ( vector, camera ) {
+
+			console.warn( 'THREE.Projector: .unprojectVector() is now vector.unproject().' );
+			vector.unproject( camera );
+
+		};
+
+		this.pickingRay = function () {
+
+			console.error( 'THREE.Projector: .pickingRay() is now raycaster.setFromCamera().' );
+
+		};
+
+	}
+
+	//
+
 	function CanvasRenderer() {
 
 		console.error( 'THREE.CanvasRenderer has been removed' );
@@ -48925,6 +48953,7 @@
 	exports.PolyhedronGeometry = PolyhedronGeometry;
 	exports.PositionalAudio = PositionalAudio;
 	exports.PositionalAudioHelper = PositionalAudioHelper;
+	exports.Projector = Projector;
 	exports.PropertyBinding = PropertyBinding;
 	exports.PropertyMixer = PropertyMixer;
 	exports.QuadraticBezierCurve = QuadraticBezierCurve;
