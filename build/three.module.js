@@ -16386,11 +16386,11 @@ function setValueV1i( gl, v ) {
 
 	var cache = this.cache;
 
-	if ( cache[ 0 ] === v ) return;
+	if ( arraysEqual( cache, v ) ) return;
 
-	gl.uniform1i( this.addr, v );
+	gl.uniform1iv( this.addr, v );
 
-	cache[ 0 ] = v;
+	copyArray( cache, v );
 
 }
 
