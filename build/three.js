@@ -16392,11 +16392,11 @@
 
 		var cache = this.cache;
 
-		if ( arraysEqual( cache, v ) ) return;
+		if ( cache[ 0 ] === v ) return;
 
-		gl.uniform1iv( this.addr, v );
+		gl.uniform1i( this.addr, v );
 
-		copyArray( cache, v );
+		cache[ 0 ] = v;
 
 	}
 
