@@ -16913,7 +16913,7 @@
 		var status = gl.getShaderParameter( shader, 35713 );
 		var source = gl.getShaderSource( shader );
 		var log = gl.getShaderInfoLog( shader ).trim();
-		var type = gl.getShaderParameter( shader, gl.SHADER_TYPE ) === 35633 ? 'vertex' : 'fragment';
+		var type = gl.getShaderParameter( shader, 35663 ) === 35633 ? 'vertex' : 'fragment';
 
 		if ( status && log === '' ) return '';
 
