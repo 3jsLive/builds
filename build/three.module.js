@@ -16846,23 +16846,6 @@ WebGLUniforms.seqWithValue = function ( seq, values ) {
  * @author mrdoob / http://mrdoob.com/
  */
 
-function WebGLShader( gl, type, string ) {
-
-	var shader = gl.createShader( type );
-
-	gl.shaderSource( shader, string );
-	gl.compileShader( shader );
-
-	return shader;
-
-}
-
-/**
- * @author mrdoob / http://mrdoob.com/
- */
-
-var programIdCount = 0;
-
 function addLineNumbers( string ) {
 
 	var lines = string.split( '\n' );
@@ -16876,6 +16859,42 @@ function addLineNumbers( string ) {
 	return lines.join( '\n' );
 
 }
+
+function WebGLShader( gl, type, string, debug ) {
+
+	var shader = gl.createShader( type );
+
+	gl.shaderSource( shader, string );
+	gl.compileShader( shader );
+
+	if ( debug === true ) {
+
+		if ( gl.getShaderParameter( shader, 35713 ) === false ) {
+
+			console.error( 'THREE.WebGLShader: Shader couldn\'t compile.' );
+
+		}
+
+		if ( gl.getShaderInfoLog( shader ) !== '' ) {
+
+			console.warn( 'THREE.WebGLShader: gl.getShaderInfoLog()', type === 35633 ? 'vertex' : 'fragment', gl.getShaderInfoLog( shader ), addLineNumbers( string ) );
+
+		}
+
+	}
+
+	// --enable-privileged-webgl-extension
+	// console.log( type, gl.getExtension( 'WEBGL_debug_shaders' ).getTranslatedShaderSource( shader ) );
+
+	return shader;
+
+}
+
+/**
+ * @author mrdoob / http://mrdoob.com/
+ */
+
+var programIdCount = 0;
 
 function getEncodingComponents( encoding ) {
 
@@ -16899,22 +16918,6 @@ function getEncodingComponents( encoding ) {
 			throw new Error( 'unsupported encoding: ' + encoding );
 
 	}
-
-}
-
-function getShaderErrors( gl, shader ) {
-
-	var status = gl.getShaderParameter( shader, 35713 );
-	var source = gl.getShaderSource( shader );
-	var log = gl.getShaderInfoLog( shader ).trim();
-	var type = gl.getShaderParameter( shader, 35663 ) === 35633 ? 'vertex' : 'fragment';
-
-	if ( status && log === '' ) return '';
-
-	// --enable-privileged-webgl-extension
-	// console.log( '**' + type + '**', gl.getExtension( 'WEBGL_debug_shaders' ).getTranslatedShaderSource( shader ) );
-
-	return 'THREE.WebGLShader: gl.getShaderInfoLog() ' + type + ' ' + log + addLineNumbers( source );
 
 }
 
@@ -17467,8 +17470,8 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 	// console.log( '*VERTEX*', vertexGlsl );
 	// console.log( '*FRAGMENT*', fragmentGlsl );
 
-	var glVertexShader = WebGLShader( gl, 35633, vertexGlsl );
-	var glFragmentShader = WebGLShader( gl, 35632, fragmentGlsl );
+	var glVertexShader = WebGLShader( gl, 35633, vertexGlsl, renderer.debug.checkShaderErrors );
+	var glFragmentShader = WebGLShader( gl, 35632, fragmentGlsl, renderer.debug.checkShaderErrors );
 
 	gl.attachShader( program, glVertexShader );
 	gl.attachShader( program, glFragmentShader );
@@ -17494,17 +17497,18 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 		var programLog = gl.getProgramInfoLog( program ).trim();
 		var vertexLog = gl.getShaderInfoLog( glVertexShader ).trim();
 		var fragmentLog = gl.getShaderInfoLog( glFragmentShader ).trim();
-		var vertexErrors = getShaderErrors( gl, glVertexShader );
-		var fragmentErrors = getShaderErrors( gl, glFragmentShader );
 
 		var runnable = true;
 		var haveDiagnostics = true;
+
+		// console.log( '**VERTEX**', gl.getExtension( 'WEBGL_debug_shaders' ).getTranslatedShaderSource( glVertexShader ) );
+		// console.log( '**FRAGMENT**', gl.getExtension( 'WEBGL_debug_shaders' ).getTranslatedShaderSource( glFragmentShader ) );
 
 		if ( gl.getProgramParameter( program, 35714 ) === false ) {
 
 			runnable = false;
 
-			console.error( 'THREE.WebGLProgram: shader error: ', gl.getError(), '35715', gl.getProgramParameter( program, 35715 ), 'gl.getProgramInfoLog', programLog, vertexErrors, fragmentErrors );
+			console.error( 'THREE.WebGLProgram: shader error: ', gl.getError(), '35715', gl.getProgramParameter( program, 35715 ), 'gl.getProgramInfoLog', programLog, vertexLog, fragmentLog );
 
 		} else if ( programLog !== '' ) {
 
