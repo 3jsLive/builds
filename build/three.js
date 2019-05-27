@@ -22034,16 +22034,16 @@
 			if ( isPresenting() ) {
 
 				var eyeParameters = device.getEyeParameters( 'left' );
-				renderWidth = 2 * eyeParameters.renderWidth * framebufferScaleFactor;
+				renderWidth = eyeParameters.renderWidth * framebufferScaleFactor;
 				renderHeight = eyeParameters.renderHeight * framebufferScaleFactor;
 
 				currentPixelRatio = renderer.getPixelRatio();
 				renderer.getSize( currentSize );
 
-				renderer.setDrawingBufferSize( renderWidth, renderHeight, 1 );
+				renderer.setDrawingBufferSize( renderWidth * 2, renderHeight, 1 );
 
-				cameraL.viewport.set( 0, 0, renderWidth / 2, renderHeight );
-				cameraR.viewport.set( renderWidth / 2, 0, renderWidth / 2, renderHeight );
+				cameraL.viewport.set( 0, 0, renderWidth, renderHeight );
+				cameraR.viewport.set( renderWidth, 0, renderWidth, renderHeight );
 
 				animation.start();
 
