@@ -24106,7 +24106,7 @@ function WebGLRenderer( parameters ) {
 			releaseMaterialProgramReference( material );
 
 		} else if ( lightsHash.stateID !== lightsStateHash.stateID ||
-			lightsHash.value !== lightsStateHash.directionalLength ) {
+			lightsHash.value !== lightsStateHash.value ) {
 
 			lightsHash.stateID = lightsStateHash.stateID;
 			lightsHash.value = lightsStateHash.value;
