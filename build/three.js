@@ -25237,6 +25237,12 @@
 
 		};
 
+		/*
+		if ( typeof __THREE_DEVTOOLS__ !== undefined ) {
+			__THREE_DEVTOOLS__.dispatchEvent( { type: 'renderer', value: this } );
+		}
+		*/
+
 	}
 
 	/**
@@ -25329,6 +25335,12 @@
 		this.overrideMaterial = null;
 
 		this.autoUpdate = true; // checked by the renderer
+
+		/*
+		if ( typeof __THREE_DEVTOOLS__ !== undefined ) {
+			__THREE_DEVTOOLS__.dispatchEvent( { type: 'scene', value: this } );
+		}
+		*/
 
 	}
 
