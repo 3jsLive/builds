@@ -22507,7 +22507,7 @@ function WebXRManager( renderer ) {
 			session.addEventListener( 'selectend', onSessionEvent );
 			session.addEventListener( 'end', onSessionEnd );
 
-			session.updateRenderState( { baseLayer: new XRWebGLLayer( session, gl ) } );
+			session.updateRenderState( {  baseLayer:  new XRWebGLLayer( session, gl ) } );
 
 			session.requestReferenceSpace( { type: 'stationary', subtype: 'eye-level' } ).then( onRequestFrameOfReference );
 
@@ -22594,6 +22594,8 @@ function WebXRManager( renderer ) {
 
 	function onAnimationFrame( time, frame ) {
 
+		let session = frame.session;
+
 		pose = frame.getViewerPose( frameOfReference );
 
 		if ( pose !== null ) {
@@ -22638,7 +22640,7 @@ function WebXRManager( renderer ) {
 
 				if ( inputPose !== null ) {
 
-					var targetRay = new XRRay( inputPose.transform );
+					let targetRay = new XRRay(inputPose.transform);
 					controller.matrix.elements = targetRay.matrix;
 
 					controller.matrix.decompose( controller.position, controller.rotation, controller.scale );
@@ -25052,7 +25054,7 @@ function WebGLRenderer( parameters ) {
 	//
 	this.setFramebuffer = function ( value ) {
 
-		if ( _framebuffer !== value ) _gl.bindFramebuffer( 36160, value );
+		if (_framebuffer !== value ) _gl.bindFramebuffer( 36160, value );
 
 		_framebuffer = value;
 
