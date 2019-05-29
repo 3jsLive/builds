@@ -18940,6 +18940,8 @@
 			if ( lights.length === 0 ) return;
 
 			var currentRenderTarget = _renderer.getRenderTarget();
+			var activeCubeFace = _renderer.getActiveCubeFace();
+			var activeMipMapLevel = _renderer.getActiveMipMapLevel();
 
 			var _state = _renderer.state;
 
@@ -19097,7 +19099,7 @@
 
 			scope.needsUpdate = false;
 
-			_renderer.setRenderTarget( currentRenderTarget );
+			_renderer.setRenderTarget( currentRenderTarget, activeCubeFace, activeMipMapLevel );
 
 		};
 
@@ -22782,6 +22784,8 @@
 
 			_framebuffer = null,
 
+			_currentActiveCubeFace = 0,
+			_currentActiveMipmapLevel = 0,
 			_currentRenderTarget = null,
 			_currentFramebuffer = null,
 			_currentMaterialId = - 1,
@@ -25067,6 +25071,18 @@
 
 		};
 
+		this.getActiveCubeFace = function () {
+
+			return _currentActiveCubeFace;
+
+		};
+
+		this.getActiveMipMapLevel = function () {
+
+			return _currentActiveMipmapLevel;
+
+		};
+
 		this.getRenderTarget = function () {
 
 			return _currentRenderTarget;
@@ -25076,6 +25092,8 @@
 		this.setRenderTarget = function ( renderTarget, activeCubeFace, activeMipMapLevel ) {
 
 			_currentRenderTarget = renderTarget;
+			_currentActiveCubeFace = activeCubeFace;
+			_currentActiveMipmapLevel = activeMipMapLevel;
 
 			if ( renderTarget && properties.get( renderTarget ).__webglFramebuffer === undefined ) {
 
