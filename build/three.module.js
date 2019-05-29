@@ -14153,15 +14153,15 @@ Object.assign( Triangle.prototype, {
 
 	},
 
-	getUV: function ( point, uv1, uv2, uv3, target ) {
-
-		return Triangle.getUV( point, this.a, this.b, this.c, uv1, uv2, uv3, target );
-
-	},
-
 	containsPoint: function ( point ) {
 
 		return Triangle.containsPoint( point, this.a, this.b, this.c );
+
+	},
+
+	getUV: function ( point, uv1, uv2, uv3, result ) {
+
+		return Triangle.getUV( point, this.a, this.b, this.c, uv1, uv2, uv3, result );
 
 	},
 
@@ -22398,10 +22398,10 @@ function WebXRManager( renderer ) {
 
 	var gl = renderer.context;
 
+	var device = null;
 	var session = null;
 
-	var referenceSpace = null;
-	var referenceSpaceType = 'local-floor';
+	var frameOfReference = null;
 
 	var pose = null;
 
@@ -22410,7 +22410,7 @@ function WebXRManager( renderer ) {
 
 	function isPresenting() {
 
-		return session !== null && referenceSpace !== null;
+		return session !== null && frameOfReference !== null;
 
 	}
 
@@ -22450,19 +22450,24 @@ function WebXRManager( renderer ) {
 
 	};
 
+	this.getDevice = function () {
+
+		return device;
+
+	};
+
+	this.setDevice = function ( value ) {
+
+		if ( value !== undefined ) device = value;
+
+	};
+
 	//
 
 	function onSessionEvent( event ) {
 
-		for ( var i = 0; i < controllers.length; i ++ ) {
-
-			if ( inputSources[ i ] === event.inputSource ) {
-
-				controllers[ i ].dispatchEvent( { type: event.type } );
-
-			}
-
-		}
+		var controller = controllers[ inputSources.indexOf( event.inputSource ) ];
+		if ( controller ) controller.dispatchEvent( { type: event.type } );
 
 	}
 
@@ -22474,9 +22479,9 @@ function WebXRManager( renderer ) {
 
 	}
 
-	function onRequestReferenceSpace( value ) {
+	function onRequestFrameOfReference( value ) {
 
-		referenceSpace = value;
+		frameOfReference = value;
 
 		animation.setContext( session );
 		animation.start();
@@ -22487,9 +22492,7 @@ function WebXRManager( renderer ) {
 
 	};
 
-	this.setReferenceSpaceType = function ( value ) {
-
-		referenceSpaceType = value;
+	this.setFrameOfReferenceType = function ( value ) {
 
 	};
 
@@ -22506,15 +22509,15 @@ function WebXRManager( renderer ) {
 
 			session.updateRenderState( { baseLayer: new XRWebGLLayer( session, gl ) } );
 
-			session.requestReferenceSpace( referenceSpaceType ).then( onRequestReferenceSpace );
+			session.requestReferenceSpace( { type: 'stationary', subtype: 'eye-level' } ).then( onRequestFrameOfReference );
 
 			//
 
-			inputSources = session.inputSources;
+			inputSources = session.getInputSources();
 
 			session.addEventListener( 'inputsourceschange', function () {
 
-				inputSources = session.inputSources;
+				inputSources = session.getInputSources();
 				console.log( inputSources );
 
 				for ( var i = 0; i < controllers.length; i ++ ) {
@@ -22591,7 +22594,7 @@ function WebXRManager( renderer ) {
 
 	function onAnimationFrame( time, frame ) {
 
-		pose = frame.getViewerPose( referenceSpace );
+		pose = frame.getViewerPose( frameOfReference );
 
 		if ( pose !== null ) {
 
@@ -22604,7 +22607,7 @@ function WebXRManager( renderer ) {
 
 				var view = views[ i ];
 				var viewport = layer.getViewport( view );
-				var viewMatrix = view.transform.inverse.matrix;
+				var viewMatrix = view.transform.inverse().matrix;
 
 				var camera = cameraVR.cameras[ i ];
 				camera.matrix.fromArray( viewMatrix ).getInverse( camera.matrix );
@@ -22631,11 +22634,13 @@ function WebXRManager( renderer ) {
 
 			if ( inputSource ) {
 
-				var inputPose = frame.getPose( inputSource.targetRaySpace, referenceSpace );
+				var inputPose = frame.getPose( inputSource.targetRaySpace, frameOfReference );
 
 				if ( inputPose !== null ) {
 
-					controller.matrix.fromArray( inputPose.transform.matrix );
+					var targetRay = new XRRay( inputPose.transform );
+					controller.matrix.elements = targetRay.matrix;
+
 					controller.matrix.decompose( controller.position, controller.rotation, controller.scale );
 					controller.visible = true;
 
@@ -22670,18 +22675,6 @@ function WebXRManager( renderer ) {
 
 		console.warn( 'THREE.WebXRManager: getStandingMatrix() is no longer needed.' );
 		return new Matrix4();
-
-	};
-
-	this.getDevice = function () {
-
-		console.warn( 'THREE.WebXRManager: getDevice() has been deprecated.' );
-
-	};
-
-	this.setDevice = function () {
-
-		console.warn( 'THREE.WebXRManager: setDevice() has been deprecated.' );
 
 	};
 
@@ -22956,7 +22949,7 @@ function WebGLRenderer( parameters ) {
 
 	// vr
 
-	var vr = ( typeof navigator !== 'undefined' && 'xr' in navigator && 'supportsSession' in navigator.xr ) ? new WebXRManager( _this ) : new WebVRManager( _this );
+	var vr = ( typeof navigator !== 'undefined' && 'xr' in navigator && 'requestDevice' in navigator.xr ) ? new WebXRManager( _this ) : new WebVRManager( _this );
 
 	this.vr = vr;
 
