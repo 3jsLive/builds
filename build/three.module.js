@@ -22503,6 +22503,12 @@ function WebXRManager( renderer ) {
 
 	};
 
+	this.getSession = function () {
+
+		return session;
+
+	};
+
 	this.setSession = function ( value ) {
 
 		session = value;
@@ -22515,17 +22521,13 @@ function WebXRManager( renderer ) {
 			session.addEventListener( 'end', onSessionEnd );
 
 			session.updateRenderState( { baseLayer: new XRWebGLLayer( session, gl ) } );
-
 			session.requestReferenceSpace( referenceSpaceType ).then( onRequestReferenceSpace );
-
-			//
 
 			inputSources = session.inputSources;
 
 			session.addEventListener( 'inputsourceschange', function () {
 
 				inputSources = session.inputSources;
-				console.log( inputSources );
 
 				for ( var i = 0; i < controllers.length; i ++ ) {
 
@@ -22606,7 +22608,9 @@ function WebXRManager( renderer ) {
 		if ( pose !== null ) {
 
 			var views = pose.views;
-			var baseLayer = session.renderState.baseLayer;
+			var baseLayer;
+
+			baseLayer = session.renderState.baseLayer;
 
 			renderer.setFramebuffer( baseLayer.framebuffer );
 
@@ -22614,7 +22618,20 @@ function WebXRManager( renderer ) {
 
 				var view = views[ i ];
 				var viewport = baseLayer.getViewport( view );
-				var viewMatrix = view.transform.inverse.matrix;
+
+				var viewMatrix;
+
+				if ( 'transform ' in view ) {
+
+					viewMatrix = view.transform.inverse.matrix;
+
+				} else {
+
+					// DEPRECATED
+
+					viewMatrix = view.viewMatrix;
+
+				}
 
 				var camera = cameraVR.cameras[ i ];
 				camera.matrix.fromArray( viewMatrix ).getInverse( camera.matrix );
@@ -22641,11 +22658,28 @@ function WebXRManager( renderer ) {
 
 			if ( inputSource ) {
 
-				var inputPose = frame.getPose( inputSource.targetRaySpace, referenceSpace );
+				var inputPose;
+
+				inputPose = frame.getPose( inputSource.targetRaySpace, referenceSpace );
 
 				if ( inputPose !== null ) {
 
-					controller.matrix.fromArray( inputPose.transform.matrix );
+					if ( 'transform' in inputPose ) {
+
+						controller.matrix.fromArray( inputPose.transform.matrix );
+
+					} else if ( 'targetRay' in inputPose ) {
+
+						controller.matrix.elements = inputPose.targetRay.transformMatrix;
+
+					} else if ( 'pointerMatrix' in inputPose ) {
+
+						// DEPRECATED
+
+						controller.matrix.elements = inputPose.pointerMatrix;
+
+					}
+
 					controller.matrix.decompose( controller.position, controller.rotation, controller.scale );
 					controller.visible = true;
 
