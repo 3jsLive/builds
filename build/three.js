@@ -22627,17 +22627,7 @@
 
 					var viewMatrix;
 
-					if ( 'transform ' in view ) {
-
-						viewMatrix = view.transform.inverse.matrix;
-
-					} else {
-
-						// DEPRECATED
-
-						viewMatrix = view.viewMatrix;
-
-					}
+					viewMatrix = view.transform.inverse.matrix;
 
 					var camera = cameraVR.cameras[ i ];
 					camera.matrix.fromArray( viewMatrix ).getInverse( camera.matrix );
@@ -22670,22 +22660,7 @@
 
 					if ( inputPose !== null ) {
 
-						if ( 'transform' in inputPose ) {
-
-							controller.matrix.fromArray( inputPose.transform.matrix );
-
-						} else if ( 'targetRay' in inputPose ) {
-
-							controller.matrix.elements = inputPose.targetRay.transformMatrix;
-
-						} else if ( 'pointerMatrix' in inputPose ) {
-
-							// DEPRECATED
-
-							controller.matrix.elements = inputPose.pointerMatrix;
-
-						}
-
+						controller.matrix.fromArray( inputPose.transform.matrix );
 						controller.matrix.decompose( controller.position, controller.rotation, controller.scale );
 						controller.visible = true;
 
