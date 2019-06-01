@@ -22527,13 +22527,17 @@
 				session.addEventListener( 'end', onSessionEnd );
 
 				session.updateRenderState( { baseLayer: new XRWebGLLayer( session, gl ) } );
+
 				session.requestReferenceSpace( referenceSpaceType ).then( onRequestReferenceSpace );
+
+				//
 
 				inputSources = session.inputSources;
 
 				session.addEventListener( 'inputsourceschange', function () {
 
 					inputSources = session.inputSources;
+					console.log( inputSources );
 
 					for ( var i = 0; i < controllers.length; i ++ ) {
 
@@ -22614,9 +22618,7 @@
 			if ( pose !== null ) {
 
 				var views = pose.views;
-				var baseLayer;
-
-				baseLayer = session.renderState.baseLayer;
+				var baseLayer = session.renderState.baseLayer;
 
 				renderer.setFramebuffer( baseLayer.framebuffer );
 
@@ -22624,10 +22626,7 @@
 
 					var view = views[ i ];
 					var viewport = baseLayer.getViewport( view );
-
-					var viewMatrix;
-
-					viewMatrix = view.transform.inverse.matrix;
+					var viewMatrix = view.transform.inverse.matrix;
 
 					var camera = cameraVR.cameras[ i ];
 					camera.matrix.fromArray( viewMatrix ).getInverse( camera.matrix );
@@ -22654,9 +22653,7 @@
 
 				if ( inputSource ) {
 
-					var inputPose;
-
-					inputPose = frame.getPose( inputSource.targetRaySpace, referenceSpace );
+					var inputPose = frame.getPose( inputSource.targetRaySpace, referenceSpace );
 
 					if ( inputPose !== null ) {
 
