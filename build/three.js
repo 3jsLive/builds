@@ -22080,6 +22080,8 @@
 
 				animation.start();
 
+				scope.dispatchEvent( { type: 'startSession' } );
+
 			} else {
 
 				if ( scope.enabled ) {
@@ -22089,6 +22091,8 @@
 				}
 
 				animation.stop();
+
+				scope.dispatchEvent( { type: 'endSession' } );
 
 			}
 
@@ -22414,11 +22418,15 @@
 
 	}
 
+	Object.assign( WebVRManager.prototype, EventDispatcher.prototype );
+
 	/**
 	 * @author mrdoob / http://mrdoob.com/
 	 */
 
 	function WebXRManager( renderer ) {
+
+		var scope = this;
 
 		var gl = renderer.context;
 
@@ -22496,6 +22504,8 @@
 			renderer.setRenderTarget( renderer.getRenderTarget() ); // Hack #15830
 			animation.stop();
 
+			scope.dispatchEvent( { type: 'endSession' } );
+
 		}
 
 		function onRequestReferenceSpace( value ) {
@@ -22504,6 +22514,8 @@
 
 			animation.setContext( session );
 			animation.start();
+
+			scope.dispatchEvent( { type: 'startSession' } );
 
 		}
 
@@ -22718,6 +22730,8 @@
 		this.submitFrame = function () {};
 
 	}
+
+	Object.assign( WebXRManager.prototype, EventDispatcher.prototype );
 
 	/**
 	 * @author supereggbert / http://www.paulbrunt.co.uk/

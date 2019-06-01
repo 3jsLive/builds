@@ -22074,6 +22074,8 @@ function WebVRManager( renderer ) {
 
 			animation.start();
 
+			scope.dispatchEvent( { type: 'startSession' } );
+
 		} else {
 
 			if ( scope.enabled ) {
@@ -22083,6 +22085,8 @@ function WebVRManager( renderer ) {
 			}
 
 			animation.stop();
+
+			scope.dispatchEvent( { type: 'endSession' } );
 
 		}
 
@@ -22408,11 +22412,15 @@ function WebVRManager( renderer ) {
 
 }
 
+Object.assign( WebVRManager.prototype, EventDispatcher.prototype );
+
 /**
  * @author mrdoob / http://mrdoob.com/
  */
 
 function WebXRManager( renderer ) {
+
+	var scope = this;
 
 	var gl = renderer.context;
 
@@ -22490,6 +22498,8 @@ function WebXRManager( renderer ) {
 		renderer.setRenderTarget( renderer.getRenderTarget() ); // Hack #15830
 		animation.stop();
 
+		scope.dispatchEvent( { type: 'endSession' } );
+
 	}
 
 	function onRequestReferenceSpace( value ) {
@@ -22498,6 +22508,8 @@ function WebXRManager( renderer ) {
 
 		animation.setContext( session );
 		animation.start();
+
+		scope.dispatchEvent( { type: 'startSession' } );
 
 	}
 
@@ -22712,6 +22724,8 @@ function WebXRManager( renderer ) {
 	this.submitFrame = function () {};
 
 }
+
+Object.assign( WebXRManager.prototype, EventDispatcher.prototype );
 
 /**
  * @author supereggbert / http://www.paulbrunt.co.uk/
