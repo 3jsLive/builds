@@ -1090,7 +1090,7 @@
 			set: function ( value ) {
 
 				this._x = value;
-				this.onChangeCallback();
+				this._onChangeCallback();
 
 			}
 
@@ -1107,7 +1107,7 @@
 			set: function ( value ) {
 
 				this._y = value;
-				this.onChangeCallback();
+				this._onChangeCallback();
 
 			}
 
@@ -1124,7 +1124,7 @@
 			set: function ( value ) {
 
 				this._z = value;
-				this.onChangeCallback();
+				this._onChangeCallback();
 
 			}
 
@@ -1141,7 +1141,7 @@
 			set: function ( value ) {
 
 				this._w = value;
-				this.onChangeCallback();
+				this._onChangeCallback();
 
 			}
 
@@ -1160,7 +1160,7 @@
 			this._z = z;
 			this._w = w;
 
-			this.onChangeCallback();
+			this._onChangeCallback();
 
 			return this;
 
@@ -1179,7 +1179,7 @@
 			this._z = quaternion.z;
 			this._w = quaternion.w;
 
-			this.onChangeCallback();
+			this._onChangeCallback();
 
 			return this;
 
@@ -1254,7 +1254,7 @@
 
 			}
 
-			if ( update !== false ) this.onChangeCallback();
+			if ( update !== false ) this._onChangeCallback();
 
 			return this;
 
@@ -1273,7 +1273,7 @@
 			this._z = axis.z * s;
 			this._w = Math.cos( halfAngle );
 
-			this.onChangeCallback();
+			this._onChangeCallback();
 
 			return this;
 
@@ -1332,7 +1332,7 @@
 
 			}
 
-			this.onChangeCallback();
+			this._onChangeCallback();
 
 			return this;
 
@@ -1415,7 +1415,7 @@
 			this._y *= - 1;
 			this._z *= - 1;
 
-			this.onChangeCallback();
+			this._onChangeCallback();
 
 			return this;
 
@@ -1461,7 +1461,7 @@
 
 			}
 
-			this.onChangeCallback();
+			this._onChangeCallback();
 
 			return this;
 
@@ -1498,7 +1498,7 @@
 			this._z = qaz * qbw + qaw * qbz + qax * qby - qay * qbx;
 			this._w = qaw * qbw - qax * qbx - qay * qby - qaz * qbz;
 
-			this.onChangeCallback();
+			this._onChangeCallback();
 
 			return this;
 
@@ -1565,7 +1565,7 @@
 			this._y = ( y * ratioA + this._y * ratioB );
 			this._z = ( z * ratioA + this._z * ratioB );
 
-			this.onChangeCallback();
+			this._onChangeCallback();
 
 			return this;
 
@@ -1586,7 +1586,7 @@
 			this._z = array[ offset + 2 ];
 			this._w = array[ offset + 3 ];
 
-			this.onChangeCallback();
+			this._onChangeCallback();
 
 			return this;
 
@@ -1606,15 +1606,15 @@
 
 		},
 
-		onChange: function ( callback ) {
+		_onChange: function ( callback ) {
 
-			this.onChangeCallback = callback;
+			this._onChangeCallback = callback;
 
 			return this;
 
 		},
 
-		onChangeCallback: function () {}
+		_onChangeCallback: function () {}
 
 	} );
 
@@ -3107,6 +3107,42 @@
 
 	}
 
+	Object.defineProperties( Vector4.prototype, {
+
+		"width": {
+
+			get: function () {
+
+				return this.z;
+
+			},
+
+			set: function ( value ) {
+
+				this.z = value;
+
+			}
+
+		},
+
+		"height": {
+
+			get: function () {
+
+				return this.w;
+
+			},
+
+			set: function ( value ) {
+
+				this.w = value;
+
+			}
+
+		}
+
+	} );
+
 	Object.assign( Vector4.prototype, {
 
 		isVector4: true,
@@ -3872,51 +3908,51 @@
 				tEquirect: { value: null },
 			},
 
-			vertexShader:
+			vertexShader: [
 
-				`
-			varying vec3 vWorldDirection;
+				"varying vec3 vWorldDirection;",
 
-			vec3 transformDirection( in vec3 dir, in mat4 matrix ) {
+				"vec3 transformDirection( in vec3 dir, in mat4 matrix ) {",
 
-				return normalize( ( matrix * vec4( dir, 0.0 ) ).xyz );
+				"	return normalize( ( matrix * vec4( dir, 0.0 ) ).xyz );",
 
-			}
+				"}",
 
-			void main() {
+				"void main() {",
 
-				vWorldDirection = transformDirection( position, modelMatrix );
+				"	vWorldDirection = transformDirection( position, modelMatrix );",
 
-				#include <begin_vertex>
-				#include <project_vertex>
+				"	#include <begin_vertex>",
+				"	#include <project_vertex>",
 
-			}
-			`,
+				"}"
 
-			fragmentShader:
+			].join( '\n' ),
 
-				`
-			uniform sampler2D tEquirect;
+			fragmentShader: [
 
-			varying vec3 vWorldDirection;
+				"uniform sampler2D tEquirect;",
 
-			#define RECIPROCAL_PI 0.31830988618
-			#define RECIPROCAL_PI2 0.15915494
+				"varying vec3 vWorldDirection;",
 
-			void main() {
+				"#define RECIPROCAL_PI 0.31830988618",
+				"#define RECIPROCAL_PI2 0.15915494",
 
-				vec3 direction = normalize( vWorldDirection );
+				"void main() {",
 
-				vec2 sampleUV;
+				"	vec3 direction = normalize( vWorldDirection );",
 
-				sampleUV.y = asin( clamp( direction.y, - 1.0, 1.0 ) ) * RECIPROCAL_PI + 0.5;
+				"	vec2 sampleUV;",
 
-				sampleUV.x = atan( direction.z, direction.x ) * RECIPROCAL_PI2 + 0.5;
+				"	sampleUV.y = asin( clamp( direction.y, - 1.0, 1.0 ) ) * RECIPROCAL_PI + 0.5;",
 
-				gl_FragColor = texture2D( tEquirect, sampleUV );
+				"	sampleUV.x = atan( direction.z, direction.x ) * RECIPROCAL_PI2 + 0.5;",
 
-			}
-			`
+				"	gl_FragColor = texture2D( tEquirect, sampleUV );",
+
+				"}"
+
+			].join( '\n' ),
 		};
 
 		var material = new THREE.ShaderMaterial( {
@@ -6283,7 +6319,7 @@
 
 	var skinbase_vertex = "#ifdef USE_SKINNING\n\tmat4 boneMatX = getBoneMatrix( skinIndex.x );\n\tmat4 boneMatY = getBoneMatrix( skinIndex.y );\n\tmat4 boneMatZ = getBoneMatrix( skinIndex.z );\n\tmat4 boneMatW = getBoneMatrix( skinIndex.w );\n#endif";
 
-	var skinning_pars_vertex = "#ifdef USE_SKINNING\n\tuniform mat4 bindMatrix;\n\tuniform mat4 bindMatrixInverse;\n\t#ifdef BONE_TEXTURE\n\t\tuniform sampler2D boneTexture;\n\t\tuniform int boneTextureSize;\n\t\tmat4 getBoneMatrix( const in float i ) {\n\t\t\tfloat j = i * 4.0;\n\t\t\tfloat x = mod( j, float( boneTextureSize ) );\n\t\t\tfloat y = floor( j / float( boneTextureSize ) );\n\t\t\tfloat dx = 1.0 / float( boneTextureSize );\n\t\t\tfloat dy = 1.0 / float( boneTextureSize );\n\t\t\ty = dy * ( y + 0.5 );\n\t\t\tvec4 v1 = texture2D( boneTexture, vec2( dx * ( x + 0.5 ), y ) );\n\t\t\tvec4 v2 = texture2D( boneTexture, vec2( dx * ( x + 1.5 ), y ) );\n\t\t\tvec4 v3 = texture2D( boneTexture, vec2( dx * ( x + 2.5 ), y ) );\n\t\t\tvec4 v4 = texture2D( boneTexture, vec2( dx * ( x + 3.5 ), y ) );\n\t\t\tmat4 bone = mat4( v1, v2, v3, v4 );\n\t\t\treturn bone;\n\t\t}\n\t#else\n\t\tuniform mat4 boneMatrices[ MAX_BONES ];\n\t\tmat4 getBoneMatrix( const in float i ) {\n\t\t\tmat4 bone = boneMatrices[ int(i) ];\n\t\t\treturn bone;\n\t\t}\n\t#endif\n#endif";
+	var skinning_pars_vertex = "#ifdef USE_SKINNING\n\tuniform mat4 bindMatrix;\n\tuniform mat4 bindMatrixInverse;\n\t#ifdef BONE_TEXTURE\n\t\tuniform highp sampler2D boneTexture;\n\t\tuniform int boneTextureSize;\n\t\tmat4 getBoneMatrix( const in float i ) {\n\t\t\tfloat j = i * 4.0;\n\t\t\tfloat x = mod( j, float( boneTextureSize ) );\n\t\t\tfloat y = floor( j / float( boneTextureSize ) );\n\t\t\tfloat dx = 1.0 / float( boneTextureSize );\n\t\t\tfloat dy = 1.0 / float( boneTextureSize );\n\t\t\ty = dy * ( y + 0.5 );\n\t\t\tvec4 v1 = texture2D( boneTexture, vec2( dx * ( x + 0.5 ), y ) );\n\t\t\tvec4 v2 = texture2D( boneTexture, vec2( dx * ( x + 1.5 ), y ) );\n\t\t\tvec4 v3 = texture2D( boneTexture, vec2( dx * ( x + 2.5 ), y ) );\n\t\t\tvec4 v4 = texture2D( boneTexture, vec2( dx * ( x + 3.5 ), y ) );\n\t\t\tmat4 bone = mat4( v1, v2, v3, v4 );\n\t\t\treturn bone;\n\t\t}\n\t#else\n\t\tuniform mat4 boneMatrices[ MAX_BONES ];\n\t\tmat4 getBoneMatrix( const in float i ) {\n\t\t\tmat4 bone = boneMatrices[ int(i) ];\n\t\t\treturn bone;\n\t\t}\n\t#endif\n#endif";
 
 	var skinning_vertex = "#ifdef USE_SKINNING\n\tvec4 skinVertex = bindMatrix * vec4( transformed, 1.0 );\n\tvec4 skinned = vec4( 0.0 );\n\tskinned += boneMatX * skinVertex * skinWeight.x;\n\tskinned += boneMatY * skinVertex * skinWeight.y;\n\tskinned += boneMatZ * skinVertex * skinWeight.z;\n\tskinned += boneMatW * skinVertex * skinWeight.w;\n\ttransformed = ( bindMatrixInverse * skinned ).xyz;\n#endif";
 
@@ -7933,7 +7969,7 @@
 			set: function ( value ) {
 
 				this._x = value;
-				this.onChangeCallback();
+				this._onChangeCallback();
 
 			}
 
@@ -7950,7 +7986,7 @@
 			set: function ( value ) {
 
 				this._y = value;
-				this.onChangeCallback();
+				this._onChangeCallback();
 
 			}
 
@@ -7967,7 +8003,7 @@
 			set: function ( value ) {
 
 				this._z = value;
-				this.onChangeCallback();
+				this._onChangeCallback();
 
 			}
 
@@ -7984,7 +8020,7 @@
 			set: function ( value ) {
 
 				this._order = value;
-				this.onChangeCallback();
+				this._onChangeCallback();
 
 			}
 
@@ -8003,7 +8039,7 @@
 			this._z = z;
 			this._order = order || this._order;
 
-			this.onChangeCallback();
+			this._onChangeCallback();
 
 			return this;
 
@@ -8022,7 +8058,7 @@
 			this._z = euler._z;
 			this._order = euler._order;
 
-			this.onChangeCallback();
+			this._onChangeCallback();
 
 			return this;
 
@@ -8145,7 +8181,7 @@
 
 			this._order = order;
 
-			if ( update !== false ) this.onChangeCallback();
+			if ( update !== false ) this._onChangeCallback();
 
 			return this;
 
@@ -8200,7 +8236,7 @@
 			this._z = array[ 2 ];
 			if ( array[ 3 ] !== undefined ) this._order = array[ 3 ];
 
-			this.onChangeCallback();
+			this._onChangeCallback();
 
 			return this;
 
@@ -8234,15 +8270,15 @@
 
 		},
 
-		onChange: function ( callback ) {
+		_onChange: function ( callback ) {
 
-			this.onChangeCallback = callback;
+			this._onChangeCallback = callback;
 
 			return this;
 
 		},
 
-		onChangeCallback: function () {}
+		_onChangeCallback: function () {}
 
 	} );
 
@@ -8331,8 +8367,8 @@
 
 		}
 
-		rotation.onChange( onRotationChange );
-		quaternion.onChange( onQuaternionChange );
+		rotation._onChange( onRotationChange );
+		quaternion._onChange( onQuaternionChange );
 
 		Object.defineProperties( this, {
 			position: {
@@ -17262,7 +17298,7 @@
 
 	}
 
-	function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities, textures ) {
+	function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities ) {
 
 		var gl = renderer.context;
 
@@ -17731,7 +17767,7 @@
 
 			if ( cachedUniforms === undefined ) {
 
-				cachedUniforms = new WebGLUniforms( gl, program, textures );
+				cachedUniforms = new WebGLUniforms( gl, program );
 
 			}
 
@@ -17764,31 +17800,6 @@
 
 		};
 
-		// DEPRECATED
-
-		Object.defineProperties( this, {
-
-			uniforms: {
-				get: function () {
-
-					console.warn( 'THREE.WebGLProgram: .uniforms is now .getUniforms().' );
-					return this.getUniforms();
-
-				}
-			},
-
-			attributes: {
-				get: function () {
-
-					console.warn( 'THREE.WebGLProgram: .attributes is now .getAttributes().' );
-					return this.getAttributes();
-
-				}
-			}
-
-		} );
-
-
 		//
 
 		this.name = shader.name;
@@ -17807,7 +17818,7 @@
 	 * @author mrdoob / http://mrdoob.com/
 	 */
 
-	function WebGLPrograms( renderer, extensions, capabilities, textures ) {
+	function WebGLPrograms( renderer, extensions, capabilities ) {
 
 		var programs = [];
 
@@ -18081,7 +18092,7 @@
 
 			if ( program === undefined ) {
 
-				program = new WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities, textures );
+				program = new WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities );
 				programs.push( program );
 
 			}
@@ -23135,7 +23146,7 @@
 			geometries = new WebGLGeometries( _gl, attributes, info );
 			objects = new WebGLObjects( geometries, info );
 			morphtargets = new WebGLMorphtargets( _gl );
-			programCache = new WebGLPrograms( _this, extensions, capabilities, textures );
+			programCache = new WebGLPrograms( _this, extensions, capabilities );
 			renderLists = new WebGLRenderLists();
 			renderStates = new WebGLRenderStates();
 
@@ -25968,8 +25979,17 @@
 			return function raycast( raycaster, intersects ) {
 
 				worldScale.setFromMatrixScale( this.matrixWorld );
-				viewWorldMatrix.getInverse( this.modelViewMatrix ).premultiply( this.matrixWorld );
+
+				viewWorldMatrix.copy( raycaster._camera.matrixWorld );
+				this.modelViewMatrix.multiplyMatrices( raycaster._camera.matrixWorldInverse, this.matrixWorld );
+
 				mvPosition.setFromMatrixPosition( this.modelViewMatrix );
+
+				if ( raycaster._camera.isPerspectiveCamera && this.material.sizeAttenuation === false ) {
+
+					worldScale.multiplyScalar( - mvPosition.z );
+
+				}
 
 				var rotation = this.material.rotation;
 				var sin, cos;
@@ -40542,19 +40562,19 @@
 			var coeff = this.coefficients;
 
 			// band 0
-			target = coeff[ 0 ] * 0.282095;
+			target.copy( coeff[ 0 ] ).multiplyScalar( 0.282095 );
 
 			// band 1
-			target += coeff[ 1 ] * 0.488603 * y;
-			target += coeff[ 2 ] * 0.488603 * z;
-			target += coeff[ 3 ] * 0.488603 * x;
+			target.addScale( coeff[ 1 ], 0.488603 * y );
+			target.addScale( coeff[ 2 ], 0.488603 * z );
+			target.addScale( coeff[ 3 ], 0.488603 * x );
 
 			// band 2
-			target += coeff[ 4 ] * 1.092548 * ( x * y );
-			target += coeff[ 5 ] * 1.092548 * ( y * z );
-			target += coeff[ 6 ] * 0.315392 * ( 3.0 * z * z - 1.0 );
-			target += coeff[ 7 ] * 1.092548 * ( x * z );
-			target += coeff[ 8 ] * 0.546274 * ( x * x - y * y );
+			target.addScale( coeff[ 4 ], 1.092548 * ( x * y ) );
+			target.addScale( coeff[ 5 ], 1.092548 * ( y * z ) );
+			target.addScale( coeff[ 6 ], 0.315392 * ( 3.0 * z * z - 1.0 ) );
+			target.addScale( coeff[ 7 ], 1.092548 * ( x * z ) );
+			target.addScale( coeff[ 8 ], 0.546274 * ( x * x - y * y ) );
 
 			return target;
 
@@ -40572,19 +40592,19 @@
 			var coeff = this.coefficients;
 
 			// band 0
-			target = coeff[ 0 ] * 0.886227; // π * 0.282095
+			target.copy( coeff[ 0 ] ).multiplyScalar( 0.886227 ); // π * 0.282095
 
 			// band 1
-			target += coeff[ 1 ] * 2.0 * 0.511664 * y; // ( 2 * π / 3 ) * 0.488603
-			target += coeff[ 2 ] * 2.0 * 0.511664 * z;
-			target += coeff[ 3 ] * 2.0 * 0.511664 * x;
+			target.addScale( coeff[ 1 ], 2.0 * 0.511664 * y ); // ( 2 * π / 3 ) * 0.488603
+			target.addScale( coeff[ 2 ], 2.0 * 0.511664 * z );
+			target.addScale( coeff[ 3 ], 2.0 * 0.511664 * x );
 
 			// band 2
-			target += coeff[ 4 ] * 2.0 * 0.429043 * x * y; // ( π / 4 ) * 1.092548
-			target += coeff[ 5 ] * 2.0 * 0.429043 * y * z;
-			target += coeff[ 6 ] * ( 0.743125 * z * z - 0.247708 ); // ( π / 4 ) * 0.315392 * 3
-			target += coeff[ 7 ] * 2.0 * 0.429043 * x * z;
-			target += coeff[ 8 ] * 0.429043 * ( x * x - y * y ); // ( π / 4 ) * 0.546274
+			target.addScale( coeff[ 4 ], 2.0 * 0.429043 * x * y ); // ( π / 4 ) * 1.092548
+			target.addScale( coeff[ 5 ], 2.0 * 0.429043 * y * z );
+			target.addScale( coeff[ 6 ], 0.743125 * z * z - 0.247708 ); // ( π / 4 ) * 0.315392 * 3
+			target.addScale( coeff[ 7 ], 2.0 * 0.429043 * x * z );
+			target.addScale( coeff[ 8 ], 0.429043 * ( x * x - y * y ) ); // ( π / 4 ) * 0.546274
 
 			return target;
 
@@ -44648,11 +44668,13 @@
 
 				this.ray.origin.setFromMatrixPosition( camera.matrixWorld );
 				this.ray.direction.set( coords.x, coords.y, 0.5 ).unproject( camera ).sub( this.ray.origin ).normalize();
+				this._camera = camera;
 
 			} else if ( ( camera && camera.isOrthographicCamera ) ) {
 
 				this.ray.origin.set( coords.x, coords.y, ( camera.near + camera.far ) / ( camera.near - camera.far ) ).unproject( camera ); // set origin in plane of camera
 				this.ray.direction.set( 0, 0, - 1 ).transformDirection( camera.matrixWorld );
+				this._camera = camera;
 
 			} else {
 
