@@ -5574,9 +5574,9 @@
 				}
 
 				object.parent = this;
-				object.dispatchEvent( { type: 'added' } );
-
 				this.children.push( object );
+
+				object.dispatchEvent( { type: 'added' } );
 
 			} else {
 
@@ -5607,10 +5607,9 @@
 			if ( index !== - 1 ) {
 
 				object.parent = null;
+				this.children.splice( index, 1 );
 
 				object.dispatchEvent( { type: 'removed' } );
-
-				this.children.splice( index, 1 );
 
 			}
 
@@ -6129,11 +6128,11 @@
 
 		this.autoUpdate = true; // checked by the renderer
 
-		/*
-		if ( typeof __THREE_DEVTOOLS__ !== undefined ) {
-			__THREE_DEVTOOLS__.dispatchEvent( { type: 'scene', value: this } );
+		if ( typeof __THREE_DEVTOOLS__ !== 'undefined' ) {
+
+			__THREE_DEVTOOLS__.dispatchEvent( new CustomEvent( 'observe', { detail: this } ) ); // eslint-disable-line no-undef
+
 		}
-		*/
 
 	}
 
@@ -7915,6 +7914,29 @@
 
 	}
 
+	function hue2rgb( p, q, t ) {
+
+		if ( t < 0 ) t += 1;
+		if ( t > 1 ) t -= 1;
+		if ( t < 1 / 6 ) return p + ( q - p ) * 6 * t;
+		if ( t < 1 / 2 ) return q;
+		if ( t < 2 / 3 ) return p + ( q - p ) * 6 * ( 2 / 3 - t );
+		return p;
+
+	}
+
+	function SRGBToLinear( c ) {
+
+		return ( c < 0.04045 ) ? c * 0.0773993808 : Math.pow( c * 0.9478672986 + 0.0521327014, 2.4 );
+
+	}
+
+	function LinearToSRGB( c ) {
+
+		return ( c < 0.0031308 ) ? c * 12.92 : 1.055 * ( Math.pow( c, 0.41666 ) ) - 0.055;
+
+	}
+
 	Object.assign( Color.prototype, {
 
 		isColor: true,
@@ -7973,46 +7995,31 @@
 
 		},
 
-		setHSL: function () {
+		setHSL: function ( h, s, l ) {
 
-			function hue2rgb( p, q, t ) {
+			// h,s,l ranges are in 0.0 - 1.0
+			h = _Math.euclideanModulo( h, 1 );
+			s = _Math.clamp( s, 0, 1 );
+			l = _Math.clamp( l, 0, 1 );
 
-				if ( t < 0 ) t += 1;
-				if ( t > 1 ) t -= 1;
-				if ( t < 1 / 6 ) return p + ( q - p ) * 6 * t;
-				if ( t < 1 / 2 ) return q;
-				if ( t < 2 / 3 ) return p + ( q - p ) * 6 * ( 2 / 3 - t );
-				return p;
+			if ( s === 0 ) {
+
+				this.r = this.g = this.b = l;
+
+			} else {
+
+				var p = l <= 0.5 ? l * ( 1 + s ) : l + s - ( l * s );
+				var q = ( 2 * l ) - p;
+
+				this.r = hue2rgb( q, p, h + 1 / 3 );
+				this.g = hue2rgb( q, p, h );
+				this.b = hue2rgb( q, p, h - 1 / 3 );
 
 			}
 
-			return function setHSL( h, s, l ) {
+			return this;
 
-				// h,s,l ranges are in 0.0 - 1.0
-				h = _Math.euclideanModulo( h, 1 );
-				s = _Math.clamp( s, 0, 1 );
-				l = _Math.clamp( l, 0, 1 );
-
-				if ( s === 0 ) {
-
-					this.r = this.g = this.b = l;
-
-				} else {
-
-					var p = l <= 0.5 ? l * ( 1 + s ) : l + s - ( l * s );
-					var q = ( 2 * l ) - p;
-
-					this.r = hue2rgb( q, p, h + 1 / 3 );
-					this.g = hue2rgb( q, p, h );
-					this.b = hue2rgb( q, p, h - 1 / 3 );
-
-				}
-
-				return this;
-
-			};
-
-		}(),
+		},
 
 		setStyle: function ( style ) {
 
@@ -8202,45 +8209,25 @@
 
 		},
 
-		copySRGBToLinear: function () {
+		copySRGBToLinear: function ( color ) {
 
-			function SRGBToLinear( c ) {
+			this.r = SRGBToLinear( color.r );
+			this.g = SRGBToLinear( color.g );
+			this.b = SRGBToLinear( color.b );
 
-				return ( c < 0.04045 ) ? c * 0.0773993808 : Math.pow( c * 0.9478672986 + 0.0521327014, 2.4 );
+			return this;
 
-			}
+		},
 
-			return function copySRGBToLinear( color ) {
+		copyLinearToSRGB: function ( color ) {
 
-				this.r = SRGBToLinear( color.r );
-				this.g = SRGBToLinear( color.g );
-				this.b = SRGBToLinear( color.b );
+			this.r = LinearToSRGB( color.r );
+			this.g = LinearToSRGB( color.g );
+			this.b = LinearToSRGB( color.b );
 
-				return this;
+			return this;
 
-			};
-
-		}(),
-
-		copyLinearToSRGB: function () {
-
-			function LinearToSRGB( c ) {
-
-				return ( c < 0.0031308 ) ? c * 12.92 : 1.055 * ( Math.pow( c, 0.41666 ) ) - 0.055;
-
-			}
-
-			return function copyLinearToSRGB( color ) {
-
-				this.r = LinearToSRGB( color.r );
-				this.g = LinearToSRGB( color.g );
-				this.b = LinearToSRGB( color.b );
-
-				return this;
-
-			};
-
-		}(),
+		},
 
 		convertSRGBToLinear: function () {
 
@@ -8691,7 +8678,7 @@
 			if ( this.metalness !== undefined ) data.metalness = this.metalness;
 
 			if ( this.emissive && this.emissive.isColor ) data.emissive = this.emissive.getHex();
-			if ( this.emissiveIntensity !== 1 ) data.emissiveIntensity = this.emissiveIntensity;
+			if ( this.emissiveIntensity && this.emissiveIntensity !== 1 ) data.emissiveIntensity = this.emissiveIntensity;
 
 			if ( this.specular && this.specular.isColor ) data.specular = this.specular.getHex();
 			if ( this.shininess !== undefined ) data.shininess = this.shininess;
@@ -8743,6 +8730,7 @@
 
 				data.envMap = this.envMap.toJSON( meta ).uuid;
 				data.reflectivity = this.reflectivity; // Scale behind envMap
+				data.refractionRatio = this.refractionRatio;
 
 				if ( this.combine !== undefined ) data.combine = this.combine;
 				if ( this.envMapIntensity !== undefined ) data.envMapIntensity = this.envMapIntensity;
@@ -8771,13 +8759,13 @@
 			data.depthWrite = this.depthWrite;
 
 			// rotation (SpriteMaterial)
-			if ( this.rotation !== 0 ) data.rotation = this.rotation;
+			if ( this.rotation && this.rotation !== 0 ) data.rotation = this.rotation;
 
 			if ( this.polygonOffset === true ) data.polygonOffset = true;
 			if ( this.polygonOffsetFactor !== 0 ) data.polygonOffsetFactor = this.polygonOffsetFactor;
 			if ( this.polygonOffsetUnits !== 0 ) data.polygonOffsetUnits = this.polygonOffsetUnits;
 
-			if ( this.linewidth !== 1 ) data.linewidth = this.linewidth;
+			if ( this.linewidth && this.linewidth !== 1 ) data.linewidth = this.linewidth;
 			if ( this.dashSize !== undefined ) data.dashSize = this.dashSize;
 			if ( this.gapSize !== undefined ) data.gapSize = this.gapSize;
 			if ( this.scale !== undefined ) data.scale = this.scale;
@@ -8793,6 +8781,7 @@
 			if ( this.wireframeLinejoin !== 'round' ) data.wireframeLinejoin = this.wireframeLinejoin;
 
 			if ( this.morphTargets === true ) data.morphTargets = true;
+			if ( this.morphNormals === true ) data.morphNormals = true;
 			if ( this.skinning === true ) data.skinning = true;
 
 			if ( this.visible === false ) data.visible = false;
@@ -13887,6 +13876,8 @@
 	}
 
 	Object.assign( Plane.prototype, {
+
+		isPlane: true,
 
 		set: function ( normal, constant ) {
 
@@ -21638,7 +21629,7 @@
 
 					var samples = getRenderTargetSamples( renderTarget );
 
-					_gl.renderbufferStorageMultisample( 36161, samples, _gl.DEPTH24_STENCIL8, renderTarget.width, renderTarget.height );
+					_gl.renderbufferStorageMultisample( 36161, samples, 35056, renderTarget.width, renderTarget.height );
 
 				} else {
 
@@ -22397,6 +22388,7 @@
 				if ( gamepad && ( gamepad.id === 'Daydream Controller' ||
 					gamepad.id === 'Gear VR Controller' || gamepad.id === 'Oculus Go Controller' ||
 					gamepad.id === 'OpenVR Gamepad' || gamepad.id.startsWith( 'Oculus Touch' ) ||
+					gamepad.id.startsWith( 'HTC Vive Focus' ) ||
 					gamepad.id.startsWith( 'Spatial Controller' ) ) ) {
 
 					if ( j === id ) return gamepad;
@@ -25566,11 +25558,11 @@
 
 		};
 
-		/*
-		if ( typeof __THREE_DEVTOOLS__ !== undefined ) {
-			__THREE_DEVTOOLS__.dispatchEvent( { type: 'renderer', value: this } );
+		if ( typeof __THREE_DEVTOOLS__ !== 'undefined' ) {
+
+			__THREE_DEVTOOLS__.dispatchEvent( new CustomEvent( 'observe', { detail: this } ) ); // eslint-disable-line no-undef
+
 		}
-		*/
 
 	}
 
@@ -27074,6 +27066,8 @@
 		this.geometry = geometry !== undefined ? geometry : new BufferGeometry();
 		this.material = material !== undefined ? material : new PointsMaterial( { color: Math.random() * 0xffffff } );
 
+		this.updateMorphTargets();
+
 	}
 
 	Points.prototype = Object.assign( Object.create( Object3D.prototype ), {
@@ -27190,6 +27184,38 @@
 			};
 
 		}() ),
+
+		updateMorphTargets: function () {
+
+			var geometry = this.geometry;
+			var m, ml, name;
+
+			var morphAttributes = geometry.morphAttributes;
+			var keys = Object.keys( morphAttributes );
+
+			if ( keys.length > 0 ) {
+
+				var morphAttribute = morphAttributes[ keys[ 0 ] ];
+
+				if ( morphAttribute !== undefined ) {
+
+					this.morphTargetInfluences = [];
+					this.morphTargetDictionary = {};
+
+					for ( m = 0, ml = morphAttribute.length; m < ml; m ++ ) {
+
+						name = morphAttribute[ m ].name || String( m );
+
+						this.morphTargetInfluences.push( 0 );
+						this.morphTargetDictionary[ name ] = m;
+
+					}
+
+				}
+
+			}
+
+		},
 
 		clone: function () {
 
@@ -38160,6 +38186,7 @@
 
 			if ( json.skinning !== undefined ) material.skinning = json.skinning;
 			if ( json.morphTargets !== undefined ) material.morphTargets = json.morphTargets;
+			if ( json.morphNormals !== undefined ) material.morphNormals = json.morphNormals;
 			if ( json.dithering !== undefined ) material.dithering = json.dithering;
 
 			if ( json.visible !== undefined ) material.visible = json.visible;
@@ -38285,6 +38312,7 @@
 			if ( json.envMapIntensity !== undefined ) material.envMapIntensity = json.envMapIntensity;
 
 			if ( json.reflectivity !== undefined ) material.reflectivity = json.reflectivity;
+			if ( json.refractionRatio !== undefined ) material.refractionRatio = json.refractionRatio;
 
 			if ( json.lightMap !== undefined ) material.lightMap = getTexture( json.lightMap );
 			if ( json.lightMapIntensity !== undefined ) material.lightMapIntensity = json.lightMapIntensity;
@@ -44156,9 +44184,7 @@
 
 			delete bindingByName[ trackName ];
 
-			remove_empty_map: {
-
-				for ( var _ in bindingByName ) break remove_empty_map; // eslint-disable-line no-unused-vars
+			if ( Object.keys( bindingByName ).length === 0 ) {
 
 				delete bindingsByRoot[ rootUuid ];
 
@@ -46941,8 +46967,8 @@
 
 	ArrowHelper.prototype.setColor = function ( color ) {
 
-		this.line.material.color.copy( color );
-		this.cone.material.color.copy( color );
+		this.line.material.color.set( color );
+		this.cone.material.color.set( color );
 
 	};
 
