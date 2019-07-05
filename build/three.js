@@ -185,7 +185,7 @@
 
 	} );
 
-	var REVISION = '106dev';
+	var REVISION = '106';
 	var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
 	var CullFaceNone = 0;
 	var CullFaceBack = 1;
@@ -1533,7 +1533,10 @@
 				this._y = s * y + t * this._y;
 				this._z = s * z + t * this._z;
 
-				return this.normalize();
+				this.normalize();
+				this._onChangeCallback();
+
+				return this;
 
 			}
 
@@ -9699,6 +9702,18 @@
 			this.uvsNeedUpdate = geometry.uvsNeedUpdate;
 			this.groupsNeedUpdate = geometry.groupsNeedUpdate;
 
+			if ( geometry.boundingSphere !== null ) {
+
+				this.boundingSphere = geometry.boundingSphere.clone();
+
+			}
+
+			if ( geometry.boundingBox !== null ) {
+
+				this.boundingBox = geometry.boundingBox.clone();
+
+			}
+
 			return this;
 
 		}
@@ -14432,7 +14447,7 @@
 
 	var roughnessmap_pars_fragment = "#ifdef USE_ROUGHNESSMAP\n\tuniform sampler2D roughnessMap;\n#endif";
 
-	var shadowmap_pars_fragment = "#ifdef USE_SHADOWMAP\n\t#if NUM_DIR_LIGHTS > 0\n\t\tuniform sampler2D directionalShadowMap[ NUM_DIR_LIGHTS ];\n\t\tvarying vec4 vDirectionalShadowCoord[ NUM_DIR_LIGHTS ];\n\t#endif\n\t#if NUM_SPOT_LIGHTS > 0\n\t\tuniform sampler2D spotShadowMap[ NUM_SPOT_LIGHTS ];\n\t\tvarying vec4 vSpotShadowCoord[ NUM_SPOT_LIGHTS ];\n\t#endif\n\t#if NUM_POINT_LIGHTS > 0\n\t\tuniform sampler2D pointShadowMap[ NUM_POINT_LIGHTS ];\n\t\tvarying vec4 vPointShadowCoord[ NUM_POINT_LIGHTS ];\n\t#endif\n\tfloat texture2DCompare( sampler2D depths, vec2 uv, float compare ) {\n\t\treturn step( compare, unpackRGBAToDepth( texture2D( depths, uv ) ) );\n\t}\n\tfloat texture2DShadowLerp( sampler2D depths, vec2 size, vec2 uv, float compare ) {\n\t\tconst vec2 offset = vec2( 0.0, 1.0 );\n\t\tvec2 texelSize = vec2( 1.0 ) / size;\n\t\tvec2 centroidUV = floor( uv * size + 0.5 ) / size;\n\t\tfloat lb = texture2DCompare( depths, centroidUV + texelSize * offset.xx, compare );\n\t\tfloat lt = texture2DCompare( depths, centroidUV + texelSize * offset.xy, compare );\n\t\tfloat rb = texture2DCompare( depths, centroidUV + texelSize * offset.yx, compare );\n\t\tfloat rt = texture2DCompare( depths, centroidUV + texelSize * offset.yy, compare );\n\t\tvec2 f = fract( uv * size + 0.5 );\n\t\tfloat a = mix( lb, lt, f.y );\n\t\tfloat b = mix( rb, rt, f.y );\n\t\tfloat c = mix( a, b, f.x );\n\t\treturn c;\n\t}\n\tfloat getShadow( sampler2D shadowMap, vec2 shadowMapSize, float shadowBias, float shadowRadius, vec4 shadowCoord ) {\n\t\tfloat shadow = 1.0;\n\t\tshadowCoord.xyz /= shadowCoord.w;\n\t\tshadowCoord.z += shadowBias;\n\t\tbvec4 inFrustumVec = bvec4 ( shadowCoord.x >= 0.0, shadowCoord.x <= 1.0, shadowCoord.y >= 0.0, shadowCoord.y <= 1.0 );\n\t\tbool inFrustum = all( inFrustumVec );\n\t\tbvec2 frustumTestVec = bvec2( inFrustum, shadowCoord.z <= 1.0 );\n\t\tbool frustumTest = all( frustumTestVec );\n\t\tif ( frustumTest ) {\n\t\t#if defined( SHADOWMAP_TYPE_PCF )\n\t\t\tvec2 texelSize = vec2( 1.0 ) / shadowMapSize;\n\t\t\tfloat dx0 = - texelSize.x * shadowRadius;\n\t\t\tfloat dy0 = - texelSize.y * shadowRadius;\n\t\t\tfloat dx1 = + texelSize.x * shadowRadius;\n\t\t\tfloat dy1 = + texelSize.y * shadowRadius;\n\t\t\tshadow = (\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx0, dy0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( 0.0, dy0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx1, dy0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx0, 0.0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy, shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx1, 0.0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx0, dy1 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( 0.0, dy1 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx1, dy1 ), shadowCoord.z )\n\t\t\t) * ( 1.0 / 9.0 );\n\t\t#elif defined( SHADOWMAP_TYPE_PCF_SOFT )\n\t\t\tvec2 texelSize = vec2( 1.0 ) / shadowMapSize;\n\t\t\tfloat dx0 = - texelSize.x * shadowRadius;\n\t\t\tfloat dy0 = - texelSize.y * shadowRadius;\n\t\t\tfloat dx1 = + texelSize.x * shadowRadius;\n\t\t\tfloat dy1 = + texelSize.y * shadowRadius;\n\t\t\tshadow = (\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( dx0, dy0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( 0.0, dy0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( dx1, dy0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( dx0, 0.0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy, shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( dx1, 0.0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( dx0, dy1 ), shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( 0.0, dy1 ), shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( dx1, dy1 ), shadowCoord.z )\n\t\t\t) * ( 1.0 / 9.0 );\n\t\t#else\n\t\t\tshadow = texture2DCompare( shadowMap, shadowCoord.xy, shadowCoord.z );\n\t\t#endif\n\t\t}\n\t\treturn shadow;\n\t}\n\tvec2 cubeToUV( vec3 v, float texelSizeY ) {\n\t\tvec3 absV = abs( v );\n\t\tfloat scaleToCube = 1.0 / max( absV.x, max( absV.y, absV.z ) );\n\t\tabsV *= scaleToCube;\n\t\tv *= scaleToCube * ( 1.0 - 2.0 * texelSizeY );\n\t\tvec2 planar = v.xy;\n\t\tfloat almostATexel = 1.5 * texelSizeY;\n\t\tfloat almostOne = 1.0 - almostATexel;\n\t\tif ( absV.z >= almostOne ) {\n\t\t\tif ( v.z > 0.0 )\n\t\t\t\tplanar.x = 4.0 - v.x;\n\t\t} else if ( absV.x >= almostOne ) {\n\t\t\tfloat signX = sign( v.x );\n\t\t\tplanar.x = v.z * signX + 2.0 * signX;\n\t\t} else if ( absV.y >= almostOne ) {\n\t\t\tfloat signY = sign( v.y );\n\t\t\tplanar.x = v.x + 2.0 * signY + 2.0;\n\t\t\tplanar.y = v.z * signY - 2.0;\n\t\t}\n\t\treturn vec2( 0.125, 0.25 ) * planar + vec2( 0.375, 0.75 );\n\t}\n\tfloat getPointShadow( sampler2D shadowMap, vec2 shadowMapSize, float shadowBias, float shadowRadius, vec4 shadowCoord, float shadowCameraNear, float shadowCameraFar ) {\n\t\tvec2 texelSize = vec2( 1.0 ) / ( shadowMapSize * vec2( 4.0, 2.0 ) );\n\t\tvec3 lightToPosition = shadowCoord.xyz;\n\t\tfloat dp = ( length( lightToPosition ) - shadowCameraNear ) / ( shadowCameraFar - shadowCameraNear );\t\tdp += shadowBias;\n\t\tvec3 bd3D = normalize( lightToPosition );\n\t\t#if defined( SHADOWMAP_TYPE_PCF ) || defined( SHADOWMAP_TYPE_PCF_SOFT )\n\t\t\tvec2 offset = vec2( - 1, 1 ) * shadowRadius * texelSize.y;\n\t\t\treturn (\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.xyy, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.yyy, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.xyx, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.yyx, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.xxy, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.yxy, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.xxx, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.yxx, texelSize.y ), dp )\n\t\t\t) * ( 1.0 / 9.0 );\n\t\t#else\n\t\t\treturn texture2DCompare( shadowMap, cubeToUV( bd3D, texelSize.y ), dp );\n\t\t#endif\n\t}\n#endif";
+	var shadowmap_pars_fragment = "#ifdef USE_SHADOWMAP\n\t#if NUM_DIR_LIGHTS > 0\n\t\tuniform sampler2D directionalShadowMap[ NUM_DIR_LIGHTS ];\n\t\tvarying vec4 vDirectionalShadowCoord[ NUM_DIR_LIGHTS ];\n\t#endif\n\t#if NUM_SPOT_LIGHTS > 0\n\t\tuniform sampler2D spotShadowMap[ NUM_SPOT_LIGHTS ];\n\t\tvarying vec4 vSpotShadowCoord[ NUM_SPOT_LIGHTS ];\n\t#endif\n\t#if NUM_POINT_LIGHTS > 0\n\t\tuniform sampler2D pointShadowMap[ NUM_POINT_LIGHTS ];\n\t\tvarying vec4 vPointShadowCoord[ NUM_POINT_LIGHTS ];\n\t#endif\n\tfloat texture2DCompare( sampler2D depths, vec2 uv, float compare ) {\n\t\treturn step( compare, unpackRGBAToDepth( texture2D( depths, uv ) ) );\n\t}\n\tfloat texture2DShadowLerp( sampler2D depths, vec2 size, vec2 uv, float compare ) {\n\t\tconst vec2 offset = vec2( 0.0, 1.0 );\n\t\tvec2 texelSize = vec2( 1.0 ) / size;\n\t\tvec2 centroidUV = floor( uv * size + 0.5 ) / size;\n\t\tfloat lb = texture2DCompare( depths, centroidUV + texelSize * offset.xx, compare );\n\t\tfloat lt = texture2DCompare( depths, centroidUV + texelSize * offset.xy, compare );\n\t\tfloat rb = texture2DCompare( depths, centroidUV + texelSize * offset.yx, compare );\n\t\tfloat rt = texture2DCompare( depths, centroidUV + texelSize * offset.yy, compare );\n\t\tvec2 f = fract( uv * size + 0.5 );\n\t\tfloat a = mix( lb, lt, f.y );\n\t\tfloat b = mix( rb, rt, f.y );\n\t\tfloat c = mix( a, b, f.x );\n\t\treturn c;\n\t}\n\tfloat getShadow( sampler2D shadowMap, vec2 shadowMapSize, float shadowBias, float shadowRadius, vec4 shadowCoord ) {\n\t\tfloat shadow = 1.0;\n\t\tshadowCoord.xyz /= shadowCoord.w;\n\t\tshadowCoord.z += shadowBias;\n\t\tbvec4 inFrustumVec = bvec4 ( shadowCoord.x >= 0.0, shadowCoord.x <= 1.0, shadowCoord.y >= 0.0, shadowCoord.y <= 1.0 );\n\t\tbool inFrustum = all( inFrustumVec );\n\t\tbvec2 frustumTestVec = bvec2( inFrustum, shadowCoord.z <= 1.0 );\n\t\tbool frustumTest = all( frustumTestVec );\n\t\tif ( frustumTest ) {\n\t\t#if defined( SHADOWMAP_TYPE_PCF )\n\t\t\tvec2 texelSize = vec2( 1.0 ) / shadowMapSize;\n\t\t\tfloat dx0 = - texelSize.x * shadowRadius;\n\t\t\tfloat dy0 = - texelSize.y * shadowRadius;\n\t\t\tfloat dx1 = + texelSize.x * shadowRadius;\n\t\t\tfloat dy1 = + texelSize.y * shadowRadius;\n\t\t\tfloat dx2 = dx0 / 2.0;\n\t\t\tfloat dy2 = dy0 / 2.0;\n\t\t\tfloat dx3 = dx1 / 2.0;\n\t\t\tfloat dy3 = dy1 / 2.0;\n\t\t\tshadow = (\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx0, dy0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( 0.0, dy0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx1, dy0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx2, dy2 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( 0.0, dy2 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx3, dy2 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx0, 0.0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx2, 0.0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy, shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx3, 0.0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx1, 0.0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx2, dy3 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( 0.0, dy3 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx3, dy3 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx0, dy1 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( 0.0, dy1 ), shadowCoord.z ) +\n\t\t\t\ttexture2DCompare( shadowMap, shadowCoord.xy + vec2( dx1, dy1 ), shadowCoord.z )\n\t\t\t) * ( 1.0 / 17.0 );\n\t\t#elif defined( SHADOWMAP_TYPE_PCF_SOFT )\n\t\t\tvec2 texelSize = vec2( 1.0 ) / shadowMapSize;\n\t\t\tfloat dx0 = - texelSize.x * shadowRadius;\n\t\t\tfloat dy0 = - texelSize.y * shadowRadius;\n\t\t\tfloat dx1 = + texelSize.x * shadowRadius;\n\t\t\tfloat dy1 = + texelSize.y * shadowRadius;\n\t\t\tshadow = (\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( dx0, dy0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( 0.0, dy0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( dx1, dy0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( dx0, 0.0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy, shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( dx1, 0.0 ), shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( dx0, dy1 ), shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( 0.0, dy1 ), shadowCoord.z ) +\n\t\t\t\ttexture2DShadowLerp( shadowMap, shadowMapSize, shadowCoord.xy + vec2( dx1, dy1 ), shadowCoord.z )\n\t\t\t) * ( 1.0 / 9.0 );\n\t\t#else\n\t\t\tshadow = texture2DCompare( shadowMap, shadowCoord.xy, shadowCoord.z );\n\t\t#endif\n\t\t}\n\t\treturn shadow;\n\t}\n\tvec2 cubeToUV( vec3 v, float texelSizeY ) {\n\t\tvec3 absV = abs( v );\n\t\tfloat scaleToCube = 1.0 / max( absV.x, max( absV.y, absV.z ) );\n\t\tabsV *= scaleToCube;\n\t\tv *= scaleToCube * ( 1.0 - 2.0 * texelSizeY );\n\t\tvec2 planar = v.xy;\n\t\tfloat almostATexel = 1.5 * texelSizeY;\n\t\tfloat almostOne = 1.0 - almostATexel;\n\t\tif ( absV.z >= almostOne ) {\n\t\t\tif ( v.z > 0.0 )\n\t\t\t\tplanar.x = 4.0 - v.x;\n\t\t} else if ( absV.x >= almostOne ) {\n\t\t\tfloat signX = sign( v.x );\n\t\t\tplanar.x = v.z * signX + 2.0 * signX;\n\t\t} else if ( absV.y >= almostOne ) {\n\t\t\tfloat signY = sign( v.y );\n\t\t\tplanar.x = v.x + 2.0 * signY + 2.0;\n\t\t\tplanar.y = v.z * signY - 2.0;\n\t\t}\n\t\treturn vec2( 0.125, 0.25 ) * planar + vec2( 0.375, 0.75 );\n\t}\n\tfloat getPointShadow( sampler2D shadowMap, vec2 shadowMapSize, float shadowBias, float shadowRadius, vec4 shadowCoord, float shadowCameraNear, float shadowCameraFar ) {\n\t\tvec2 texelSize = vec2( 1.0 ) / ( shadowMapSize * vec2( 4.0, 2.0 ) );\n\t\tvec3 lightToPosition = shadowCoord.xyz;\n\t\tfloat dp = ( length( lightToPosition ) - shadowCameraNear ) / ( shadowCameraFar - shadowCameraNear );\t\tdp += shadowBias;\n\t\tvec3 bd3D = normalize( lightToPosition );\n\t\t#if defined( SHADOWMAP_TYPE_PCF ) || defined( SHADOWMAP_TYPE_PCF_SOFT )\n\t\t\tvec2 offset = vec2( - 1, 1 ) * shadowRadius * texelSize.y;\n\t\t\treturn (\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.xyy, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.yyy, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.xyx, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.yyx, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.xxy, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.yxy, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.xxx, texelSize.y ), dp ) +\n\t\t\t\ttexture2DCompare( shadowMap, cubeToUV( bd3D + offset.yxx, texelSize.y ), dp )\n\t\t\t) * ( 1.0 / 9.0 );\n\t\t#else\n\t\t\treturn texture2DCompare( shadowMap, cubeToUV( bd3D, texelSize.y ), dp );\n\t\t#endif\n\t}\n#endif";
 
 	var shadowmap_pars_vertex = "#ifdef USE_SHADOWMAP\n\t#if NUM_DIR_LIGHTS > 0\n\t\tuniform mat4 directionalShadowMatrix[ NUM_DIR_LIGHTS ];\n\t\tvarying vec4 vDirectionalShadowCoord[ NUM_DIR_LIGHTS ];\n\t#endif\n\t#if NUM_SPOT_LIGHTS > 0\n\t\tuniform mat4 spotShadowMatrix[ NUM_SPOT_LIGHTS ];\n\t\tvarying vec4 vSpotShadowCoord[ NUM_SPOT_LIGHTS ];\n\t#endif\n\t#if NUM_POINT_LIGHTS > 0\n\t\tuniform mat4 pointShadowMatrix[ NUM_POINT_LIGHTS ];\n\t\tvarying vec4 vPointShadowCoord[ NUM_POINT_LIGHTS ];\n\t#endif\n#endif";
 
@@ -23249,8 +23264,8 @@
 			utils = new WebGLUtils( _gl, extensions, capabilities );
 
 			state = new WebGLState( _gl, extensions, utils, capabilities );
-			state.scissor( _currentScissor.copy( _scissor ).multiplyScalar( _pixelRatio ) );
-			state.viewport( _currentViewport.copy( _viewport ).multiplyScalar( _pixelRatio ) );
+			state.scissor( _currentScissor.copy( _scissor ).multiplyScalar( _pixelRatio ).floor() );
+			state.viewport( _currentViewport.copy( _viewport ).multiplyScalar( _pixelRatio ).floor() );
 
 			info = new WebGLInfo( _gl );
 			properties = new WebGLProperties();
@@ -23364,8 +23379,8 @@
 			_width = width;
 			_height = height;
 
-			_canvas.width = width * _pixelRatio;
-			_canvas.height = height * _pixelRatio;
+			_canvas.width = Math.floor( width * _pixelRatio );
+			_canvas.height = Math.floor( height * _pixelRatio );
 
 			if ( updateStyle !== false ) {
 
@@ -23388,7 +23403,7 @@
 
 			}
 
-			return target.set( _width * _pixelRatio, _height * _pixelRatio );
+			return target.set( _width * _pixelRatio, _height * _pixelRatio ).floor();
 
 		};
 
@@ -23399,8 +23414,8 @@
 
 			_pixelRatio = pixelRatio;
 
-			_canvas.width = width * pixelRatio;
-			_canvas.height = height * pixelRatio;
+			_canvas.width = Math.floor( width * pixelRatio );
+			_canvas.height = Math.floor( height * pixelRatio );
 
 			this.setViewport( 0, 0, width, height );
 
@@ -23438,7 +23453,7 @@
 
 			}
 
-			state.viewport( _currentViewport.copy( _viewport ).multiplyScalar( _pixelRatio ) );
+			state.viewport( _currentViewport.copy( _viewport ).multiplyScalar( _pixelRatio ).floor() );
 
 		};
 
@@ -23460,7 +23475,7 @@
 
 			}
 
-			state.scissor( _currentScissor.copy( _scissor ).multiplyScalar( _pixelRatio ) );
+			state.scissor( _currentScissor.copy( _scissor ).multiplyScalar( _pixelRatio ).floor() );
 
 		};
 
@@ -24229,6 +24244,10 @@
 				if ( object.isGroup ) {
 
 					groupOrder = object.renderOrder;
+
+				} else if ( object.isLOD ) {
+
+					if ( object.autoUpdate === true ) object.update( camera );
 
 				} else if ( object.isLight ) {
 
@@ -25418,8 +25437,8 @@
 
 			} else {
 
-				_currentViewport.copy( _viewport ).multiplyScalar( _pixelRatio );
-				_currentScissor.copy( _scissor ).multiplyScalar( _pixelRatio );
+				_currentViewport.copy( _viewport ).multiplyScalar( _pixelRatio ).floor();
+				_currentScissor.copy( _scissor ).multiplyScalar( _pixelRatio ).floor();
 				_currentScissorTest = _scissorTest;
 
 			}
@@ -26132,6 +26151,8 @@
 				value: []
 			}
 		} );
+
+		this.autoUpdate = true;
 
 	}
 
@@ -27190,26 +27211,40 @@
 			var geometry = this.geometry;
 			var m, ml, name;
 
-			var morphAttributes = geometry.morphAttributes;
-			var keys = Object.keys( morphAttributes );
+			if ( geometry.isBufferGeometry ) {
 
-			if ( keys.length > 0 ) {
+				var morphAttributes = geometry.morphAttributes;
+				var keys = Object.keys( morphAttributes );
 
-				var morphAttribute = morphAttributes[ keys[ 0 ] ];
+				if ( keys.length > 0 ) {
 
-				if ( morphAttribute !== undefined ) {
+					var morphAttribute = morphAttributes[ keys[ 0 ] ];
 
-					this.morphTargetInfluences = [];
-					this.morphTargetDictionary = {};
+					if ( morphAttribute !== undefined ) {
 
-					for ( m = 0, ml = morphAttribute.length; m < ml; m ++ ) {
+						this.morphTargetInfluences = [];
+						this.morphTargetDictionary = {};
 
-						name = morphAttribute[ m ].name || String( m );
+						for ( m = 0, ml = morphAttribute.length; m < ml; m ++ ) {
 
-						this.morphTargetInfluences.push( 0 );
-						this.morphTargetDictionary[ name ] = m;
+							name = morphAttribute[ m ].name || String( m );
+
+							this.morphTargetInfluences.push( 0 );
+							this.morphTargetDictionary[ name ] = m;
+
+						}
 
 					}
+
+				}
+
+			} else {
+
+				var morphTargets = geometry.morphTargets;
+
+				if ( morphTargets !== undefined && morphTargets.length > 0 ) {
+
+					console.error( 'THREE.Points.updateMorphTargets() does not support THREE.Geometry. Use THREE.BufferGeometry instead.' );
 
 				}
 
@@ -28800,7 +28835,7 @@
 
 	/**
 	 * @author Mugen87 / https://github.com/Mugen87
-	 * Port from https://github.com/mapbox/earcut (v2.1.2)
+	 * Port from https://github.com/mapbox/earcut (v2.1.5)
 	 */
 
 	var Earcut = {
@@ -28814,14 +28849,13 @@
 				outerNode = linkedList( data, 0, outerLen, dim, true ),
 				triangles = [];
 
-			if ( ! outerNode ) return triangles;
+			if ( ! outerNode || outerNode.next === outerNode.prev ) return triangles;
 
 			var minX, minY, maxX, maxY, x, y, invSize;
 
 			if ( hasHoles ) outerNode = eliminateHoles( data, holeIndices, outerNode, dim );
 
 			// if the shape is not too simple, we'll use z-order curve hash later; calculate polygon bbox
-
 			if ( data.length > 80 * dim ) {
 
 				minX = maxX = data[ 0 ];
@@ -28839,7 +28873,6 @@
 				}
 
 				// minX, minY and invSize are later used to transform coords into integers for z-order calculation
-
 				invSize = Math.max( maxX - minX, maxY - minY );
 				invSize = invSize !== 0 ? 1 / invSize : 0;
 
@@ -28854,7 +28887,6 @@
 	};
 
 	// create a circular doubly linked list from polygon points in the specified winding order
-
 	function linkedList( data, start, end, dim, clockwise ) {
 
 		var i, last;
@@ -28881,14 +28913,13 @@
 	}
 
 	// eliminate colinear or duplicate points
-
 	function filterPoints( start, end ) {
 
 		if ( ! start ) return start;
 		if ( ! end ) end = start;
 
-		var p = start, again;
-
+		var p = start,
+			again;
 		do {
 
 			again = false;
@@ -28913,19 +28944,17 @@
 	}
 
 	// main ear slicing loop which triangulates a polygon (given as a linked list)
-
 	function earcutLinked( ear, triangles, dim, minX, minY, invSize, pass ) {
 
 		if ( ! ear ) return;
 
 		// interlink polygon nodes in z-order
-
 		if ( ! pass && invSize ) indexCurve( ear, minX, minY, invSize );
 
-		var stop = ear, prev, next;
+		var stop = ear,
+			prev, next;
 
 		// iterate through ears, slicing them one by one
-
 		while ( ear.prev !== ear.next ) {
 
 			prev = ear.prev;
@@ -28940,7 +28969,7 @@
 
 				removeNode( ear );
 
-				// skipping the next vertice leads to less sliver triangles
+				// skipping the next vertex leads to less sliver triangles
 				ear = next.next;
 				stop = next.next;
 
@@ -28951,11 +28980,9 @@
 			ear = next;
 
 			// if we looped through the whole remaining polygon and can't find any more ears
-
 			if ( ear === stop ) {
 
 				// try filtering points and slicing again
-
 				if ( ! pass ) {
 
 					earcutLinked( filterPoints( ear ), triangles, dim, minX, minY, invSize, 1 );
@@ -28984,7 +29011,6 @@
 	}
 
 	// check whether a polygon node forms a valid ear with adjacent nodes
-
 	function isEar( ear ) {
 
 		var a = ear.prev,
@@ -28998,12 +29024,8 @@
 
 		while ( p !== ear.prev ) {
 
-			if ( pointInTriangle( a.x, a.y, b.x, b.y, c.x, c.y, p.x, p.y ) && area( p.prev, p, p.next ) >= 0 ) {
-
-				return false;
-
-			}
-
+			if ( pointInTriangle( a.x, a.y, b.x, b.y, c.x, c.y, p.x, p.y ) &&
+				area( p.prev, p, p.next ) >= 0 ) return false;
 			p = p.next;
 
 		}
@@ -29021,41 +29043,50 @@
 		if ( area( a, b, c ) >= 0 ) return false; // reflex, can't be an ear
 
 		// triangle bbox; min & max are calculated like this for speed
-
 		var minTX = a.x < b.x ? ( a.x < c.x ? a.x : c.x ) : ( b.x < c.x ? b.x : c.x ),
 			minTY = a.y < b.y ? ( a.y < c.y ? a.y : c.y ) : ( b.y < c.y ? b.y : c.y ),
 			maxTX = a.x > b.x ? ( a.x > c.x ? a.x : c.x ) : ( b.x > c.x ? b.x : c.x ),
 			maxTY = a.y > b.y ? ( a.y > c.y ? a.y : c.y ) : ( b.y > c.y ? b.y : c.y );
 
 		// z-order range for the current triangle bbox;
-
 		var minZ = zOrder( minTX, minTY, minX, minY, invSize ),
 			maxZ = zOrder( maxTX, maxTY, minX, minY, invSize );
 
-		// first look for points inside the triangle in increasing z-order
+		var p = ear.prevZ,
+			n = ear.nextZ;
 
-		var p = ear.nextZ;
-
-		while ( p && p.z <= maxZ ) {
+		// look for points inside the triangle in both directions
+		while ( p && p.z >= minZ && n && n.z <= maxZ ) {
 
 			if ( p !== ear.prev && p !== ear.next &&
-					pointInTriangle( a.x, a.y, b.x, b.y, c.x, c.y, p.x, p.y ) &&
-					area( p.prev, p, p.next ) >= 0 ) return false;
-			p = p.nextZ;
+				pointInTriangle( a.x, a.y, b.x, b.y, c.x, c.y, p.x, p.y ) &&
+				area( p.prev, p, p.next ) >= 0 ) return false;
+			p = p.prevZ;
+
+			if ( n !== ear.prev && n !== ear.next &&
+				pointInTriangle( a.x, a.y, b.x, b.y, c.x, c.y, n.x, n.y ) &&
+				area( n.prev, n, n.next ) >= 0 ) return false;
+			n = n.nextZ;
 
 		}
 
-		// then look for points in decreasing z-order
-
-		p = ear.prevZ;
-
+		// look for remaining points in decreasing z-order
 		while ( p && p.z >= minZ ) {
 
 			if ( p !== ear.prev && p !== ear.next &&
-					pointInTriangle( a.x, a.y, b.x, b.y, c.x, c.y, p.x, p.y ) &&
-					area( p.prev, p, p.next ) >= 0 ) return false;
-
+				pointInTriangle( a.x, a.y, b.x, b.y, c.x, c.y, p.x, p.y ) &&
+				area( p.prev, p, p.next ) >= 0 ) return false;
 			p = p.prevZ;
+
+		}
+
+		// look for remaining points in increasing z-order
+		while ( n && n.z <= maxZ ) {
+
+			if ( n !== ear.prev && n !== ear.next &&
+				pointInTriangle( a.x, a.y, b.x, b.y, c.x, c.y, n.x, n.y ) &&
+				area( n.prev, n, n.next ) >= 0 ) return false;
+			n = n.nextZ;
 
 		}
 
@@ -29064,14 +29095,13 @@
 	}
 
 	// go through all polygon nodes and cure small local self-intersections
-
 	function cureLocalIntersections( start, triangles, dim ) {
 
 		var p = start;
-
 		do {
 
-			var a = p.prev, b = p.next.next;
+			var a = p.prev,
+				b = p.next.next;
 
 			if ( ! equals( a, b ) && intersects( a, p, p.next, b ) && locallyInside( a, b ) && locallyInside( b, a ) ) {
 
@@ -29080,7 +29110,6 @@
 				triangles.push( b.i / dim );
 
 				// remove two nodes involved
-
 				removeNode( p );
 				removeNode( p.next );
 
@@ -29097,32 +29126,25 @@
 	}
 
 	// try splitting polygon into two and triangulate them independently
-
 	function splitEarcut( start, triangles, dim, minX, minY, invSize ) {
 
 		// look for a valid diagonal that divides the polygon into two
-
 		var a = start;
-
 		do {
 
 			var b = a.next.next;
-
 			while ( b !== a.prev ) {
 
 				if ( a.i !== b.i && isValidDiagonal( a, b ) ) {
 
 					// split the polygon in two by the diagonal
-
 					var c = splitPolygon( a, b );
 
 					// filter colinear points around the cuts
-
 					a = filterPoints( a, a.next );
 					c = filterPoints( c, c.next );
 
 					// run earcut on each half
-
 					earcutLinked( a, triangles, dim, minX, minY, invSize );
 					earcutLinked( c, triangles, dim, minX, minY, invSize );
 					return;
@@ -29140,10 +29162,10 @@
 	}
 
 	// link every hole into the outer loop, producing a single-ring polygon without holes
-
 	function eliminateHoles( data, holeIndices, outerNode, dim ) {
 
-		var queue = [], i, len, start, end, list;
+		var queue = [],
+			i, len, start, end, list;
 
 		for ( i = 0, len = holeIndices.length; i < len; i ++ ) {
 
@@ -29158,7 +29180,6 @@
 		queue.sort( compareX );
 
 		// process holes from left to right
-
 		for ( i = 0; i < queue.length; i ++ ) {
 
 			eliminateHole( queue[ i ], outerNode );
@@ -29177,15 +29198,12 @@
 	}
 
 	// find a bridge between vertices that connects hole with an outer ring and and link it
-
 	function eliminateHole( hole, outerNode ) {
 
 		outerNode = findHoleBridge( hole, outerNode );
-
 		if ( outerNode ) {
 
 			var b = splitPolygon( outerNode, hole );
-
 			filterPoints( b, b.next );
 
 		}
@@ -29193,7 +29211,6 @@
 	}
 
 	// David Eberly's algorithm for finding a bridge between hole and outer polygon
-
 	function findHoleBridge( hole, outerNode ) {
 
 		var p = outerNode,
@@ -29204,17 +29221,14 @@
 
 		// find a segment intersected by a ray from the hole's leftmost point to the left;
 		// segment's endpoint with lesser x will be potential connection point
-
 		do {
 
 			if ( hy <= p.y && hy >= p.next.y && p.next.y !== p.y ) {
 
 				var x = p.x + ( hy - p.y ) * ( p.next.x - p.x ) / ( p.next.y - p.y );
-
 				if ( x <= hx && x > qx ) {
 
 					qx = x;
-
 					if ( x === hx ) {
 
 						if ( hy === p.y ) return p;
@@ -29251,7 +29265,7 @@
 		while ( p !== stop ) {
 
 			if ( hx >= p.x && p.x >= mx && hx !== p.x &&
-							pointInTriangle( hy < my ? hx : qx, hy, mx, my, hy < my ? qx : hx, hy, p.x, p.y ) ) {
+					pointInTriangle( hy < my ? hx : qx, hy, mx, my, hy < my ? qx : hx, hy, p.x, p.y ) ) {
 
 				tan = Math.abs( hy - p.y ) / ( hx - p.x ); // tangential
 
@@ -29273,11 +29287,9 @@
 	}
 
 	// interlink polygon nodes in z-order
-
 	function indexCurve( start, minX, minY, invSize ) {
 
 		var p = start;
-
 		do {
 
 			if ( p.z === null ) p.z = zOrder( p.x, p.y, minX, minY, invSize );
@@ -29296,10 +29308,10 @@
 
 	// Simon Tatham's linked list merge sort algorithm
 	// http://www.chiark.greenend.org.uk/~sgtatham/algorithms/listsort.html
-
 	function sortLinked( list ) {
 
-		var i, p, q, e, tail, numMerges, pSize, qSize, inSize = 1;
+		var i, p, q, e, tail, numMerges, pSize, qSize,
+			inSize = 1;
 
 		do {
 
@@ -29313,7 +29325,6 @@
 				numMerges ++;
 				q = p;
 				pSize = 0;
-
 				for ( i = 0; i < inSize; i ++ ) {
 
 					pSize ++;
@@ -29362,11 +29373,9 @@
 	}
 
 	// z-order of a point given coords and inverse of the longer side of data bbox
-
 	function zOrder( x, y, minX, minY, invSize ) {
 
 		// coords are transformed into non-negative 15-bit integer range
-
 		x = 32767 * ( x - minX ) * invSize;
 		y = 32767 * ( y - minY ) * invSize;
 
@@ -29385,14 +29394,13 @@
 	}
 
 	// find the leftmost node of a polygon ring
-
 	function getLeftmost( start ) {
 
-		var p = start, leftmost = start;
-
+		var p = start,
+			leftmost = start;
 		do {
 
-			if ( p.x < leftmost.x ) leftmost = p;
+			if ( p.x < leftmost.x || ( p.x === leftmost.x && p.y < leftmost.y ) ) leftmost = p;
 			p = p.next;
 
 		} while ( p !== start );
@@ -29402,26 +29410,23 @@
 	}
 
 	// check if a point lies within a convex triangle
-
 	function pointInTriangle( ax, ay, bx, by, cx, cy, px, py ) {
 
 		return ( cx - px ) * ( ay - py ) - ( ax - px ) * ( cy - py ) >= 0 &&
-		 ( ax - px ) * ( by - py ) - ( bx - px ) * ( ay - py ) >= 0 &&
-		 ( bx - px ) * ( cy - py ) - ( cx - px ) * ( by - py ) >= 0;
+			   ( ax - px ) * ( by - py ) - ( bx - px ) * ( ay - py ) >= 0 &&
+			   ( bx - px ) * ( cy - py ) - ( cx - px ) * ( by - py ) >= 0;
 
 	}
 
 	// check if a diagonal between two polygon nodes is valid (lies in polygon interior)
-
 	function isValidDiagonal( a, b ) {
 
 		return a.next.i !== b.i && a.prev.i !== b.i && ! intersectsPolygon( a, b ) &&
-			locallyInside( a, b ) && locallyInside( b, a ) && middleInside( a, b );
+			   locallyInside( a, b ) && locallyInside( b, a ) && middleInside( a, b );
 
 	}
 
 	// signed area of a triangle
-
 	function area( p, q, r ) {
 
 		return ( q.y - p.y ) * ( r.x - q.x ) - ( q.x - p.x ) * ( r.y - q.y );
@@ -29429,7 +29434,6 @@
 	}
 
 	// check if two points are equal
-
 	function equals( p1, p2 ) {
 
 		return p1.x === p2.x && p1.y === p2.y;
@@ -29437,32 +29441,23 @@
 	}
 
 	// check if two segments intersect
-
 	function intersects( p1, q1, p2, q2 ) {
 
-		if ( ( equals( p1, q1 ) && equals( p2, q2 ) ) ||
-				( equals( p1, q2 ) && equals( p2, q1 ) ) ) return true;
-
+		if ( ( equals( p1, p2 ) && equals( q1, q2 ) ) ||
+			( equals( p1, q2 ) && equals( p2, q1 ) ) ) return true;
 		return area( p1, q1, p2 ) > 0 !== area( p1, q1, q2 ) > 0 &&
-					 area( p2, q2, p1 ) > 0 !== area( p2, q2, q1 ) > 0;
+			   area( p2, q2, p1 ) > 0 !== area( p2, q2, q1 ) > 0;
 
 	}
 
 	// check if a polygon diagonal intersects any polygon segments
-
 	function intersectsPolygon( a, b ) {
 
 		var p = a;
-
 		do {
 
 			if ( p.i !== a.i && p.next.i !== a.i && p.i !== b.i && p.next.i !== b.i &&
-							intersects( p, p.next, a, b ) ) {
-
-				return true;
-
-			}
-
+					intersects( p, p.next, a, b ) ) return true;
 			p = p.next;
 
 		} while ( p !== a );
@@ -29472,7 +29467,6 @@
 	}
 
 	// check if a polygon diagonal is locally inside the polygon
-
 	function locallyInside( a, b ) {
 
 		return area( a.prev, a, a.next ) < 0 ?
@@ -29482,23 +29476,17 @@
 	}
 
 	// check if the middle point of a polygon diagonal is inside the polygon
-
 	function middleInside( a, b ) {
 
 		var p = a,
 			inside = false,
 			px = ( a.x + b.x ) / 2,
 			py = ( a.y + b.y ) / 2;
-
 		do {
 
 			if ( ( ( p.y > py ) !== ( p.next.y > py ) ) && p.next.y !== p.y &&
-							( px < ( p.next.x - p.x ) * ( py - p.y ) / ( p.next.y - p.y ) + p.x ) ) {
-
+					( px < ( p.next.x - p.x ) * ( py - p.y ) / ( p.next.y - p.y ) + p.x ) )
 				inside = ! inside;
-
-			}
-
 			p = p.next;
 
 		} while ( p !== a );
@@ -29509,7 +29497,6 @@
 
 	// link two polygon vertices with a bridge; if the vertices belong to the same ring, it splits polygon into two;
 	// if one belongs to the outer ring and another to a hole, it merges it into a single ring
-
 	function splitPolygon( a, b ) {
 
 		var a2 = new Node( a.i, a.x, a.y ),
@@ -29534,7 +29521,6 @@
 	}
 
 	// create a node and optionally link it with previous one (in a circular doubly linked list)
-
 	function insertNode( i, x, y, last ) {
 
 		var p = new Node( i, x, y );
@@ -29569,14 +29555,14 @@
 
 	function Node( i, x, y ) {
 
-		// vertice index in coordinates array
+		// vertex index in coordinates array
 		this.i = i;
 
 		// vertex coordinates
 		this.x = x;
 		this.y = y;
 
-		// previous and next vertice nodes in a polygon ring
+		// previous and next vertex nodes in a polygon ring
 		this.prev = null;
 		this.next = null;
 
@@ -29595,7 +29581,6 @@
 	function signedArea( data, start, end, dim ) {
 
 		var sum = 0;
-
 		for ( var i = start, j = end - dim; i < end; i += dim ) {
 
 			sum += ( data[ j ] - data[ i ] ) * ( data[ i + 1 ] + data[ j + 1 ] );
@@ -46765,13 +46750,13 @@
 	 * @author WestLangley / http://github.com/WestLangley
 	 */
 
-	function Box3Helper( box, hex ) {
+	function Box3Helper( box, color ) {
 
 		this.type = 'Box3Helper';
 
 		this.box = box;
 
-		var color = ( hex !== undefined ) ? hex : 0xffff00;
+		color = color || 0xffff00;
 
 		var indices = new Uint16Array( [ 0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7 ] );
 
