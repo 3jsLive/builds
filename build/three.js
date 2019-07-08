@@ -19552,7 +19552,7 @@
 
 			var currentRenderTarget = _renderer.getRenderTarget();
 			var activeCubeFace = _renderer.getActiveCubeFace();
-			var activeMipMapLevel = _renderer.getActiveMipMapLevel();
+			var activeMipmapLevel = _renderer.getActiveMipmapLevel();
 
 			var _state = _renderer.state;
 
@@ -19710,7 +19710,7 @@
 
 			scope.needsUpdate = false;
 
-			_renderer.setRenderTarget( currentRenderTarget, activeCubeFace, activeMipMapLevel );
+			_renderer.setRenderTarget( currentRenderTarget, activeCubeFace, activeMipmapLevel );
 
 		};
 
@@ -25385,7 +25385,7 @@
 
 		};
 
-		this.getActiveMipMapLevel = function () {
+		this.getActiveMipmapLevel = function () {
 
 			return _currentActiveMipmapLevel;
 
@@ -25397,11 +25397,11 @@
 
 		};
 
-		this.setRenderTarget = function ( renderTarget, activeCubeFace, activeMipMapLevel ) {
+		this.setRenderTarget = function ( renderTarget, activeCubeFace, activeMipmapLevel ) {
 
 			_currentRenderTarget = renderTarget;
 			_currentActiveCubeFace = activeCubeFace;
-			_currentActiveMipmapLevel = activeMipMapLevel;
+			_currentActiveMipmapLevel = activeMipmapLevel;
 
 			if ( renderTarget && properties.get( renderTarget ).__webglFramebuffer === undefined ) {
 
@@ -25457,7 +25457,7 @@
 			if ( isCube ) {
 
 				var textureProperties = properties.get( renderTarget.texture );
-				_gl.framebufferTexture2D( 36160, 36064, 34069 + ( activeCubeFace || 0 ), textureProperties.__webglTexture, activeMipMapLevel || 0 );
+				_gl.framebufferTexture2D( 36160, 36064, 34069 + ( activeCubeFace || 0 ), textureProperties.__webglTexture, activeMipmapLevel || 0 );
 
 			}
 
@@ -48428,6 +48428,12 @@
 		setTextureCube: function () {
 
 			console.warn( 'THREE.WebGLRenderer: .setTextureCube() has been removed.' );
+
+		},
+		getActiveMipMapLevel: function () {
+
+			console.warn( 'THREE.WebGLRenderer: .getActiveMipMapLevel() is now .getActiveMipmapLevel().' );
+			return this.getActiveMipmapLevel();
 
 		}
 
