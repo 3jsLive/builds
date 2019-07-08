@@ -19546,7 +19546,7 @@ function WebGLShadowMap( _renderer, _objects, maxTextureSize ) {
 
 		var currentRenderTarget = _renderer.getRenderTarget();
 		var activeCubeFace = _renderer.getActiveCubeFace();
-		var activeMipMapLevel = _renderer.getActiveMipMapLevel();
+		var activeMipmapLevel = _renderer.getActiveMipmapLevel();
 
 		var _state = _renderer.state;
 
@@ -19704,7 +19704,7 @@ function WebGLShadowMap( _renderer, _objects, maxTextureSize ) {
 
 		scope.needsUpdate = false;
 
-		_renderer.setRenderTarget( currentRenderTarget, activeCubeFace, activeMipMapLevel );
+		_renderer.setRenderTarget( currentRenderTarget, activeCubeFace, activeMipmapLevel );
 
 	};
 
@@ -25379,7 +25379,7 @@ function WebGLRenderer( parameters ) {
 
 	};
 
-	this.getActiveMipMapLevel = function () {
+	this.getActiveMipmapLevel = function () {
 
 		return _currentActiveMipmapLevel;
 
@@ -25391,11 +25391,11 @@ function WebGLRenderer( parameters ) {
 
 	};
 
-	this.setRenderTarget = function ( renderTarget, activeCubeFace, activeMipMapLevel ) {
+	this.setRenderTarget = function ( renderTarget, activeCubeFace, activeMipmapLevel ) {
 
 		_currentRenderTarget = renderTarget;
 		_currentActiveCubeFace = activeCubeFace;
-		_currentActiveMipmapLevel = activeMipMapLevel;
+		_currentActiveMipmapLevel = activeMipmapLevel;
 
 		if ( renderTarget && properties.get( renderTarget ).__webglFramebuffer === undefined ) {
 
@@ -25451,7 +25451,7 @@ function WebGLRenderer( parameters ) {
 		if ( isCube ) {
 
 			var textureProperties = properties.get( renderTarget.texture );
-			_gl.framebufferTexture2D( 36160, 36064, 34069 + ( activeCubeFace || 0 ), textureProperties.__webglTexture, activeMipMapLevel || 0 );
+			_gl.framebufferTexture2D( 36160, 36064, 34069 + ( activeCubeFace || 0 ), textureProperties.__webglTexture, activeMipmapLevel || 0 );
 
 		}
 
@@ -27205,26 +27205,40 @@ Points.prototype = Object.assign( Object.create( Object3D.prototype ), {
 		var geometry = this.geometry;
 		var m, ml, name;
 
-		var morphAttributes = geometry.morphAttributes;
-		var keys = Object.keys( morphAttributes );
+		if ( geometry.isBufferGeometry ) {
 
-		if ( keys.length > 0 ) {
+			var morphAttributes = geometry.morphAttributes;
+			var keys = Object.keys( morphAttributes );
 
-			var morphAttribute = morphAttributes[ keys[ 0 ] ];
+			if ( keys.length > 0 ) {
 
-			if ( morphAttribute !== undefined ) {
+				var morphAttribute = morphAttributes[ keys[ 0 ] ];
 
-				this.morphTargetInfluences = [];
-				this.morphTargetDictionary = {};
+				if ( morphAttribute !== undefined ) {
 
-				for ( m = 0, ml = morphAttribute.length; m < ml; m ++ ) {
+					this.morphTargetInfluences = [];
+					this.morphTargetDictionary = {};
 
-					name = morphAttribute[ m ].name || String( m );
+					for ( m = 0, ml = morphAttribute.length; m < ml; m ++ ) {
 
-					this.morphTargetInfluences.push( 0 );
-					this.morphTargetDictionary[ name ] = m;
+						name = morphAttribute[ m ].name || String( m );
+
+						this.morphTargetInfluences.push( 0 );
+						this.morphTargetDictionary[ name ] = m;
+
+					}
 
 				}
+
+			}
+
+		} else {
+
+			var morphTargets = geometry.morphTargets;
+
+			if ( morphTargets !== undefined && morphTargets.length > 0 ) {
+
+				console.error( 'THREE.Points.updateMorphTargets() does not support THREE.Geometry. Use THREE.BufferGeometry instead.' );
 
 			}
 
@@ -48408,6 +48422,12 @@ Object.assign( WebGLRenderer.prototype, {
 	setTextureCube: function () {
 
 		console.warn( 'THREE.WebGLRenderer: .setTextureCube() has been removed.' );
+
+	},
+	getActiveMipMapLevel: function () {
+
+		console.warn( 'THREE.WebGLRenderer: .getActiveMipMapLevel() is now .getActiveMipmapLevel().' );
+		return this.getActiveMipmapLevel();
 
 	}
 
