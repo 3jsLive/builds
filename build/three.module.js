@@ -19546,7 +19546,7 @@ function WebGLShadowMap( _renderer, _objects, maxTextureSize ) {
 
 		var currentRenderTarget = _renderer.getRenderTarget();
 		var activeCubeFace = _renderer.getActiveCubeFace();
-		var activeMipmapLevel = _renderer.getActiveMipmapLevel();
+		var activeMipMapLevel = _renderer.getActiveMipMapLevel();
 
 		var _state = _renderer.state;
 
@@ -19704,7 +19704,7 @@ function WebGLShadowMap( _renderer, _objects, maxTextureSize ) {
 
 		scope.needsUpdate = false;
 
-		_renderer.setRenderTarget( currentRenderTarget, activeCubeFace, activeMipmapLevel );
+		_renderer.setRenderTarget( currentRenderTarget, activeCubeFace, activeMipMapLevel );
 
 	};
 
@@ -25379,7 +25379,7 @@ function WebGLRenderer( parameters ) {
 
 	};
 
-	this.getActiveMipmapLevel = function () {
+	this.getActiveMipMapLevel = function () {
 
 		return _currentActiveMipmapLevel;
 
@@ -25391,11 +25391,11 @@ function WebGLRenderer( parameters ) {
 
 	};
 
-	this.setRenderTarget = function ( renderTarget, activeCubeFace, activeMipmapLevel ) {
+	this.setRenderTarget = function ( renderTarget, activeCubeFace, activeMipMapLevel ) {
 
 		_currentRenderTarget = renderTarget;
 		_currentActiveCubeFace = activeCubeFace;
-		_currentActiveMipmapLevel = activeMipmapLevel;
+		_currentActiveMipmapLevel = activeMipMapLevel;
 
 		if ( renderTarget && properties.get( renderTarget ).__webglFramebuffer === undefined ) {
 
@@ -25451,7 +25451,7 @@ function WebGLRenderer( parameters ) {
 		if ( isCube ) {
 
 			var textureProperties = properties.get( renderTarget.texture );
-			_gl.framebufferTexture2D( 36160, 36064, 34069 + ( activeCubeFace || 0 ), textureProperties.__webglTexture, activeMipmapLevel || 0 );
+			_gl.framebufferTexture2D( 36160, 36064, 34069 + ( activeCubeFace || 0 ), textureProperties.__webglTexture, activeMipMapLevel || 0 );
 
 		}
 
@@ -48422,12 +48422,6 @@ Object.assign( WebGLRenderer.prototype, {
 	setTextureCube: function () {
 
 		console.warn( 'THREE.WebGLRenderer: .setTextureCube() has been removed.' );
-
-	},
-	getActiveMipMapLevel: function () {
-
-		console.warn( 'THREE.WebGLRenderer: .getActiveMipMapLevel() is now .getActiveMipmapLevel().' );
-		return this.getActiveMipmapLevel();
 
 	}
 
