@@ -256,10 +256,14 @@
 	var ClampToEdgeWrapping = 1001;
 	var MirroredRepeatWrapping = 1002;
 	var NearestFilter = 1003;
+	var NearestMipmapNearestFilter = 1004;
 	var NearestMipMapNearestFilter = 1004;
+	var NearestMipmapLinearFilter = 1005;
 	var NearestMipMapLinearFilter = 1005;
 	var LinearFilter = 1006;
+	var LinearMipmapNearestFilter = 1007;
 	var LinearMipMapNearestFilter = 1007;
+	var LinearMipmapLinearFilter = 1008;
 	var LinearMipMapLinearFilter = 1008;
 	var UnsignedByteType = 1009;
 	var ByteType = 1010;
@@ -19553,7 +19557,7 @@
 
 			var currentRenderTarget = _renderer.getRenderTarget();
 			var activeCubeFace = _renderer.getActiveCubeFace();
-			var activeMipMapLevel = _renderer.getActiveMipMapLevel();
+			var activeMipmapLevel = _renderer.getActiveMipmapLevel();
 
 			var _state = _renderer.state;
 
@@ -19711,7 +19715,7 @@
 
 			scope.needsUpdate = false;
 
-			_renderer.setRenderTarget( currentRenderTarget, activeCubeFace, activeMipMapLevel );
+			_renderer.setRenderTarget( currentRenderTarget, activeCubeFace, activeMipmapLevel );
 
 		};
 
@@ -25387,7 +25391,7 @@
 
 		};
 
-		this.getActiveMipMapLevel = function () {
+		this.getActiveMipmapLevel = function () {
 
 			return _currentActiveMipmapLevel;
 
@@ -25399,11 +25403,11 @@
 
 		};
 
-		this.setRenderTarget = function ( renderTarget, activeCubeFace, activeMipMapLevel ) {
+		this.setRenderTarget = function ( renderTarget, activeCubeFace, activeMipmapLevel ) {
 
 			_currentRenderTarget = renderTarget;
 			_currentActiveCubeFace = activeCubeFace;
-			_currentActiveMipmapLevel = activeMipMapLevel;
+			_currentActiveMipmapLevel = activeMipmapLevel;
 
 			if ( renderTarget && properties.get( renderTarget ).__webglFramebuffer === undefined ) {
 
@@ -25459,7 +25463,7 @@
 			if ( isCube ) {
 
 				var textureProperties = properties.get( renderTarget.texture );
-				_gl.framebufferTexture2D( 36160, 36064, 34069 + ( activeCubeFace || 0 ), textureProperties.__webglTexture, activeMipMapLevel || 0 );
+				_gl.framebufferTexture2D( 36160, 36064, 34069 + ( activeCubeFace || 0 ), textureProperties.__webglTexture, activeMipmapLevel || 0 );
 
 			}
 
@@ -48435,6 +48439,12 @@
 
 			console.warn( 'THREE.WebGLRenderer: .setTextureCube() has been removed.' );
 
+		},
+		getActiveMipMapLevel: function () {
+
+			console.warn( 'THREE.WebGLRenderer: .getActiveMipMapLevel() is now .getActiveMipmapLevel().' );
+			return this.getActiveMipmapLevel();
+
 		}
 
 	} );
@@ -49057,6 +49067,8 @@
 	exports.LinearInterpolant = LinearInterpolant;
 	exports.LinearMipMapLinearFilter = LinearMipMapLinearFilter;
 	exports.LinearMipMapNearestFilter = LinearMipMapNearestFilter;
+	exports.LinearMipmapLinearFilter = LinearMipmapLinearFilter;
+	exports.LinearMipmapNearestFilter = LinearMipmapNearestFilter;
 	exports.LinearToneMapping = LinearToneMapping;
 	exports.Loader = Loader;
 	exports.LoaderUtils = LoaderUtils;
@@ -49095,6 +49107,8 @@
 	exports.NearestFilter = NearestFilter;
 	exports.NearestMipMapLinearFilter = NearestMipMapLinearFilter;
 	exports.NearestMipMapNearestFilter = NearestMipMapNearestFilter;
+	exports.NearestMipmapLinearFilter = NearestMipmapLinearFilter;
+	exports.NearestMipmapNearestFilter = NearestMipmapNearestFilter;
 	exports.NeverDepth = NeverDepth;
 	exports.NoBlending = NoBlending;
 	exports.NoColors = NoColors;
