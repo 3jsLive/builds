@@ -256,10 +256,14 @@
 	var ClampToEdgeWrapping = 1001;
 	var MirroredRepeatWrapping = 1002;
 	var NearestFilter = 1003;
+	var NearestMipmapNearestFilter = 1004;
 	var NearestMipMapNearestFilter = 1004;
+	var NearestMipmapLinearFilter = 1005;
 	var NearestMipMapLinearFilter = 1005;
 	var LinearFilter = 1006;
+	var LinearMipmapNearestFilter = 1007;
 	var LinearMipMapNearestFilter = 1007;
+	var LinearMipmapLinearFilter = 1008;
 	var LinearMipMapLinearFilter = 1008;
 	var UnsignedByteType = 1009;
 	var ByteType = 1010;
@@ -49057,6 +49061,8 @@
 	exports.LinearInterpolant = LinearInterpolant;
 	exports.LinearMipMapLinearFilter = LinearMipMapLinearFilter;
 	exports.LinearMipMapNearestFilter = LinearMipMapNearestFilter;
+	exports.LinearMipmapLinearFilter = LinearMipmapLinearFilter;
+	exports.LinearMipmapNearestFilter = LinearMipmapNearestFilter;
 	exports.LinearToneMapping = LinearToneMapping;
 	exports.Loader = Loader;
 	exports.LoaderUtils = LoaderUtils;
@@ -49095,6 +49101,8 @@
 	exports.NearestFilter = NearestFilter;
 	exports.NearestMipMapLinearFilter = NearestMipMapLinearFilter;
 	exports.NearestMipMapNearestFilter = NearestMipMapNearestFilter;
+	exports.NearestMipmapLinearFilter = NearestMipmapLinearFilter;
+	exports.NearestMipmapNearestFilter = NearestMipmapNearestFilter;
 	exports.NeverDepth = NeverDepth;
 	exports.NoBlending = NoBlending;
 	exports.NoColors = NoColors;
