@@ -256,14 +256,10 @@
 	var ClampToEdgeWrapping = 1001;
 	var MirroredRepeatWrapping = 1002;
 	var NearestFilter = 1003;
-	var NearestMipmapNearestFilter = 1004;
 	var NearestMipMapNearestFilter = 1004;
-	var NearestMipmapLinearFilter = 1005;
 	var NearestMipMapLinearFilter = 1005;
 	var LinearFilter = 1006;
-	var LinearMipmapNearestFilter = 1007;
 	var LinearMipMapNearestFilter = 1007;
-	var LinearMipmapLinearFilter = 1008;
 	var LinearMipMapLinearFilter = 1008;
 	var UnsignedByteType = 1009;
 	var ByteType = 1010;
@@ -2791,7 +2787,7 @@
 		this.wrapT = wrapT !== undefined ? wrapT : ClampToEdgeWrapping;
 
 		this.magFilter = magFilter !== undefined ? magFilter : LinearFilter;
-		this.minFilter = minFilter !== undefined ? minFilter : LinearMipmapLinearFilter;
+		this.minFilter = minFilter !== undefined ? minFilter : LinearMipMapLinearFilter;
 
 		this.anisotropy = anisotropy !== undefined ? anisotropy : 1;
 
@@ -21023,7 +21019,7 @@
 
 		function filterFallback( f ) {
 
-			if ( f === NearestFilter || f === NearestMipmapNearestFilter || f === NearestMipmapLinearFilter ) {
+			if ( f === NearestFilter || f === NearestMipMapNearestFilter || f === NearestMipMapLinearFilter ) {
 
 				return 9728;
 
@@ -22049,12 +22045,12 @@
 			if ( p === MirroredRepeatWrapping ) return 33648;
 
 			if ( p === NearestFilter ) return 9728;
-			if ( p === NearestMipmapNearestFilter ) return 9984;
-			if ( p === NearestMipmapLinearFilter ) return 9986;
+			if ( p === NearestMipMapNearestFilter ) return 9984;
+			if ( p === NearestMipMapLinearFilter ) return 9986;
 
 			if ( p === LinearFilter ) return 9729;
-			if ( p === LinearMipmapNearestFilter ) return 9985;
-			if ( p === LinearMipmapLinearFilter ) return 9987;
+			if ( p === LinearMipMapNearestFilter ) return 9985;
+			if ( p === LinearMipMapLinearFilter ) return 9987;
 
 			if ( p === UnsignedByteType ) return 5121;
 			if ( p === UnsignedShort4444Type ) return 32819;
@@ -35233,7 +35229,7 @@
 				texture.wrapT = texData.wrapT !== undefined ? texData.wrapT : ClampToEdgeWrapping;
 
 				texture.magFilter = texData.magFilter !== undefined ? texData.magFilter : LinearFilter;
-				texture.minFilter = texData.minFilter !== undefined ? texData.minFilter : LinearMipmapLinearFilter;
+				texture.minFilter = texData.minFilter !== undefined ? texData.minFilter : LinearMipMapLinearFilter;
 
 				texture.anisotropy = texData.anisotropy !== undefined ? texData.anisotropy : 1;
 
@@ -39581,11 +39577,11 @@
 
 	var TEXTURE_FILTER = {
 		NearestFilter: NearestFilter,
-		NearestMipmapNearestFilter: NearestMipmapNearestFilter,
-		NearestMipmapLinearFilter: NearestMipmapLinearFilter,
+		NearestMipMapNearestFilter: NearestMipMapNearestFilter,
+		NearestMipMapLinearFilter: NearestMipMapLinearFilter,
 		LinearFilter: LinearFilter,
-		LinearMipmapNearestFilter: LinearMipmapNearestFilter,
-		LinearMipmapLinearFilter: LinearMipmapLinearFilter
+		LinearMipMapNearestFilter: LinearMipMapNearestFilter,
+		LinearMipMapLinearFilter: LinearMipMapLinearFilter
 	};
 
 	/**
@@ -49061,8 +49057,6 @@
 	exports.LinearInterpolant = LinearInterpolant;
 	exports.LinearMipMapLinearFilter = LinearMipMapLinearFilter;
 	exports.LinearMipMapNearestFilter = LinearMipMapNearestFilter;
-	exports.LinearMipmapLinearFilter = LinearMipmapLinearFilter;
-	exports.LinearMipmapNearestFilter = LinearMipmapNearestFilter;
 	exports.LinearToneMapping = LinearToneMapping;
 	exports.Loader = Loader;
 	exports.LoaderUtils = LoaderUtils;
@@ -49101,8 +49095,6 @@
 	exports.NearestFilter = NearestFilter;
 	exports.NearestMipMapLinearFilter = NearestMipMapLinearFilter;
 	exports.NearestMipMapNearestFilter = NearestMipMapNearestFilter;
-	exports.NearestMipmapLinearFilter = NearestMipmapLinearFilter;
-	exports.NearestMipmapNearestFilter = NearestMipmapNearestFilter;
 	exports.NeverDepth = NeverDepth;
 	exports.NoBlending = NoBlending;
 	exports.NoColors = NoColors;
