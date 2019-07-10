@@ -185,9 +185,8 @@
 
 	} );
 
-	var REVISION = '107dev';
-	var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
-	var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
+	var REVISION = '106';
+	var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
 	var CullFaceNone = 0;
 	var CullFaceBack = 1;
 	var CullFaceFront = 2;
@@ -49234,7 +49233,6 @@
 	exports.StringKeyframeTrack = StringKeyframeTrack;
 	exports.SubtractEquation = SubtractEquation;
 	exports.SubtractiveBlending = SubtractiveBlending;
-	exports.TOUCH = TOUCH;
 	exports.TangentSpaceNormalMap = TangentSpaceNormalMap;
 	exports.TetrahedronBufferGeometry = TetrahedronBufferGeometry;
 	exports.TetrahedronGeometry = TetrahedronGeometry;
