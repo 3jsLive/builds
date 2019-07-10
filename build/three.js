@@ -186,7 +186,8 @@
 	} );
 
 	var REVISION = '107dev';
-	var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
+	var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
+	var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
 	var CullFaceNone = 0;
 	var CullFaceBack = 1;
 	var CullFaceFront = 2;
@@ -256,14 +257,10 @@
 	var ClampToEdgeWrapping = 1001;
 	var MirroredRepeatWrapping = 1002;
 	var NearestFilter = 1003;
-	var NearestMipmapNearestFilter = 1004;
 	var NearestMipMapNearestFilter = 1004;
-	var NearestMipmapLinearFilter = 1005;
 	var NearestMipMapLinearFilter = 1005;
 	var LinearFilter = 1006;
-	var LinearMipmapNearestFilter = 1007;
 	var LinearMipMapNearestFilter = 1007;
-	var LinearMipmapLinearFilter = 1008;
 	var LinearMipMapLinearFilter = 1008;
 	var UnsignedByteType = 1009;
 	var ByteType = 1010;
@@ -19556,7 +19553,7 @@
 
 			var currentRenderTarget = _renderer.getRenderTarget();
 			var activeCubeFace = _renderer.getActiveCubeFace();
-			var activeMipmapLevel = _renderer.getActiveMipmapLevel();
+			var activeMipMapLevel = _renderer.getActiveMipMapLevel();
 
 			var _state = _renderer.state;
 
@@ -19714,7 +19711,7 @@
 
 			scope.needsUpdate = false;
 
-			_renderer.setRenderTarget( currentRenderTarget, activeCubeFace, activeMipmapLevel );
+			_renderer.setRenderTarget( currentRenderTarget, activeCubeFace, activeMipMapLevel );
 
 		};
 
@@ -25389,7 +25386,7 @@
 
 		};
 
-		this.getActiveMipmapLevel = function () {
+		this.getActiveMipMapLevel = function () {
 
 			return _currentActiveMipmapLevel;
 
@@ -25401,11 +25398,11 @@
 
 		};
 
-		this.setRenderTarget = function ( renderTarget, activeCubeFace, activeMipmapLevel ) {
+		this.setRenderTarget = function ( renderTarget, activeCubeFace, activeMipMapLevel ) {
 
 			_currentRenderTarget = renderTarget;
 			_currentActiveCubeFace = activeCubeFace;
-			_currentActiveMipmapLevel = activeMipmapLevel;
+			_currentActiveMipmapLevel = activeMipMapLevel;
 
 			if ( renderTarget && properties.get( renderTarget ).__webglFramebuffer === undefined ) {
 
@@ -25461,7 +25458,7 @@
 			if ( isCube ) {
 
 				var textureProperties = properties.get( renderTarget.texture );
-				_gl.framebufferTexture2D( 36160, 36064, 34069 + ( activeCubeFace || 0 ), textureProperties.__webglTexture, activeMipmapLevel || 0 );
+				_gl.framebufferTexture2D( 36160, 36064, 34069 + ( activeCubeFace || 0 ), textureProperties.__webglTexture, activeMipMapLevel || 0 );
 
 			}
 
@@ -27215,40 +27212,26 @@
 			var geometry = this.geometry;
 			var m, ml, name;
 
-			if ( geometry.isBufferGeometry ) {
+			var morphAttributes = geometry.morphAttributes;
+			var keys = Object.keys( morphAttributes );
 
-				var morphAttributes = geometry.morphAttributes;
-				var keys = Object.keys( morphAttributes );
+			if ( keys.length > 0 ) {
 
-				if ( keys.length > 0 ) {
+				var morphAttribute = morphAttributes[ keys[ 0 ] ];
 
-					var morphAttribute = morphAttributes[ keys[ 0 ] ];
+				if ( morphAttribute !== undefined ) {
 
-					if ( morphAttribute !== undefined ) {
+					this.morphTargetInfluences = [];
+					this.morphTargetDictionary = {};
 
-						this.morphTargetInfluences = [];
-						this.morphTargetDictionary = {};
+					for ( m = 0, ml = morphAttribute.length; m < ml; m ++ ) {
 
-						for ( m = 0, ml = morphAttribute.length; m < ml; m ++ ) {
+						name = morphAttribute[ m ].name || String( m );
 
-							name = morphAttribute[ m ].name || String( m );
-
-							this.morphTargetInfluences.push( 0 );
-							this.morphTargetDictionary[ name ] = m;
-
-						}
+						this.morphTargetInfluences.push( 0 );
+						this.morphTargetDictionary[ name ] = m;
 
 					}
-
-				}
-
-			} else {
-
-				var morphTargets = geometry.morphTargets;
-
-				if ( morphTargets !== undefined && morphTargets.length > 0 ) {
-
-					console.error( 'THREE.Points.updateMorphTargets() does not support THREE.Geometry. Use THREE.BufferGeometry instead.' );
 
 				}
 
@@ -48433,12 +48416,6 @@
 
 			console.warn( 'THREE.WebGLRenderer: .setTextureCube() has been removed.' );
 
-		},
-		getActiveMipMapLevel: function () {
-
-			console.warn( 'THREE.WebGLRenderer: .getActiveMipMapLevel() is now .getActiveMipmapLevel().' );
-			return this.getActiveMipmapLevel();
-
 		}
 
 	} );
@@ -49061,8 +49038,6 @@
 	exports.LinearInterpolant = LinearInterpolant;
 	exports.LinearMipMapLinearFilter = LinearMipMapLinearFilter;
 	exports.LinearMipMapNearestFilter = LinearMipMapNearestFilter;
-	exports.LinearMipmapLinearFilter = LinearMipmapLinearFilter;
-	exports.LinearMipmapNearestFilter = LinearMipmapNearestFilter;
 	exports.LinearToneMapping = LinearToneMapping;
 	exports.Loader = Loader;
 	exports.LoaderUtils = LoaderUtils;
@@ -49101,8 +49076,6 @@
 	exports.NearestFilter = NearestFilter;
 	exports.NearestMipMapLinearFilter = NearestMipMapLinearFilter;
 	exports.NearestMipMapNearestFilter = NearestMipMapNearestFilter;
-	exports.NearestMipmapLinearFilter = NearestMipmapLinearFilter;
-	exports.NearestMipmapNearestFilter = NearestMipmapNearestFilter;
 	exports.NeverDepth = NeverDepth;
 	exports.NoBlending = NoBlending;
 	exports.NoColors = NoColors;
@@ -49233,6 +49206,7 @@
 	exports.StringKeyframeTrack = StringKeyframeTrack;
 	exports.SubtractEquation = SubtractEquation;
 	exports.SubtractiveBlending = SubtractiveBlending;
+	exports.TOUCH = TOUCH;
 	exports.TangentSpaceNormalMap = TangentSpaceNormalMap;
 	exports.TetrahedronBufferGeometry = TetrahedronBufferGeometry;
 	exports.TetrahedronGeometry = TetrahedronGeometry;
