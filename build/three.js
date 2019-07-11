@@ -17750,7 +17750,7 @@
 
 	function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities ) {
 
-		var gl = renderer.getContext();
+		var gl = renderer.context;
 
 		var defines = material.defines;
 
@@ -22724,7 +22724,7 @@
 
 		var scope = this;
 
-		var gl = renderer.getContext();
+		var gl = renderer.context;
 
 		var session = null;
 
@@ -23067,6 +23067,7 @@
 		// public properties
 
 		this.domElement = _canvas;
+		this.context = null;
 
 		// Debug configuration container
 		this.debug = {
@@ -23289,6 +23290,7 @@
 
 			info.programs = programCache.programs;
 
+			_this.context = _gl;
 			_this.capabilities = capabilities;
 			_this.extensions = extensions;
 			_this.properties = properties;
@@ -48482,16 +48484,7 @@
 				console.warn( 'THREE.WebGLRenderer: .shadowMapCullFace has been removed. Set Material.shadowSide instead.' );
 
 			}
-		},
-		context: {
-			get: function () {
-
-				console.warn( 'THREE.WebGLRenderer: .context has been removed. Use .getContext() instead.' );
-				return this.getContext();
-
-			}
 		}
-
 	} );
 
 	Object.defineProperties( WebGLShadowMap.prototype, {
