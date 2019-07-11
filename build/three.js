@@ -22454,7 +22454,7 @@
 	 * @author Takahiro https://github.com/takahirox
 	 */
 
-	function WebGLMultiview( renderer, gl ) {
+	function WebGLMultiview( renderer, gl, contextAttributes ) {
 
 		var DEFAULT_NUMVIEWS = 2;
 
@@ -22498,7 +22498,7 @@
 
 		function isAvailable() {
 
-			return capabilities.multiview;
+			return capabilities.multiview && !contextAttributes.antialias;
 
 		}
 
@@ -22650,8 +22650,6 @@
 
 
 		if ( isAvailable() ) {
-
-			console.log('multiivew enabled!');
 
 			renderTarget = new WebGLMultiviewRenderTarget( 0, 0, DEFAULT_NUMVIEWS );
 
@@ -23786,7 +23784,7 @@
 
 		// Multiview
 
-		var multiview = new WebGLMultiview( _this, _gl );
+		var multiview = new WebGLMultiview( _this, _gl, _gl.getContextAttributes() );
 
 		this.multiview = multiview;
 
