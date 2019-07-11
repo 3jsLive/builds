@@ -22203,10 +22203,9 @@ WebGLMultiviewRenderTarget.prototype = Object.assign( Object.create( WebGLRender
  * @author Takahiro https://github.com/takahirox
  */
 
-function WebGLMultiview( renderer ) {
+function WebGLMultiview( renderer, gl, contextAttributes ) {
 
 	var DEFAULT_NUMVIEWS = 2;
-	var gl = renderer.context;
 
 	var capabilities = renderer.capabilities;
 	var properties = renderer.properties;
@@ -22248,7 +22247,7 @@ function WebGLMultiview( renderer ) {
 
 	function isAvailable() {
 
-		return capabilities.multiview;
+		return capabilities.multiview && !contextAttributes.antialias;
 
 	}
 
@@ -22400,8 +22399,6 @@ function WebGLMultiview( renderer ) {
 
 
 	if ( isAvailable() ) {
-
-		console.log('multiivew enabled!');
 
 		renderTarget = new WebGLMultiviewRenderTarget( 0, 0, DEFAULT_NUMVIEWS );
 
@@ -23532,7 +23529,9 @@ function WebGLRenderer( parameters ) {
 
 	this.vr = vr;
 
-	var multiview = new WebGLMultiview( _this );
+	// Multiview
+
+	var multiview = new WebGLMultiview( _this, _gl, _gl.getContextAttributes() );
 
 	this.multiview = multiview;
 
