@@ -22454,10 +22454,9 @@
 	 * @author Takahiro https://github.com/takahirox
 	 */
 
-	function WebGLMultiview( renderer ) {
+	function WebGLMultiview( renderer, gl ) {
 
 		var DEFAULT_NUMVIEWS = 2;
-		var gl = renderer.context;
 
 		var capabilities = renderer.capabilities;
 		var properties = renderer.properties;
@@ -23785,7 +23784,9 @@
 
 		this.vr = vr;
 
-		var multiview = new WebGLMultiview( _this );
+		// Multiview
+
+		var multiview = new WebGLMultiview( _this, _gl );
 
 		this.multiview = multiview;
 
