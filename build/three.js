@@ -22209,9 +22209,7 @@
 	 * @author Takahiro https://github.com/takahirox
 	 */
 
-	function WebGLMultiview( renderer, requested, options ) {
-
-		options = Object.assign( {}, { debug: false }, options );
+	function WebGLMultiview( renderer ) {
 
 		var DEFAULT_NUMVIEWS = 2;
 		var gl = renderer.context;
@@ -22257,26 +22255,6 @@
 		function isAvailable() {
 
 			return capabilities.multiview;
-
-		}
-
-		function isEnabled() {
-
-			return requested && isAvailable();
-
-		}
-
-		if ( options.debug ) {
-
-			if ( requested && ! isAvailable() ) {
-
-				console.warn( 'WebGLRenderer: Multiview requested but not supported by the browser' );
-
-			} else if ( requested !== false && isAvailable() ) {
-
-				console.info( 'WebGLRenderer: Multiview enabled' );
-
-			}
 
 		}
 
@@ -22427,7 +22405,9 @@
 		}
 
 
-		if ( isEnabled() ) {
+		if ( isAvailable() ) {
+
+			console.log('multiivew enabled!');
 
 			renderTarget = new WebGLMultiviewRenderTarget( 0, 0, DEFAULT_NUMVIEWS );
 
@@ -22449,7 +22429,6 @@
 		this.attachRenderTarget = attachRenderTarget;
 		this.detachRenderTarget = detachRenderTarget;
 		this.isAvailable = isAvailable;
-		this.isEnabled = isEnabled;
 		this.getNumViews = getNumViews;
 		this.updateCameraProjectionMatricesUniform = updateCameraProjectionMatricesUniform;
 		this.updateCameraViewMatricesUniform = updateCameraViewMatricesUniform;
@@ -23305,9 +23284,6 @@
 
 		var _canvas = parameters.canvas !== undefined ? parameters.canvas : document.createElementNS( 'http://www.w3.org/1999/xhtml', 'canvas' ),
 			_context = parameters.context !== undefined ? parameters.context : null,
-
-			_multiviewRequested = parameters.multiview !== undefined ? parameters.multiview : false,
-
 			_alpha = parameters.alpha !== undefined ? parameters.alpha : false,
 			_depth = parameters.depth !== undefined ? parameters.depth : true,
 			_stencil = parameters.stencil !== undefined ? parameters.stencil : true,
@@ -23562,7 +23538,7 @@
 
 		this.vr = vr;
 
-		var multiview = new WebGLMultiview( _this, _multiviewRequested );
+		var multiview = new WebGLMultiview( _this );
 
 		this.multiview = multiview;
 
@@ -24429,7 +24405,7 @@
 
 			}
 
-			if ( multiview.isEnabled() ) {
+			if ( multiview.isAvailable() ) {
 
 				multiview.attachRenderTarget( camera );
 
@@ -24489,7 +24465,7 @@
 
 			state.setPolygonOffset( false );
 
-			if ( multiview.isEnabled() ) {
+			if ( multiview.isAvailable() ) {
 
 				multiview.detachRenderTarget( camera );
 
@@ -24637,7 +24613,7 @@
 				var material = overrideMaterial === undefined ? renderItem.material : overrideMaterial;
 				var group = renderItem.group;
 
-				if ( multiview.isEnabled() ) {
+				if ( multiview.isAvailable() ) {
 
 					_currentArrayCamera = camera;
 
