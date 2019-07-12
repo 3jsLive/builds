@@ -2792,7 +2792,7 @@
 		this.wrapT = wrapT !== undefined ? wrapT : ClampToEdgeWrapping;
 
 		this.magFilter = magFilter !== undefined ? magFilter : LinearFilter;
-		this.minFilter = minFilter !== undefined ? minFilter : LinearMipMapLinearFilter;
+		this.minFilter = minFilter !== undefined ? minFilter : LinearMipmapLinearFilter;
 
 		this.anisotropy = anisotropy !== undefined ? anisotropy : 1;
 
@@ -17750,7 +17750,7 @@
 
 	function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities ) {
 
-		var gl = renderer.context;
+		var gl = renderer.getContext();
 
 		var defines = material.defines;
 
@@ -21024,7 +21024,7 @@
 
 		function filterFallback( f ) {
 
-			if ( f === NearestFilter || f === NearestMipMapNearestFilter || f === NearestMipMapLinearFilter ) {
+			if ( f === NearestFilter || f === NearestMipmapNearestFilter || f === NearestMipmapLinearFilter ) {
 
 				return 9728;
 
@@ -22050,12 +22050,12 @@
 			if ( p === MirroredRepeatWrapping ) return 33648;
 
 			if ( p === NearestFilter ) return 9728;
-			if ( p === NearestMipMapNearestFilter ) return 9984;
-			if ( p === NearestMipMapLinearFilter ) return 9986;
+			if ( p === NearestMipmapNearestFilter ) return 9984;
+			if ( p === NearestMipmapLinearFilter ) return 9986;
 
 			if ( p === LinearFilter ) return 9729;
-			if ( p === LinearMipMapNearestFilter ) return 9985;
-			if ( p === LinearMipMapLinearFilter ) return 9987;
+			if ( p === LinearMipmapNearestFilter ) return 9985;
+			if ( p === LinearMipmapLinearFilter ) return 9987;
 
 			if ( p === UnsignedByteType ) return 5121;
 			if ( p === UnsignedShort4444Type ) return 32819;
@@ -22724,7 +22724,7 @@
 
 		var scope = this;
 
-		var gl = renderer.context;
+		var gl = renderer.getContext();
 
 		var session = null;
 
@@ -23067,7 +23067,6 @@
 		// public properties
 
 		this.domElement = _canvas;
-		this.context = null;
 
 		// Debug configuration container
 		this.debug = {
@@ -23290,7 +23289,6 @@
 
 			info.programs = programCache.programs;
 
-			_this.context = _gl;
 			_this.capabilities = capabilities;
 			_this.extensions = extensions;
 			_this.properties = properties;
@@ -35234,7 +35232,7 @@
 				texture.wrapT = texData.wrapT !== undefined ? texData.wrapT : ClampToEdgeWrapping;
 
 				texture.magFilter = texData.magFilter !== undefined ? texData.magFilter : LinearFilter;
-				texture.minFilter = texData.minFilter !== undefined ? texData.minFilter : LinearMipMapLinearFilter;
+				texture.minFilter = texData.minFilter !== undefined ? texData.minFilter : LinearMipmapLinearFilter;
 
 				texture.anisotropy = texData.anisotropy !== undefined ? texData.anisotropy : 1;
 
@@ -39582,11 +39580,11 @@
 
 	var TEXTURE_FILTER = {
 		NearestFilter: NearestFilter,
-		NearestMipMapNearestFilter: NearestMipMapNearestFilter,
-		NearestMipMapLinearFilter: NearestMipMapLinearFilter,
+		NearestMipmapNearestFilter: NearestMipmapNearestFilter,
+		NearestMipmapLinearFilter: NearestMipmapLinearFilter,
 		LinearFilter: LinearFilter,
-		LinearMipMapNearestFilter: LinearMipMapNearestFilter,
-		LinearMipMapLinearFilter: LinearMipMapLinearFilter
+		LinearMipmapNearestFilter: LinearMipmapNearestFilter,
+		LinearMipmapLinearFilter: LinearMipmapLinearFilter
 	};
 
 	/**
@@ -48484,7 +48482,16 @@
 				console.warn( 'THREE.WebGLRenderer: .shadowMapCullFace has been removed. Set Material.shadowSide instead.' );
 
 			}
+		},
+		context: {
+			get: function () {
+
+				console.warn( 'THREE.WebGLRenderer: .context has been removed. Use .getContext() instead.' );
+				return this.getContext();
+
+			}
 		}
+
 	} );
 
 	Object.defineProperties( WebGLShadowMap.prototype, {
