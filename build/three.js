@@ -335,24 +335,6 @@
 	var TangentSpaceNormalMap = 0;
 	var ObjectSpaceNormalMap = 1;
 
-	var ZeroStencilOp = 0;
-	var KeepStencilOp = 7680;
-	var ReplaceStencilOp = 7681;
-	var IncrementStencilOp = 7682;
-	var DecrementStencilOp = 7683;
-	var IncrementWrapStencilOp = 34055;
-	var DecrementWrapStencilOp = 34056;
-	var InvertStencilOp = 5386;
-
-	var NeverStencilFunc = 512;
-	var LessStencilFunc = 513;
-	var EqualStencilFunc = 514;
-	var LessEqualStencilFunc = 515;
-	var GreaterStencilFunc = 516;
-	var NotEqualStencilFunc = 517;
-	var GreaterEqualStencilFunc = 518;
-	var AlwaysStencilFunc = 519;
-
 	/**
 	 * @author alteredq / http://alteredqualia.com/
 	 * @author mrdoob / http://mrdoob.com/
@@ -8585,14 +8567,6 @@
 		this.depthTest = true;
 		this.depthWrite = true;
 
-		this.stencilFunc = AlwaysStencilFunc;
-		this.stencilRef = 0;
-		this.stencilMask = 0xff;
-		this.stencilFail = KeepStencilOp;
-		this.stencilZFail = KeepStencilOp;
-		this.stencilZPass = KeepStencilOp;
-		this.stencilWrite = false;
-
 		this.clippingPlanes = null;
 		this.clipIntersection = false;
 		this.clipShadows = false;
@@ -8792,14 +8766,6 @@
 			data.depthTest = this.depthTest;
 			data.depthWrite = this.depthWrite;
 
-			data.stencilWrite = this.stencilWrite;
-			data.stencilFunc = this.stencilFunc;
-			data.stencilRef = this.stencilRef;
-			data.stencilMask = this.stencilMask;
-			data.stencilFail = this.stencilFail;
-			data.stencilZFail = this.stencilZFail;
-			data.stencilZPass = this.stencilZPass;
-
 			// rotation (SpriteMaterial)
 			if ( this.rotation && this.rotation !== 0 ) data.rotation = this.rotation;
 
@@ -8892,14 +8858,6 @@
 			this.depthFunc = source.depthFunc;
 			this.depthTest = source.depthTest;
 			this.depthWrite = source.depthWrite;
-
-			this.stencilWrite = source.stencilWrite;
-			this.stencilFunc = source.stencilFunc;
-			this.stencilRef = source.stencilRef;
-			this.stencilMask = source.stencilMask;
-			this.stencilFail = source.stencilFail;
-			this.stencilZFail = source.stencilZFail;
-			this.stencilZPass = source.stencilZPass;
 
 			this.colorWrite = source.colorWrite;
 
@@ -12171,6 +12129,8 @@
 				vertices2 = geometry.vertices,
 				faces1 = this.faces,
 				faces2 = geometry.faces,
+				uvs1 = this.faceVertexUvs[ 0 ],
+				uvs2 = geometry.faceVertexUvs[ 0 ],
 				colors1 = this.colors,
 				colors2 = geometry.colors;
 
@@ -12252,25 +12212,23 @@
 
 			// uvs
 
-			for ( var i = 0, il = geometry.faceVertexUvs.length; i < il; i ++ ) {
+			for ( i = 0, il = uvs2.length; i < il; i ++ ) {
 
-				var faceVertexUvs2 = geometry.faceVertexUvs[ i ];
+				var uv = uvs2[ i ], uvCopy = [];
 
-				if ( this.faceVertexUvs[ i ] === undefined ) this.faceVertexUvs[ i ] = [];
+				if ( uv === undefined ) {
 
-				for ( var j = 0, jl = faceVertexUvs2.length; j < jl; j ++ ) {
-
-					var uvs2 = faceVertexUvs2[ j ], uvsCopy = [];
-
-					for ( var k = 0, kl = uvs2.length; k < kl; k ++ ) {
-
-						uvsCopy.push( uvs2[ k ].clone() );
-
-					}
-
-					this.faceVertexUvs[ i ].push( uvsCopy );
+					continue;
 
 				}
+
+				for ( var j = 0, jl = uv.length; j < jl; j ++ ) {
+
+					uvCopy.push( uv[ j ].clone() );
+
+				}
+
+				uvs1.push( uvCopy );
 
 			}
 
@@ -20602,15 +20560,6 @@
 			depthBuffer.setTest( material.depthTest );
 			depthBuffer.setMask( material.depthWrite );
 			colorBuffer.setMask( material.colorWrite );
-
-			var stencilWrite = material.stencilWrite;
-			stencilBuffer.setTest( stencilWrite );
-			if ( stencilWrite ) {
-
-				stencilBuffer.setFunc( material.stencilFunc, material.stencilRef, material.stencilMask );
-				stencilBuffer.setOp( material.stencilFail, material.stencilZFail, material.stencilZPass );
-
-			}
 
 			setPolygonOffset( material.polygonOffset, material.polygonOffsetFactor, material.polygonOffsetUnits );
 
@@ -48939,7 +48888,6 @@
 	exports.AdditiveBlending = AdditiveBlending;
 	exports.AlphaFormat = AlphaFormat;
 	exports.AlwaysDepth = AlwaysDepth;
-	exports.AlwaysStencilFunc = AlwaysStencilFunc;
 	exports.AmbientLight = AmbientLight;
 	exports.AmbientLightProbe = AmbientLightProbe;
 	exports.AnimationClip = AnimationClip;
@@ -49017,8 +48965,6 @@
 	exports.DataTexture2DArray = DataTexture2DArray;
 	exports.DataTexture3D = DataTexture3D;
 	exports.DataTextureLoader = DataTextureLoader;
-	exports.DecrementStencilOp = DecrementStencilOp;
-	exports.DecrementWrapStencilOp = DecrementWrapStencilOp;
 	exports.DefaultLoadingManager = DefaultLoadingManager;
 	exports.DepthFormat = DepthFormat;
 	exports.DepthStencilFormat = DepthStencilFormat;
@@ -49037,7 +48983,6 @@
 	exports.EdgesHelper = EdgesHelper;
 	exports.EllipseCurve = EllipseCurve;
 	exports.EqualDepth = EqualDepth;
-	exports.EqualStencilFunc = EqualStencilFunc;
 	exports.EquirectangularReflectionMapping = EquirectangularReflectionMapping;
 	exports.EquirectangularRefractionMapping = EquirectangularRefractionMapping;
 	exports.Euler = Euler;
@@ -49068,8 +49013,6 @@
 	exports.GeometryUtils = GeometryUtils;
 	exports.GreaterDepth = GreaterDepth;
 	exports.GreaterEqualDepth = GreaterEqualDepth;
-	exports.GreaterEqualStencilFunc = GreaterEqualStencilFunc;
-	exports.GreaterStencilFunc = GreaterStencilFunc;
 	exports.GridHelper = GridHelper;
 	exports.Group = Group;
 	exports.HalfFloatType = HalfFloatType;
@@ -49082,8 +49025,6 @@
 	exports.ImageLoader = ImageLoader;
 	exports.ImageUtils = ImageUtils;
 	exports.ImmediateRenderObject = ImmediateRenderObject;
-	exports.IncrementStencilOp = IncrementStencilOp;
-	exports.IncrementWrapStencilOp = IncrementWrapStencilOp;
 	exports.InstancedBufferAttribute = InstancedBufferAttribute;
 	exports.InstancedBufferGeometry = InstancedBufferGeometry;
 	exports.InstancedInterleavedBuffer = InstancedInterleavedBuffer;
@@ -49100,9 +49041,7 @@
 	exports.InterpolateDiscrete = InterpolateDiscrete;
 	exports.InterpolateLinear = InterpolateLinear;
 	exports.InterpolateSmooth = InterpolateSmooth;
-	exports.InvertStencilOp = InvertStencilOp;
 	exports.JSONLoader = JSONLoader;
-	exports.KeepStencilOp = KeepStencilOp;
 	exports.KeyframeTrack = KeyframeTrack;
 	exports.LOD = LOD;
 	exports.LatheBufferGeometry = LatheBufferGeometry;
@@ -49111,8 +49050,6 @@
 	exports.LensFlare = LensFlare;
 	exports.LessDepth = LessDepth;
 	exports.LessEqualDepth = LessEqualDepth;
-	exports.LessEqualStencilFunc = LessEqualStencilFunc;
-	exports.LessStencilFunc = LessStencilFunc;
 	exports.Light = Light;
 	exports.LightProbe = LightProbe;
 	exports.LightProbeHelper = LightProbeHelper;
@@ -49175,13 +49112,11 @@
 	exports.NearestMipmapLinearFilter = NearestMipmapLinearFilter;
 	exports.NearestMipmapNearestFilter = NearestMipmapNearestFilter;
 	exports.NeverDepth = NeverDepth;
-	exports.NeverStencilFunc = NeverStencilFunc;
 	exports.NoBlending = NoBlending;
 	exports.NoColors = NoColors;
 	exports.NoToneMapping = NoToneMapping;
 	exports.NormalBlending = NormalBlending;
 	exports.NotEqualDepth = NotEqualDepth;
-	exports.NotEqualStencilFunc = NotEqualStencilFunc;
 	exports.NumberKeyframeTrack = NumberKeyframeTrack;
 	exports.Object3D = Object3D;
 	exports.ObjectLoader = ObjectLoader;
@@ -49266,7 +49201,6 @@
 	exports.RedFormat = RedFormat;
 	exports.ReinhardToneMapping = ReinhardToneMapping;
 	exports.RepeatWrapping = RepeatWrapping;
-	exports.ReplaceStencilOp = ReplaceStencilOp;
 	exports.ReverseSubtractEquation = ReverseSubtractEquation;
 	exports.RingBufferGeometry = RingBufferGeometry;
 	exports.RingGeometry = RingGeometry;
@@ -49365,7 +49299,6 @@
 	exports.ZeroCurvatureEnding = ZeroCurvatureEnding;
 	exports.ZeroFactor = ZeroFactor;
 	exports.ZeroSlopeEnding = ZeroSlopeEnding;
-	exports.ZeroStencilOp = ZeroStencilOp;
 	exports.sRGBEncoding = sRGBEncoding;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
