@@ -16273,7 +16273,13 @@ function WebGLGeometries( gl, attributes, info ) {
 
 		attributes.update( attribute, 34963 );
 
-		if ( wireframeAttributes[ geometry.id ] ) attributes.remove( wireframeAttributes[ geometry.id ] );
+		//
+
+		var previousAttribute = wireframeAttributes[ geometry.id ];
+
+		if ( previousAttribute ) attributes.remove( previousAttribute );
+
+		//
 
 		wireframeAttributes[ geometry.id ] = attribute;
 
