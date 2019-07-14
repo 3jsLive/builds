@@ -16279,6 +16279,8 @@
 
 			attributes.update( attribute, 34963 );
 
+			if ( wireframeAttributes[ geometry.id ] ) attributes.remove( wireframeAttributes[ geometry.id ] );
+
 			wireframeAttributes[ geometry.id ] = attribute;
 
 		}
