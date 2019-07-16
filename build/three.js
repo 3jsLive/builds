@@ -185,8 +185,9 @@
 
 	} );
 
-	var REVISION = '106';
-	var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
+	var REVISION = '107dev';
+	var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
+	var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
 	var CullFaceNone = 0;
 	var CullFaceBack = 1;
 	var CullFaceFront = 2;
@@ -256,10 +257,14 @@
 	var ClampToEdgeWrapping = 1001;
 	var MirroredRepeatWrapping = 1002;
 	var NearestFilter = 1003;
+	var NearestMipmapNearestFilter = 1004;
 	var NearestMipMapNearestFilter = 1004;
+	var NearestMipmapLinearFilter = 1005;
 	var NearestMipMapLinearFilter = 1005;
 	var LinearFilter = 1006;
+	var LinearMipmapNearestFilter = 1007;
 	var LinearMipMapNearestFilter = 1007;
+	var LinearMipmapLinearFilter = 1008;
 	var LinearMipMapLinearFilter = 1008;
 	var UnsignedByteType = 1009;
 	var ByteType = 1010;
@@ -329,6 +334,24 @@
 	var RGBADepthPacking = 3201;
 	var TangentSpaceNormalMap = 0;
 	var ObjectSpaceNormalMap = 1;
+
+	var ZeroStencilOp = 0;
+	var KeepStencilOp = 7680;
+	var ReplaceStencilOp = 7681;
+	var IncrementStencilOp = 7682;
+	var DecrementStencilOp = 7683;
+	var IncrementWrapStencilOp = 34055;
+	var DecrementWrapStencilOp = 34056;
+	var InvertStencilOp = 5386;
+
+	var NeverStencilFunc = 512;
+	var LessStencilFunc = 513;
+	var EqualStencilFunc = 514;
+	var LessEqualStencilFunc = 515;
+	var GreaterStencilFunc = 516;
+	var NotEqualStencilFunc = 517;
+	var GreaterEqualStencilFunc = 518;
+	var AlwaysStencilFunc = 519;
 
 	/**
 	 * @author alteredq / http://alteredqualia.com/
@@ -2787,7 +2810,7 @@
 		this.wrapT = wrapT !== undefined ? wrapT : ClampToEdgeWrapping;
 
 		this.magFilter = magFilter !== undefined ? magFilter : LinearFilter;
-		this.minFilter = minFilter !== undefined ? minFilter : LinearMipMapLinearFilter;
+		this.minFilter = minFilter !== undefined ? minFilter : LinearMipmapLinearFilter;
 
 		this.anisotropy = anisotropy !== undefined ? anisotropy : 1;
 
@@ -8562,6 +8585,14 @@
 		this.depthTest = true;
 		this.depthWrite = true;
 
+		this.stencilFunc = AlwaysStencilFunc;
+		this.stencilRef = 0;
+		this.stencilMask = 0xff;
+		this.stencilFail = KeepStencilOp;
+		this.stencilZFail = KeepStencilOp;
+		this.stencilZPass = KeepStencilOp;
+		this.stencilWrite = false;
+
 		this.clippingPlanes = null;
 		this.clipIntersection = false;
 		this.clipShadows = false;
@@ -8761,6 +8792,14 @@
 			data.depthTest = this.depthTest;
 			data.depthWrite = this.depthWrite;
 
+			data.stencilWrite = this.stencilWrite;
+			data.stencilFunc = this.stencilFunc;
+			data.stencilRef = this.stencilRef;
+			data.stencilMask = this.stencilMask;
+			data.stencilFail = this.stencilFail;
+			data.stencilZFail = this.stencilZFail;
+			data.stencilZPass = this.stencilZPass;
+
 			// rotation (SpriteMaterial)
 			if ( this.rotation && this.rotation !== 0 ) data.rotation = this.rotation;
 
@@ -8853,6 +8892,14 @@
 			this.depthFunc = source.depthFunc;
 			this.depthTest = source.depthTest;
 			this.depthWrite = source.depthWrite;
+
+			this.stencilWrite = source.stencilWrite;
+			this.stencilFunc = source.stencilFunc;
+			this.stencilRef = source.stencilRef;
+			this.stencilMask = source.stencilMask;
+			this.stencilFail = source.stencilFail;
+			this.stencilZFail = source.stencilZFail;
+			this.stencilZPass = source.stencilZPass;
 
 			this.colorWrite = source.colorWrite;
 
@@ -12124,8 +12171,6 @@
 				vertices2 = geometry.vertices,
 				faces1 = this.faces,
 				faces2 = geometry.faces,
-				uvs1 = this.faceVertexUvs[ 0 ],
-				uvs2 = geometry.faceVertexUvs[ 0 ],
 				colors1 = this.colors,
 				colors2 = geometry.colors;
 
@@ -12207,23 +12252,25 @@
 
 			// uvs
 
-			for ( i = 0, il = uvs2.length; i < il; i ++ ) {
+			for ( var i = 0, il = geometry.faceVertexUvs.length; i < il; i ++ ) {
 
-				var uv = uvs2[ i ], uvCopy = [];
+				var faceVertexUvs2 = geometry.faceVertexUvs[ i ];
 
-				if ( uv === undefined ) {
+				if ( this.faceVertexUvs[ i ] === undefined ) this.faceVertexUvs[ i ] = [];
 
-					continue;
+				for ( var j = 0, jl = faceVertexUvs2.length; j < jl; j ++ ) {
+
+					var uvs2 = faceVertexUvs2[ j ], uvsCopy = [];
+
+					for ( var k = 0, kl = uvs2.length; k < kl; k ++ ) {
+
+						uvsCopy.push( uvs2[ k ].clone() );
+
+					}
+
+					this.faceVertexUvs[ i ].push( uvsCopy );
 
 				}
-
-				for ( var j = 0, jl = uv.length; j < jl; j ++ ) {
-
-					uvCopy.push( uv[ j ].clone() );
-
-				}
-
-				uvs1.push( uvCopy );
 
 			}
 
@@ -16187,22 +16234,18 @@
 
 		}
 
-		function getWireframeAttribute( geometry ) {
-
-			var attribute = wireframeAttributes[ geometry.id ];
-
-			if ( attribute ) return attribute;
+		function updateWireframeAttribute( geometry ) {
 
 			var indices = [];
 
 			var geometryIndex = geometry.index;
-			var geometryAttributes = geometry.attributes;
-
-			// console.time( 'wireframe' );
+			var geometryPosition = geometry.attributes.position;
+			var version = 0;
 
 			if ( geometryIndex !== null ) {
 
 				var array = geometryIndex.array;
+				version = geometryIndex.version;
 
 				for ( var i = 0, l = array.length; i < l; i += 3 ) {
 
@@ -16216,7 +16259,8 @@
 
 			} else {
 
-				var array = geometryAttributes.position.array;
+				var array = geometryPosition.array;
+				version = geometryPosition.version;
 
 				for ( var i = 0, l = ( array.length / 3 ) - 1; i < l; i += 3 ) {
 
@@ -16230,15 +16274,50 @@
 
 			}
 
-			// console.timeEnd( 'wireframe' );
-
-			attribute = new ( arrayMax( indices ) > 65535 ? Uint32BufferAttribute : Uint16BufferAttribute )( indices, 1 );
+			var attribute = new ( arrayMax( indices ) > 65535 ? Uint32BufferAttribute : Uint16BufferAttribute )( indices, 1 );
+			attribute.version = version;
 
 			attributes.update( attribute, 34963 );
 
+			//
+
+			var previousAttribute = wireframeAttributes[ geometry.id ];
+
+			if ( previousAttribute ) attributes.remove( previousAttribute );
+
+			//
+
 			wireframeAttributes[ geometry.id ] = attribute;
 
-			return attribute;
+		}
+
+		function getWireframeAttribute( geometry ) {
+
+			var currentAttribute = wireframeAttributes[ geometry.id ];
+
+			if ( currentAttribute ) {
+
+				var geometryIndex = geometry.index;
+
+				if ( geometryIndex !== null ) {
+
+					// if the attribute is obsolete, create a new one
+
+					if ( currentAttribute.version < geometryIndex.version ) {
+
+						updateWireframeAttribute( geometry );
+
+					}
+
+				}
+
+			} else {
+
+				updateWireframeAttribute( geometry );
+
+			}
+
+			return wireframeAttributes[ geometry.id ];
 
 		}
 
@@ -17745,7 +17824,7 @@
 
 	function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities ) {
 
-		var gl = renderer.context;
+		var gl = renderer.getContext();
 
 		var defines = material.defines;
 
@@ -20556,6 +20635,15 @@
 			depthBuffer.setMask( material.depthWrite );
 			colorBuffer.setMask( material.colorWrite );
 
+			var stencilWrite = material.stencilWrite;
+			stencilBuffer.setTest( stencilWrite );
+			if ( stencilWrite ) {
+
+				stencilBuffer.setFunc( material.stencilFunc, material.stencilRef, material.stencilMask );
+				stencilBuffer.setOp( material.stencilFail, material.stencilZFail, material.stencilZPass );
+
+			}
+
 			setPolygonOffset( material.polygonOffset, material.polygonOffsetFactor, material.polygonOffsetUnits );
 
 		}
@@ -21019,7 +21107,7 @@
 
 		function filterFallback( f ) {
 
-			if ( f === NearestFilter || f === NearestMipMapNearestFilter || f === NearestMipMapLinearFilter ) {
+			if ( f === NearestFilter || f === NearestMipmapNearestFilter || f === NearestMipmapLinearFilter ) {
 
 				return 9728;
 
@@ -22045,12 +22133,12 @@
 			if ( p === MirroredRepeatWrapping ) return 33648;
 
 			if ( p === NearestFilter ) return 9728;
-			if ( p === NearestMipMapNearestFilter ) return 9984;
-			if ( p === NearestMipMapLinearFilter ) return 9986;
+			if ( p === NearestMipmapNearestFilter ) return 9984;
+			if ( p === NearestMipmapLinearFilter ) return 9986;
 
 			if ( p === LinearFilter ) return 9729;
-			if ( p === LinearMipMapNearestFilter ) return 9985;
-			if ( p === LinearMipMapLinearFilter ) return 9987;
+			if ( p === LinearMipmapNearestFilter ) return 9985;
+			if ( p === LinearMipmapLinearFilter ) return 9987;
 
 			if ( p === UnsignedByteType ) return 5121;
 			if ( p === UnsignedShort4444Type ) return 32819;
@@ -22719,7 +22807,7 @@
 
 		var scope = this;
 
-		var gl = renderer.context;
+		var gl = renderer.getContext();
 
 		var session = null;
 
@@ -23062,7 +23150,6 @@
 		// public properties
 
 		this.domElement = _canvas;
-		this.context = null;
 
 		// Debug configuration container
 		this.debug = {
@@ -23285,7 +23372,6 @@
 
 			info.programs = programCache.programs;
 
-			_this.context = _gl;
 			_this.capabilities = capabilities;
 			_this.extensions = extensions;
 			_this.properties = properties;
@@ -35229,7 +35315,7 @@
 				texture.wrapT = texData.wrapT !== undefined ? texData.wrapT : ClampToEdgeWrapping;
 
 				texture.magFilter = texData.magFilter !== undefined ? texData.magFilter : LinearFilter;
-				texture.minFilter = texData.minFilter !== undefined ? texData.minFilter : LinearMipMapLinearFilter;
+				texture.minFilter = texData.minFilter !== undefined ? texData.minFilter : LinearMipmapLinearFilter;
 
 				texture.anisotropy = texData.anisotropy !== undefined ? texData.anisotropy : 1;
 
@@ -39577,11 +39663,11 @@
 
 	var TEXTURE_FILTER = {
 		NearestFilter: NearestFilter,
-		NearestMipMapNearestFilter: NearestMipMapNearestFilter,
-		NearestMipMapLinearFilter: NearestMipMapLinearFilter,
+		NearestMipmapNearestFilter: NearestMipmapNearestFilter,
+		NearestMipmapLinearFilter: NearestMipmapLinearFilter,
 		LinearFilter: LinearFilter,
-		LinearMipMapNearestFilter: LinearMipMapNearestFilter,
-		LinearMipMapLinearFilter: LinearMipMapLinearFilter
+		LinearMipmapNearestFilter: LinearMipmapNearestFilter,
+		LinearMipmapLinearFilter: LinearMipmapLinearFilter
 	};
 
 	/**
@@ -48479,7 +48565,16 @@
 				console.warn( 'THREE.WebGLRenderer: .shadowMapCullFace has been removed. Set Material.shadowSide instead.' );
 
 			}
+		},
+		context: {
+			get: function () {
+
+				console.warn( 'THREE.WebGLRenderer: .context has been removed. Use .getContext() instead.' );
+				return this.getContext();
+
+			}
 		}
+
 	} );
 
 	Object.defineProperties( WebGLShadowMap.prototype, {
@@ -48876,6 +48971,7 @@
 	exports.AdditiveBlending = AdditiveBlending;
 	exports.AlphaFormat = AlphaFormat;
 	exports.AlwaysDepth = AlwaysDepth;
+	exports.AlwaysStencilFunc = AlwaysStencilFunc;
 	exports.AmbientLight = AmbientLight;
 	exports.AmbientLightProbe = AmbientLightProbe;
 	exports.AnimationClip = AnimationClip;
@@ -48953,6 +49049,8 @@
 	exports.DataTexture2DArray = DataTexture2DArray;
 	exports.DataTexture3D = DataTexture3D;
 	exports.DataTextureLoader = DataTextureLoader;
+	exports.DecrementStencilOp = DecrementStencilOp;
+	exports.DecrementWrapStencilOp = DecrementWrapStencilOp;
 	exports.DefaultLoadingManager = DefaultLoadingManager;
 	exports.DepthFormat = DepthFormat;
 	exports.DepthStencilFormat = DepthStencilFormat;
@@ -48971,6 +49069,7 @@
 	exports.EdgesHelper = EdgesHelper;
 	exports.EllipseCurve = EllipseCurve;
 	exports.EqualDepth = EqualDepth;
+	exports.EqualStencilFunc = EqualStencilFunc;
 	exports.EquirectangularReflectionMapping = EquirectangularReflectionMapping;
 	exports.EquirectangularRefractionMapping = EquirectangularRefractionMapping;
 	exports.Euler = Euler;
@@ -49001,6 +49100,8 @@
 	exports.GeometryUtils = GeometryUtils;
 	exports.GreaterDepth = GreaterDepth;
 	exports.GreaterEqualDepth = GreaterEqualDepth;
+	exports.GreaterEqualStencilFunc = GreaterEqualStencilFunc;
+	exports.GreaterStencilFunc = GreaterStencilFunc;
 	exports.GridHelper = GridHelper;
 	exports.Group = Group;
 	exports.HalfFloatType = HalfFloatType;
@@ -49013,6 +49114,8 @@
 	exports.ImageLoader = ImageLoader;
 	exports.ImageUtils = ImageUtils;
 	exports.ImmediateRenderObject = ImmediateRenderObject;
+	exports.IncrementStencilOp = IncrementStencilOp;
+	exports.IncrementWrapStencilOp = IncrementWrapStencilOp;
 	exports.InstancedBufferAttribute = InstancedBufferAttribute;
 	exports.InstancedBufferGeometry = InstancedBufferGeometry;
 	exports.InstancedInterleavedBuffer = InstancedInterleavedBuffer;
@@ -49029,7 +49132,9 @@
 	exports.InterpolateDiscrete = InterpolateDiscrete;
 	exports.InterpolateLinear = InterpolateLinear;
 	exports.InterpolateSmooth = InterpolateSmooth;
+	exports.InvertStencilOp = InvertStencilOp;
 	exports.JSONLoader = JSONLoader;
+	exports.KeepStencilOp = KeepStencilOp;
 	exports.KeyframeTrack = KeyframeTrack;
 	exports.LOD = LOD;
 	exports.LatheBufferGeometry = LatheBufferGeometry;
@@ -49038,6 +49143,8 @@
 	exports.LensFlare = LensFlare;
 	exports.LessDepth = LessDepth;
 	exports.LessEqualDepth = LessEqualDepth;
+	exports.LessEqualStencilFunc = LessEqualStencilFunc;
+	exports.LessStencilFunc = LessStencilFunc;
 	exports.Light = Light;
 	exports.LightProbe = LightProbe;
 	exports.LightProbeHelper = LightProbeHelper;
@@ -49057,6 +49164,8 @@
 	exports.LinearInterpolant = LinearInterpolant;
 	exports.LinearMipMapLinearFilter = LinearMipMapLinearFilter;
 	exports.LinearMipMapNearestFilter = LinearMipMapNearestFilter;
+	exports.LinearMipmapLinearFilter = LinearMipmapLinearFilter;
+	exports.LinearMipmapNearestFilter = LinearMipmapNearestFilter;
 	exports.LinearToneMapping = LinearToneMapping;
 	exports.Loader = Loader;
 	exports.LoaderUtils = LoaderUtils;
@@ -49095,12 +49204,16 @@
 	exports.NearestFilter = NearestFilter;
 	exports.NearestMipMapLinearFilter = NearestMipMapLinearFilter;
 	exports.NearestMipMapNearestFilter = NearestMipMapNearestFilter;
+	exports.NearestMipmapLinearFilter = NearestMipmapLinearFilter;
+	exports.NearestMipmapNearestFilter = NearestMipmapNearestFilter;
 	exports.NeverDepth = NeverDepth;
+	exports.NeverStencilFunc = NeverStencilFunc;
 	exports.NoBlending = NoBlending;
 	exports.NoColors = NoColors;
 	exports.NoToneMapping = NoToneMapping;
 	exports.NormalBlending = NormalBlending;
 	exports.NotEqualDepth = NotEqualDepth;
+	exports.NotEqualStencilFunc = NotEqualStencilFunc;
 	exports.NumberKeyframeTrack = NumberKeyframeTrack;
 	exports.Object3D = Object3D;
 	exports.ObjectLoader = ObjectLoader;
@@ -49185,6 +49298,7 @@
 	exports.RedFormat = RedFormat;
 	exports.ReinhardToneMapping = ReinhardToneMapping;
 	exports.RepeatWrapping = RepeatWrapping;
+	exports.ReplaceStencilOp = ReplaceStencilOp;
 	exports.ReverseSubtractEquation = ReverseSubtractEquation;
 	exports.RingBufferGeometry = RingBufferGeometry;
 	exports.RingGeometry = RingGeometry;
@@ -49225,6 +49339,7 @@
 	exports.StringKeyframeTrack = StringKeyframeTrack;
 	exports.SubtractEquation = SubtractEquation;
 	exports.SubtractiveBlending = SubtractiveBlending;
+	exports.TOUCH = TOUCH;
 	exports.TangentSpaceNormalMap = TangentSpaceNormalMap;
 	exports.TetrahedronBufferGeometry = TetrahedronBufferGeometry;
 	exports.TetrahedronGeometry = TetrahedronGeometry;
@@ -49282,6 +49397,7 @@
 	exports.ZeroCurvatureEnding = ZeroCurvatureEnding;
 	exports.ZeroFactor = ZeroFactor;
 	exports.ZeroSlopeEnding = ZeroSlopeEnding;
+	exports.ZeroStencilOp = ZeroStencilOp;
 	exports.sRGBEncoding = sRGBEncoding;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
