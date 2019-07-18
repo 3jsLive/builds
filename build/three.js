@@ -22498,7 +22498,7 @@
 
 		function isAvailable() {
 
-			return capabilities.multiview && !contextAttributes.antialias;
+			return capabilities.multiview && ! contextAttributes.antialias;
 
 		}
 
@@ -23551,7 +23551,7 @@
 			 * Enables error checking and reporting when shader programs are being compiled
 			 * @type {boolean}
 			 */
-			checkShaderErrors: false
+			checkShaderErrors: true
 		};
 
 		// clearing
