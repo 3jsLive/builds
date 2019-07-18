@@ -22247,7 +22247,7 @@ function WebGLMultiview( renderer, gl, contextAttributes ) {
 
 	function isAvailable() {
 
-		return capabilities.multiview && !contextAttributes.antialias;
+		return capabilities.multiview && ! contextAttributes.antialias;
 
 	}
 
@@ -23298,7 +23298,7 @@ function WebGLRenderer( parameters ) {
 		 * Enables error checking and reporting when shader programs are being compiled
 		 * @type {boolean}
 		 */
-		checkShaderErrors: false
+		checkShaderErrors: true
 	};
 
 	// clearing
