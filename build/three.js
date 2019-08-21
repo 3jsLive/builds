@@ -15537,7 +15537,7 @@
 		var maxSamples = isWebGL2 ? gl.getParameter( 36183 ) : 0;
 
 		var multiviewExt = extensions.get( 'OVR_multiview2' );
-		var multiview = isWebGL2 && ( !! multiviewExt );
+		var multiview = isWebGL2 && ( !! multiviewExt ) && !gl.getContextAttributes().antialias;
 		var maxMultiviewViews = multiview ? gl.getParameter( multiviewExt.MAX_VIEWS_OVR ) : 0;
 
 		return {
@@ -22212,7 +22212,7 @@
 	 * @author Takahiro https://github.com/takahirox
 	 */
 
-	function WebGLMultiview( renderer, gl, contextAttributes ) {
+	function WebGLMultiview( renderer, gl ) {
 
 		var DEFAULT_NUMVIEWS = 2;
 
@@ -22253,12 +22253,6 @@
 		}
 
 		//
-
-		function isAvailable() {
-
-			return capabilities.multiview && ! contextAttributes.antialias;
-
-		}
 
 		function updateCameraProjectionMatricesUniform( camera, uniforms ) {
 
@@ -22407,7 +22401,7 @@
 		}
 
 
-		if ( isAvailable() ) {
+		if ( renderer.capabilities.multiview ) {
 
 			renderTarget = new WebGLMultiviewRenderTarget( 0, 0, DEFAULT_NUMVIEWS );
 
@@ -22428,7 +22422,6 @@
 
 		this.attachRenderTarget = attachRenderTarget;
 		this.detachRenderTarget = detachRenderTarget;
-		this.isAvailable = isAvailable;
 		this.getNumViews = getNumViews;
 		this.updateCameraProjectionMatricesUniform = updateCameraProjectionMatricesUniform;
 		this.updateCameraViewMatricesUniform = updateCameraViewMatricesUniform;
@@ -23540,7 +23533,7 @@
 
 		// Multiview
 
-		var multiview = new WebGLMultiview( _this, _gl, _gl.getContextAttributes() );
+		var multiview = new WebGLMultiview( _this, _gl );
 
 		this.multiview = multiview;
 
@@ -24407,7 +24400,7 @@
 
 			}
 
-			if ( multiview.isAvailable() ) {
+			if ( capabilities.multiview ) {
 
 				multiview.attachRenderTarget( camera );
 
@@ -24467,7 +24460,7 @@
 
 			state.setPolygonOffset( false );
 
-			if ( multiview.isAvailable() ) {
+			if ( capabilities.multiview ) {
 
 				multiview.detachRenderTarget( camera );
 
@@ -24615,7 +24608,7 @@
 				var material = overrideMaterial === undefined ? renderItem.material : overrideMaterial;
 				var group = renderItem.group;
 
-				if ( multiview.isAvailable() ) {
+				if ( capabilities.multiview ) {
 
 					_currentArrayCamera = camera;
 
