@@ -17608,6 +17608,53 @@
 	}
 
 	/**
+	 * @author fernandojsg / http://fernandojsg.com
+	 * @author Takahiro https://github.com/takahirox
+	 */
+
+	function WebGLMultiviewRenderTarget( width, height, numViews, options ) {
+
+		WebGLRenderTarget.call( this, width, height, options );
+
+		this.depthBuffer = false;
+		this.stencilBuffer = false;
+
+		this.numViews = numViews;
+
+	}
+
+	WebGLMultiviewRenderTarget.prototype = Object.assign( Object.create( WebGLRenderTarget.prototype ), {
+
+		constructor: WebGLMultiviewRenderTarget,
+
+		isWebGLMultiviewRenderTarget: true,
+
+		copy: function ( source ) {
+
+			WebGLRenderTarget.prototype.copy.call( this, source );
+
+			this.numViews = source.numViews;
+
+			return this;
+
+		},
+
+		setNumViews: function ( numViews ) {
+
+			if ( this.numViews !== numViews ) {
+
+				this.numViews = numViews;
+				this.dispose();
+
+			}
+
+			return this;
+
+		}
+
+	} );
+
+	/**
 	 * @author mrdoob / http://mrdoob.com/
 	 */
 
@@ -17933,7 +17980,8 @@
 
 		var prefixVertex, prefixFragment;
 
-		var numMultiviewViews = renderer.multiview.getNumViews();
+		var renderTarget = renderer.getRenderTarget();
+		var numMultiviewViews = renderTarget instanceof WebGLMultiviewRenderTarget ? renderTarget.numViews : 0;
 
 		if ( material.isRawShaderMaterial ) {
 
@@ -22410,53 +22458,6 @@
 	 * @author Takahiro https://github.com/takahirox
 	 */
 
-	function WebGLMultiviewRenderTarget( width, height, numViews, options ) {
-
-		WebGLRenderTarget.call( this, width, height, options );
-
-		this.depthBuffer = false;
-		this.stencilBuffer = false;
-
-		this.numViews = numViews;
-
-	}
-
-	WebGLMultiviewRenderTarget.prototype = Object.assign( Object.create( WebGLRenderTarget.prototype ), {
-
-		constructor: WebGLMultiviewRenderTarget,
-
-		isWebGLMultiviewRenderTarget: true,
-
-		copy: function ( source ) {
-
-			WebGLRenderTarget.prototype.copy.call( this, source );
-
-			this.numViews = source.numViews;
-
-			return this;
-
-		},
-
-		setNumViews: function ( numViews ) {
-
-			if ( this.numViews !== numViews ) {
-
-				this.numViews = numViews;
-				this.dispose();
-
-			}
-
-			return this;
-
-		}
-
-	} );
-
-	/**
-	 * @author fernandojsg / http://fernandojsg.com
-	 * @author Takahiro https://github.com/takahirox
-	 */
-
 	function WebGLMultiview( renderer, gl ) {
 
 		var DEFAULT_NUMVIEWS = 2;
@@ -22472,18 +22473,6 @@
 		function getMaxViews() {
 
 			return capabilities.maxMultiviewViews;
-
-		}
-
-		function getNumViews() {
-
-			if ( renderTarget && renderer.getRenderTarget() === renderTarget ) {
-
-				return renderTarget.numViews;
-
-			}
-
-			return 0;
 
 		}
 
@@ -22667,7 +22656,6 @@
 
 		this.attachRenderTarget = attachRenderTarget;
 		this.detachRenderTarget = detachRenderTarget;
-		this.getNumViews = getNumViews;
 		this.updateCameraProjectionMatricesUniform = updateCameraProjectionMatricesUniform;
 		this.updateCameraViewMatricesUniform = updateCameraViewMatricesUniform;
 		this.updateObjectMatricesUniforms = updateObjectMatricesUniforms;
@@ -23781,8 +23769,6 @@
 		// Multiview
 
 		var multiview = new WebGLMultiview( _this, _gl );
-
-		this.multiview = multiview;
 
 		// shadow map
 
