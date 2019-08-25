@@ -34433,84 +34433,6 @@ function LoadingManager( onLoad, onProgress, onError ) {
 var DefaultLoadingManager = new LoadingManager();
 
 /**
- * @author alteredq / http://alteredqualia.com/
- */
-
-function Loader( manager ) {
-
-	this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
-
-	this.crossOrigin = 'anonymous';
-	this.path = '';
-	this.resourcePath = '';
-
-}
-
-Object.assign( Loader.prototype, {
-
-	load: function ( /* url, onLoad, onProgress, onError */ ) {},
-
-	parse: function ( /* data */ ) {},
-
-	setCrossOrigin: function ( crossOrigin ) {
-
-		this.crossOrigin = crossOrigin;
-		return this;
-
-	},
-
-	setPath: function ( path ) {
-
-		this.path = path;
-		return this;
-
-	},
-
-	setResourcePath: function ( resourcePath ) {
-
-		this.resourcePath = resourcePath;
-		return this;
-
-	}
-
-} );
-
-//
-
-Loader.Handlers = {
-
-	handlers: [],
-
-	add: function ( regex, loader ) {
-
-		this.handlers.push( regex, loader );
-
-	},
-
-	get: function ( file ) {
-
-		var handlers = this.handlers;
-
-		for ( var i = 0, l = handlers.length; i < l; i += 2 ) {
-
-			var regex = handlers[ i ];
-			var loader = handlers[ i + 1 ];
-
-			if ( regex.test( file ) ) {
-
-				return loader;
-
-			}
-
-		}
-
-		return null;
-
-	}
-
-};
-
-/**
  * @author mrdoob / http://mrdoob.com/
  */
 
@@ -34518,13 +34440,11 @@ var loading = {};
 
 function FileLoader( manager ) {
 
-	Loader.call( this, manager );
+	this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
 
 }
 
-FileLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
-
-	constructor: FileLoader,
+Object.assign( FileLoader.prototype, {
 
 	load: function ( url, onLoad, onProgress, onError ) {
 
@@ -34789,6 +34709,13 @@ FileLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 
 	},
 
+	setPath: function ( value ) {
+
+		this.path = value;
+		return this;
+
+	},
+
 	setResponseType: function ( value ) {
 
 		this.responseType = value;
@@ -34818,6 +34745,84 @@ FileLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 	}
 
 } );
+
+/**
+ * @author alteredq / http://alteredqualia.com/
+ */
+
+function Loader( manager ) {
+
+	this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
+
+	this.crossOrigin = 'anonymous';
+	this.path = '';
+	this.resourcePath = '';
+
+}
+
+Object.assign( Loader.prototype, {
+
+	load: function ( /* url, onLoad, onProgress, onError */ ) {},
+
+	parse: function ( /* data */ ) {},
+
+	setCrossOrigin: function ( crossOrigin ) {
+
+		this.crossOrigin = crossOrigin;
+		return this;
+
+	},
+
+	setPath: function ( path ) {
+
+		this.path = path;
+		return this;
+
+	},
+
+	setResourcePath: function ( resourcePath ) {
+
+		this.resourcePath = resourcePath;
+		return this;
+
+	}
+
+} );
+
+//
+
+Loader.Handlers = {
+
+	handlers: [],
+
+	add: function ( regex, loader ) {
+
+		this.handlers.push( regex, loader );
+
+	},
+
+	get: function ( file ) {
+
+		var handlers = this.handlers;
+
+		for ( var i = 0, l = handlers.length; i < l; i += 2 ) {
+
+			var regex = handlers[ i ];
+			var loader = handlers[ i + 1 ];
+
+			if ( regex.test( file ) ) {
+
+				return loader;
+
+			}
+
+		}
+
+		return null;
+
+	}
+
+};
 
 /**
  * @author bhouston / http://clara.io/
@@ -34873,16 +34878,14 @@ AnimationLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 
 function CompressedTextureLoader( manager ) {
 
-	Loader.call( this, manager );
+	this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
 
 	// override in sub classes
 	this._parser = null;
 
 }
 
-CompressedTextureLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
-
-	constructor: CompressedTextureLoader,
+Object.assign( CompressedTextureLoader.prototype, {
 
 	load: function ( url, onLoad, onProgress, onError ) {
 
@@ -34990,6 +34993,13 @@ CompressedTextureLoader.prototype = Object.assign( Object.create( Loader.prototy
 
 		return texture;
 
+	},
+
+	setPath: function ( value ) {
+
+		this.path = value;
+		return this;
+
 	}
 
 } );
@@ -35002,16 +35012,14 @@ CompressedTextureLoader.prototype = Object.assign( Object.create( Loader.prototy
 
 function DataTextureLoader( manager ) {
 
-	Loader.call( this, manager );
+	this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
 
 	// override in sub classes
 	this._parser = null;
 
 }
 
-DataTextureLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
-
-	constructor: DataTextureLoader,
+Object.assign( DataTextureLoader.prototype, {
 
 	load: function ( url, onLoad, onProgress, onError ) {
 
@@ -35080,6 +35088,13 @@ DataTextureLoader.prototype = Object.assign( Object.create( Loader.prototype ), 
 
 		return texture;
 
+	},
+
+	setPath: function ( value ) {
+
+		this.path = value;
+		return this;
+
 	}
 
 } );
@@ -35088,17 +35103,20 @@ DataTextureLoader.prototype = Object.assign( Object.create( Loader.prototype ), 
  * @author mrdoob / http://mrdoob.com/
  */
 
+
 function ImageLoader( manager ) {
 
-	Loader.call( this, manager );
+	this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
 
 }
 
-ImageLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
+Object.assign( ImageLoader.prototype, {
 
-	constructor: ImageLoader,
+	crossOrigin: 'anonymous',
 
 	load: function ( url, onLoad, onProgress, onError ) {
+
+		if ( url === undefined ) url = '';
 
 		if ( this.path !== undefined ) url = this.path + url;
 
@@ -35166,6 +35184,20 @@ ImageLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 
 		return image;
 
+	},
+
+	setCrossOrigin: function ( value ) {
+
+		this.crossOrigin = value;
+		return this;
+
+	},
+
+	setPath: function ( value ) {
+
+		this.path = value;
+		return this;
+
 	}
 
 } );
@@ -35177,13 +35209,13 @@ ImageLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 
 function CubeTextureLoader( manager ) {
 
-	Loader.call( this, manager );
+	this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
 
 }
 
-CubeTextureLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
+Object.assign( CubeTextureLoader.prototype, {
 
-	constructor: CubeTextureLoader,
+	crossOrigin: 'anonymous',
 
 	load: function ( urls, onLoad, onProgress, onError ) {
 
@@ -35223,6 +35255,20 @@ CubeTextureLoader.prototype = Object.assign( Object.create( Loader.prototype ), 
 
 		return texture;
 
+	},
+
+	setCrossOrigin: function ( value ) {
+
+		this.crossOrigin = value;
+		return this;
+
+	},
+
+	setPath: function ( value ) {
+
+		this.path = value;
+		return this;
+
 	}
 
 } );
@@ -35231,15 +35277,16 @@ CubeTextureLoader.prototype = Object.assign( Object.create( Loader.prototype ), 
  * @author mrdoob / http://mrdoob.com/
  */
 
+
 function TextureLoader( manager ) {
 
-	Loader.call( this, manager );
+	this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
 
 }
 
-TextureLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
+Object.assign( TextureLoader.prototype, {
 
-	constructor: TextureLoader,
+	crossOrigin: 'anonymous',
 
 	load: function ( url, onLoad, onProgress, onError ) {
 
@@ -35268,6 +35315,20 @@ TextureLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 		}, onProgress, onError );
 
 		return texture;
+
+	},
+
+	setCrossOrigin: function ( value ) {
+
+		this.crossOrigin = value;
+		return this;
+
+	},
+
+	setPath: function ( value ) {
+
+		this.path = value;
+		return this;
 
 	}
 
@@ -38016,15 +38077,12 @@ RectAreaLight.prototype = Object.assign( Object.create( Light.prototype ), {
 
 function MaterialLoader( manager ) {
 
-	Loader.call( this, manager );
-
+	this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
 	this.textures = {};
 
 }
 
-MaterialLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
-
-	constructor: MaterialLoader,
+Object.assign( MaterialLoader.prototype, {
 
 	load: function ( url, onLoad, onProgress, onError ) {
 
@@ -38241,6 +38299,13 @@ MaterialLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 		if ( json.clearcoatNormalScale !== undefined ) material.clearcoatNormalScale = new Vector2().fromArray( json.clearcoatNormalScale );
 
 		return material;
+
+	},
+
+	setPath: function ( value ) {
+
+		this.path = value;
+		return this;
 
 	},
 
@@ -39502,13 +39567,12 @@ function ImageBitmapLoader( manager ) {
 
 	}
 
-	Loader.call( this, manager );
-
+	this.manager = manager !== undefined ? manager : DefaultLoadingManager;
 	this.options = undefined;
 
 }
 
-ImageBitmapLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
+ImageBitmapLoader.prototype = {
 
 	constructor: ImageBitmapLoader,
 
@@ -39584,9 +39648,22 @@ ImageBitmapLoader.prototype = Object.assign( Object.create( Loader.prototype ), 
 
 		scope.manager.itemStart( url );
 
+	},
+
+	setCrossOrigin: function ( /* value */ ) {
+
+		return this;
+
+	},
+
+	setPath: function ( value ) {
+
+		this.path = value;
+		return this;
+
 	}
 
-} );
+};
 
 /**
  * @author zz85 / http://www.lab4games.net/zz85/blog
@@ -40021,13 +40098,11 @@ function createPath( char, scale, offsetX, offsetY, data ) {
 
 function FontLoader( manager ) {
 
-	Loader.call( this, manager );
+	this.manager = ( manager !== undefined ) ? manager : DefaultLoadingManager;
 
 }
 
-FontLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
-
-	constructor: FontLoader,
+Object.assign( FontLoader.prototype, {
 
 	load: function ( url, onLoad, onProgress, onError ) {
 
@@ -40061,6 +40136,13 @@ FontLoader.prototype = Object.assign( Object.create( Loader.prototype ), {
 	parse: function ( json ) {
 
 		return new Font( json );
+
+	},
+
+	setPath: function ( value ) {
+
+		this.path = value;
+		return this;
 
 	}
 
