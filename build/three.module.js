@@ -5114,6 +5114,12 @@ Object.assign( Layers.prototype, {
 
 	},
 
+	enableAll: function () {
+
+		this.mask = 0xffffffff | 0;
+
+	},
+
 	toggle: function ( channel ) {
 
 		this.mask ^= 1 << channel | 0;
@@ -5126,21 +5132,15 @@ Object.assign( Layers.prototype, {
 
 	},
 
-	test: function ( layers ) {
-
-		return ( this.mask & layers.mask ) !== 0;
-
-	},
-
-	enableAll: function () {
-
-		this.mask = 0xffffffff | 0;
-
-	},
-
 	disableAll: function () {
 
 		this.mask = 0;
+
+	},
+
+	test: function ( layers ) {
+
+		return ( this.mask & layers.mask ) !== 0;
 
 	}
 
