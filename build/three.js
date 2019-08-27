@@ -5136,6 +5136,18 @@
 
 			return ( this.mask & layers.mask ) !== 0;
 
+		},
+
+		enableAll: function () {
+
+			this.mask = 0xffffffff | 0;
+
+		},
+
+		disableAll: function () {
+
+			this.mask = 0;
+
 		}
 
 	} );
