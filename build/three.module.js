@@ -15531,7 +15531,7 @@ function WebGLCapabilities( gl, extensions, parameters ) {
 	var maxSamples = isWebGL2 ? gl.getParameter( 36183 ) : 0;
 
 	var multiviewExt = extensions.get( 'OVR_multiview2' );
-	var multiview = isWebGL2 && ( !! multiviewExt ) && !gl.getContextAttributes().antialias;
+	var multiview = isWebGL2 && ( !! multiviewExt ) && ! gl.getContextAttributes().antialias;
 	var maxMultiviewViews = multiview ? gl.getParameter( multiviewExt.MAX_VIEWS_OVR ) : 0;
 
 	return {
@@ -17255,53 +17255,6 @@ function WebGLShader( gl, type, string ) {
 }
 
 /**
- * @author fernandojsg / http://fernandojsg.com
- * @author Takahiro https://github.com/takahirox
- */
-
-function WebGLMultiviewRenderTarget( width, height, numViews, options ) {
-
-	WebGLRenderTarget.call( this, width, height, options );
-
-	this.depthBuffer = false;
-	this.stencilBuffer = false;
-
-	this.numViews = numViews;
-
-}
-
-WebGLMultiviewRenderTarget.prototype = Object.assign( Object.create( WebGLRenderTarget.prototype ), {
-
-	constructor: WebGLMultiviewRenderTarget,
-
-	isWebGLMultiviewRenderTarget: true,
-
-	copy: function ( source ) {
-
-		WebGLRenderTarget.prototype.copy.call( this, source );
-
-		this.numViews = source.numViews;
-
-		return this;
-
-	},
-
-	setNumViews: function ( numViews ) {
-
-		if ( this.numViews !== numViews ) {
-
-			this.numViews = numViews;
-			this.dispose();
-
-		}
-
-		return this;
-
-	}
-
-} );
-
-/**
  * @author mrdoob / http://mrdoob.com/
  */
 
@@ -17639,7 +17592,7 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 	var prefixVertex, prefixFragment;
 
 	var renderTarget = renderer.getRenderTarget();
-	var numMultiviewViews = renderTarget instanceof WebGLMultiviewRenderTarget ? renderTarget.numViews : 0;
+	var numMultiviewViews = renderTarget && renderTarget.isWebGLMultiviewRenderTarget ? renderTarget.numViews : 0;
 
 	if ( material.isRawShaderMaterial ) {
 
@@ -22207,6 +22160,53 @@ function WebGLUtils( gl, extensions, capabilities ) {
  * @author Takahiro https://github.com/takahirox
  */
 
+function WebGLMultiviewRenderTarget( width, height, numViews, options ) {
+
+	WebGLRenderTarget.call( this, width, height, options );
+
+	this.depthBuffer = false;
+	this.stencilBuffer = false;
+
+	this.numViews = numViews;
+
+}
+
+WebGLMultiviewRenderTarget.prototype = Object.assign( Object.create( WebGLRenderTarget.prototype ), {
+
+	constructor: WebGLMultiviewRenderTarget,
+
+	isWebGLMultiviewRenderTarget: true,
+
+	copy: function ( source ) {
+
+		WebGLRenderTarget.prototype.copy.call( this, source );
+
+		this.numViews = source.numViews;
+
+		return this;
+
+	},
+
+	setNumViews: function ( numViews ) {
+
+		if ( this.numViews !== numViews ) {
+
+			this.numViews = numViews;
+			this.dispose();
+
+		}
+
+		return this;
+
+	}
+
+} );
+
+/**
+ * @author fernandojsg / http://fernandojsg.com
+ * @author Takahiro https://github.com/takahirox
+ */
+
 function WebGLMultiview( renderer, gl ) {
 
 	var DEFAULT_NUMVIEWS = 2;
@@ -22218,12 +22218,6 @@ function WebGLMultiview( renderer, gl ) {
 
 	var renderTarget, currentRenderTarget;
 	var mat3, mat4, cameraArray, renderSize;
-
-	function getMaxViews() {
-
-		return capabilities.maxMultiviewViews;
-
-	}
 
 	function getCameraArray( camera ) {
 
@@ -22329,7 +22323,7 @@ function WebGLMultiview( renderer, gl ) {
 
 	}
 
-	function attachRenderTarget( camera ) {
+	function attachCamera( camera ) {
 
 		if ( ! isMultiviewCompatible( camera ) ) return;
 
@@ -22393,7 +22387,9 @@ function WebGLMultiview( renderer, gl ) {
 		mat3 = [];
 		cameraArray = [];
 
-		for ( var i = 0; i < getMaxViews(); i ++ ) {
+		var maxViews = capabilities.maxMultiviewViews;
+
+		for ( var i = 0; i < maxViews; i ++ ) {
 
 			mat4[ i ] = new Matrix4();
 			mat3[ i ] = new Matrix3();
@@ -22403,7 +22399,7 @@ function WebGLMultiview( renderer, gl ) {
 	}
 
 
-	this.attachRenderTarget = attachRenderTarget;
+	this.attachCamera = attachCamera;
 	this.detachRenderTarget = detachRenderTarget;
 	this.updateCameraProjectionMatricesUniform = updateCameraProjectionMatricesUniform;
 	this.updateCameraViewMatricesUniform = updateCameraViewMatricesUniform;
@@ -24382,7 +24378,7 @@ function WebGLRenderer( parameters ) {
 
 		if ( capabilities.multiview ) {
 
-			multiview.attachRenderTarget( camera );
+			multiview.attachCamera( camera );
 
 		}
 
