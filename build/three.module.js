@@ -15531,7 +15531,7 @@ function WebGLCapabilities( gl, extensions, parameters ) {
 	var maxSamples = isWebGL2 ? gl.getParameter( 36183 ) : 0;
 
 	var multiviewExt = extensions.get( 'OVR_multiview2' );
-	var multiview = isWebGL2 && ( !! multiviewExt ) && ! gl.getContextAttributes().antialias;
+	var multiview = isWebGL2 && ( !! multiviewExt ) && !gl.getContextAttributes().antialias;
 	var maxMultiviewViews = multiview ? gl.getParameter( multiviewExt.MAX_VIEWS_OVR ) : 0;
 
 	return {
@@ -17253,6 +17253,53 @@ function WebGLShader( gl, type, string ) {
 	return shader;
 
 }
+
+/**
+ * @author fernandojsg / http://fernandojsg.com
+ * @author Takahiro https://github.com/takahirox
+ */
+
+function WebGLMultiviewRenderTarget( width, height, numViews, options ) {
+
+	WebGLRenderTarget.call( this, width, height, options );
+
+	this.depthBuffer = false;
+	this.stencilBuffer = false;
+
+	this.numViews = numViews;
+
+}
+
+WebGLMultiviewRenderTarget.prototype = Object.assign( Object.create( WebGLRenderTarget.prototype ), {
+
+	constructor: WebGLMultiviewRenderTarget,
+
+	isWebGLMultiviewRenderTarget: true,
+
+	copy: function ( source ) {
+
+		WebGLRenderTarget.prototype.copy.call( this, source );
+
+		this.numViews = source.numViews;
+
+		return this;
+
+	},
+
+	setNumViews: function ( numViews ) {
+
+		if ( this.numViews !== numViews ) {
+
+			this.numViews = numViews;
+			this.dispose();
+
+		}
+
+		return this;
+
+	}
+
+} );
 
 /**
  * @author mrdoob / http://mrdoob.com/
@@ -22154,53 +22201,6 @@ function WebGLUtils( gl, extensions, capabilities ) {
 	return { convert: convert };
 
 }
-
-/**
- * @author fernandojsg / http://fernandojsg.com
- * @author Takahiro https://github.com/takahirox
- */
-
-function WebGLMultiviewRenderTarget( width, height, numViews, options ) {
-
-	WebGLRenderTarget.call( this, width, height, options );
-
-	this.depthBuffer = false;
-	this.stencilBuffer = false;
-
-	this.numViews = numViews;
-
-}
-
-WebGLMultiviewRenderTarget.prototype = Object.assign( Object.create( WebGLRenderTarget.prototype ), {
-
-	constructor: WebGLMultiviewRenderTarget,
-
-	isWebGLMultiviewRenderTarget: true,
-
-	copy: function ( source ) {
-
-		WebGLRenderTarget.prototype.copy.call( this, source );
-
-		this.numViews = source.numViews;
-
-		return this;
-
-	},
-
-	setNumViews: function ( numViews ) {
-
-		if ( this.numViews !== numViews ) {
-
-			this.numViews = numViews;
-			this.dispose();
-
-		}
-
-		return this;
-
-	}
-
-} );
 
 /**
  * @author fernandojsg / http://fernandojsg.com
