@@ -9279,7 +9279,7 @@ function DirectGeometry() {
 
 }
 
-Object.assign( DirectGeometry.prototype, {
+DirectGeometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), {
 
 	computeGroups: function ( geometry ) {
 
