@@ -8332,12 +8332,30 @@
 
 		this.stencilWriteMask = 0xff;
 		this.stencilFunc = AlwaysStencilFunc;
-		this.stencilFuncMask = 0xff;
 		this.stencilRef = 0;
+		this.stencilFuncMask = 0xff;
 		this.stencilFail = KeepStencilOp;
 		this.stencilZFail = KeepStencilOp;
 		this.stencilZPass = KeepStencilOp;
 		this.stencilWrite = false;
+
+		Object.defineProperty( this, 'stencilMask', {
+
+			set: function( value ) {
+
+				console.warn( 'Material.stencilMask has been removed. Use Material.stencilFuncMask instead.' );
+				this.stencilFuncMask = value;
+
+			},
+
+			get: function() {
+
+				console.warn( 'Material.stencilMask has been removed. Use Material.stencilFuncMask instead.' );
+				return this.stencilFuncMask;
+
+			}
+
+		} );
 
 		this.clippingPlanes = null;
 		this.clipIntersection = false;
