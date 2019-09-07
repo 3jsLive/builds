@@ -8458,7 +8458,6 @@
 			if ( this.roughness !== undefined ) { data.roughness = this.roughness; }
 			if ( this.metalness !== undefined ) { data.metalness = this.metalness; }
 
-			if ( this.sheen && this.sheen.isColor ) { data.sheen = this.sheen.getHex(); }
 			if ( this.emissive && this.emissive.isColor ) { data.emissive = this.emissive.getHex(); }
 			if ( this.emissiveIntensity && this.emissiveIntensity !== 1 ) { data.emissiveIntensity = this.emissiveIntensity; }
 
@@ -38203,7 +38202,6 @@
 			if ( json.color !== undefined ) { material.color.setHex( json.color ); }
 			if ( json.roughness !== undefined ) { material.roughness = json.roughness; }
 			if ( json.metalness !== undefined ) { material.metalness = json.metalness; }
-			if ( json.sheen !== undefined ) { material.sheen = (new Color()).setHex( json.sheen ); }
 			if ( json.emissive !== undefined ) { material.emissive.setHex( json.emissive ); }
 			if ( json.specular !== undefined ) { material.specular.setHex( json.specular ); }
 			if ( json.shininess !== undefined ) { material.shininess = json.shininess; }
