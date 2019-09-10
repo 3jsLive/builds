@@ -8339,24 +8339,6 @@
 		this.stencilZPass = KeepStencilOp;
 		this.stencilWrite = false;
 
-		Object.defineProperty( this, 'stencilMask', {
-
-			set: function ( value ) {
-
-				console.warn( 'Material.stencilMask has been removed. Use Material.stencilFuncMask instead.' );
-				this.stencilFuncMask = value;
-
-			},
-
-			get: function () {
-
-				console.warn( 'Material.stencilMask has been removed. Use Material.stencilFuncMask instead.' );
-				return this.stencilFuncMask;
-
-			}
-
-		} );
-
 		this.clippingPlanes = null;
 		this.clipIntersection = false;
 		this.clipShadows = false;
@@ -8566,9 +8548,10 @@
 			data.depthWrite = this.depthWrite;
 
 			data.stencilWrite = this.stencilWrite;
+			data.stencilWriteMask = this.stencilWriteMask;
 			data.stencilFunc = this.stencilFunc;
 			data.stencilRef = this.stencilRef;
-			data.stencilMask = this.stencilMask;
+			data.stencilFuncMask = this.stencilFuncMask;
 			data.stencilFail = this.stencilFail;
 			data.stencilZFail = this.stencilZFail;
 			data.stencilZPass = this.stencilZPass;
@@ -38232,6 +38215,16 @@
 			if ( json.depthTest !== undefined ) { material.depthTest = json.depthTest; }
 			if ( json.depthWrite !== undefined ) { material.depthWrite = json.depthWrite; }
 			if ( json.colorWrite !== undefined ) { material.colorWrite = json.colorWrite; }
+
+			if ( json.stencilWrite !== undefined ) { material.stencilWrite = json.stencilWrite; }
+			if ( json.stencilWriteMask !== undefined ) { material.stencilWriteMask = json.stencilWriteMask; }
+			if ( json.stencilFunc !== undefined ) { material.stencilFunc = json.stencilFunc; }
+			if ( json.stencilRef !== undefined ) { material.stencilRef = json.stencilRef; }
+			if ( json.stencilFuncMask !== undefined ) { material.stencilFuncMask = json.stencilFuncMask; }
+			if ( json.stencilFail !== undefined ) { material.stencilFail = json.stencilFail; }
+			if ( json.stencilZFail !== undefined ) { material.stencilZFail = json.stencilZFail; }
+			if ( json.stencilZPass !== undefined ) { material.stencilZPass = json.stencilZPass; }
+
 			if ( json.wireframe !== undefined ) { material.wireframe = json.wireframe; }
 			if ( json.wireframeLinewidth !== undefined ) { material.wireframeLinewidth = json.wireframeLinewidth; }
 			if ( json.wireframeLinecap !== undefined ) { material.wireframeLinecap = json.wireframeLinecap; }
@@ -47889,6 +47882,21 @@
 
 				console.warn( 'THREE.' + this.type + ': .shading has been removed. Use the boolean .flatShading instead.' );
 				this.flatShading = ( value === FlatShading );
+
+			}
+		},
+
+		stencilMask: {
+			get: function () {
+
+				console.warn( 'THREE.' + this.type + ': .stencilMask has been removed. Use .stencilFuncMask instead.' );
+				return this.stencilFuncMask;
+
+			},
+			set: function ( value ) {
+
+				console.warn( 'THREE.' + this.type + ': .stencilMask has been removed. Use .stencilFuncMask instead.' );
+				this.stencilFuncMask = value;
 
 			}
 		}
