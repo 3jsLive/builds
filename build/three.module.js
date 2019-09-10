@@ -8333,24 +8333,6 @@ function Material() {
 	this.stencilZPass = KeepStencilOp;
 	this.stencilWrite = false;
 
-	Object.defineProperty( this, 'stencilMask', {
-
-		set: function( value ) {
-
-			console.warn( 'Material.stencilMask has been removed. Use Material.stencilFuncMask instead.' );
-			this.stencilFuncMask = value;
-
-		},
-
-		get: function() {
-
-			console.warn( 'Material.stencilMask has been removed. Use Material.stencilFuncMask instead.' );
-			return this.stencilFuncMask;
-
-		}
-
-	} );
-
 	this.clippingPlanes = null;
 	this.clipIntersection = false;
 	this.clipShadows = false;
@@ -8560,9 +8542,10 @@ Material.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 		data.depthWrite = this.depthWrite;
 
 		data.stencilWrite = this.stencilWrite;
+		data.stencilWriteMask = this.stencilWriteMask;
 		data.stencilFunc = this.stencilFunc;
 		data.stencilRef = this.stencilRef;
-		data.stencilMask = this.stencilMask;
+		data.stencilFuncMask = this.stencilFuncMask;
 		data.stencilFail = this.stencilFail;
 		data.stencilZFail = this.stencilZFail;
 		data.stencilZPass = this.stencilZPass;
@@ -8664,9 +8647,10 @@ Material.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 		this.depthWrite = source.depthWrite;
 
 		this.stencilWrite = source.stencilWrite;
+		this.stencilWriteMask = source.stencilWriteMask;
 		this.stencilFunc = source.stencilFunc;
 		this.stencilRef = source.stencilRef;
-		this.stencilMask = source.stencilMask;
+		this.stencilFuncMask = source.stencilFuncMask;
 		this.stencilFail = source.stencilFail;
 		this.stencilZFail = source.stencilZFail;
 		this.stencilZPass = source.stencilZPass;
@@ -47877,6 +47861,21 @@ Object.defineProperties( Material.prototype, {
 
 			console.warn( 'THREE.' + this.type + ': .shading has been removed. Use the boolean .flatShading instead.' );
 			this.flatShading = ( value === FlatShading );
+
+		}
+	},
+
+	stencilMask: {
+		get: function () {
+
+			console.warn( 'THREE.' + this.type + ': .stencilMask has been removed. Use .stencilFuncMask instead.' );
+			return this.stencilFuncMask;
+
+		},
+		set: function ( value ) {
+
+			console.warn( 'THREE.' + this.type + ': .stencilMask has been removed. Use .stencilFuncMask instead.' );
+			this.stencilFuncMask = value;
 
 		}
 	}
