@@ -8360,7 +8360,6 @@
 		this.visible = true;
 
 		this.toneMapped = true;
-		this.supportsMultiview = true;
 		this.userData = {};
 
 		this.needsUpdate = true;
@@ -15537,7 +15536,7 @@
 		var maxSamples = isWebGL2 ? gl.getParameter( 36183 ) : 0;
 
 		var multiviewExt = extensions.get( 'OVR_multiview2' );
-		var multiview = isWebGL2 && ( !! multiviewExt ) && !gl.getContextAttributes().antialias;
+		var multiview = isWebGL2 && ( !! multiviewExt ) && ! gl.getContextAttributes().antialias;
 		var maxMultiviewViews = multiview ? gl.getParameter( multiviewExt.MAX_VIEWS_OVR ) : 0;
 
 		return {
