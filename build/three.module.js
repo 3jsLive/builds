@@ -8354,9 +8354,7 @@ function Material() {
 	this.visible = true;
 
 	this.toneMapped = true;
-
 	this.userData = {};
-
 	this.needsUpdate = true;
 
 }
