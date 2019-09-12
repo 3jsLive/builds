@@ -18813,7 +18813,7 @@ function WebGLLights() {
 		pointShadowMatrix: [],
 		hemi: [],
 		hemiAffectedLayers: [],
-		
+
 		numDirectionalShadows: - 1,
 		numPointShadows: - 1,
 		numSpotShadows: - 1
