@@ -17513,29 +17513,14 @@
 
 	}
 
-	function generatePrecision( parameters ) {
+	function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities ) {
 
-		var precisionstring = "precision " + parameters.precision + " float;\nprecision " + parameters.precision + " int;";
+		var gl = renderer.getContext();
 
-		if ( parameters.precision === "highp" ) {
+		var defines = material.defines;
 
-			precisionstring += "\n#define HIGH_PRECISION;";
-
-		} else if ( parameters.precision === "mediump" ) {
-
-			precisionstring += "\n#define MEDIUM_PRECISION;";
-
-		} else if ( parameters.precision === "lowp" ) {
-
-			precisionstring += "\n#define LOW_PRECISION;";
-
-		}
-
-		return precisionstring;
-
-	}
-
-	function generateShadowMapTypeDefine( parameters ) {
+		var vertexShader = shader.vertexShader;
+		var fragmentShader = shader.fragmentShader;
 
 		var shadowMapTypeDefine = 'SHADOWMAP_TYPE_BASIC';
 
@@ -17553,13 +17538,9 @@
 
 		}
 
-		return shadowMapTypeDefine;
-
-	}
-
-	function generateEnvMapTypeDefine( parameters, material ) {
-
 		var envMapTypeDefine = 'ENVMAP_TYPE_CUBE';
+		var envMapModeDefine = 'ENVMAP_MODE_REFLECTION';
+		var envMapBlendingDefine = 'ENVMAP_BLENDING_MULTIPLY';
 
 		if ( parameters.envMap ) {
 
@@ -17586,18 +17567,6 @@
 
 			}
 
-		}
-
-		return envMapTypeDefine;
-
-	}
-
-	function generateEnvMapModeDefine( parameters, material ) {
-
-		var envMapModeDefine = 'ENVMAP_TYPE_CUBE';
-
-		if ( parameters.envMap ) {
-
 			switch ( material.envMap.mapping ) {
 
 				case CubeRefractionMapping:
@@ -17606,18 +17575,6 @@
 					break;
 
 			}
-
-		}
-
-		return envMapModeDefine;
-
-	}
-
-	function generateEnvMapBlendingDefine( parameters, material ) {
-
-		var envMapBlendingDefine = 'ENVMAP_TYPE_CUBE';
-
-		if ( parameters.envMap ) {
 
 			switch ( material.combine ) {
 
@@ -17637,29 +17594,17 @@
 
 		}
 
-		return envMapBlendingDefine;
-
-	}
-
-	function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities ) {
-
-		var gl = renderer.getContext();
-
-		var defines = material.defines;
-
-		var vertexShader = shader.vertexShader;
-		var fragmentShader = shader.fragmentShader;
-		var shadowMapTypeDefine = generateShadowMapTypeDefine( parameters );
-		var envMapTypeDefine = generateEnvMapTypeDefine( parameters, material );
-		var envMapModeDefine = generateEnvMapModeDefine( parameters, material );
-		var envMapBlendingDefine = generateEnvMapBlendingDefine( parameters, material );
-
-
 		var gammaFactorDefine = ( renderer.gammaFactor > 0 ) ? renderer.gammaFactor : 1.0;
+
+		// console.log( 'building new program ' );
+
+		//
 
 		var customExtensions = capabilities.isWebGL2 ? '' : generateExtensions( material.extensions, parameters, extensions );
 
 		var customDefines = generateDefines( defines );
+
+		//
 
 		var program = gl.createProgram();
 
@@ -17699,7 +17644,10 @@
 
 			prefixVertex = [
 
-				generatePrecision( parameters ),
+				'precision ' + parameters.precision + ' float;',
+				'precision ' + parameters.precision + ' int;',
+
+				( parameters.precision === 'highp' ) ? '#define HIGH_PRECISION' : '',
 
 				'#define SHADER_NAME ' + shader.name,
 
@@ -17829,7 +17777,10 @@
 
 				customExtensions,
 
-				generatePrecision( parameters ),
+				'precision ' + parameters.precision + ' float;',
+				'precision ' + parameters.precision + ' int;',
+
+				( parameters.precision === 'highp' ) ? '#define HIGH_PRECISION' : '',
 
 				'#define SHADER_NAME ' + shader.name,
 
