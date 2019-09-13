@@ -13585,7 +13585,7 @@ function DataTexture( data, width, height, format, type, mapping, wrapS, wrapT, 
 
 	Texture.call( this, null, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy, encoding );
 
-	this.image = { data: data || null, width: width || 1, height: height || 1 };
+	this.image = { data: data, width: width, height: height };
 
 	this.magFilter = magFilter !== undefined ? magFilter : NearestFilter;
 	this.minFilter = minFilter !== undefined ? minFilter : NearestFilter;
@@ -13593,8 +13593,6 @@ function DataTexture( data, width, height, format, type, mapping, wrapS, wrapT, 
 	this.generateMipmaps = false;
 	this.flipY = false;
 	this.unpackAlignment = 1;
-
-	this.needsUpdate = true;
 
 }
 
@@ -14042,7 +14040,7 @@ var defaultnormal_vertex = "vec3 transformedNormal = normalMatrix * objectNormal
 
 var displacementmap_pars_vertex = "#ifdef USE_DISPLACEMENTMAP\n\tuniform sampler2D displacementMap;\n\tuniform float displacementScale;\n\tuniform float displacementBias;\n#endif";
 
-var displacementmap_vertex = "#ifdef USE_DISPLACEMENTMAP\n\ttransformed += normalize( objectNormal ) * ( texture2D( displacementMap, uv ).x * displacementScale + displacementBias );\n#endif";
+var displacementmap_vertex = "#ifdef USE_DISPLACEMENTMAP\n\ttransformed += normalize( objectNormal ) * ( texture2D( displacementMap, vUv ).x * displacementScale + displacementBias );\n#endif";
 
 var emissivemap_fragment = "#ifdef USE_EMISSIVEMAP\n\tvec4 emissiveColor = texture2D( emissiveMap, vUv );\n\temissiveColor.rgb = emissiveMapTexelToLinear( emissiveColor ).rgb;\n\ttotalEmissiveRadiance *= emissiveColor.rgb;\n#endif";
 
@@ -25020,6 +25018,7 @@ function WebGLRenderer( parameters ) {
 						boneMatrices.set( skeleton.boneMatrices ); // copy current values
 
 						var boneTexture = new DataTexture( boneMatrices, size, size, RGBAFormat, FloatType );
+						boneTexture.needsUpdate = true;
 
 						skeleton.boneMatrices = boneMatrices;
 						skeleton.boneTexture = boneTexture;
@@ -41428,17 +41427,6 @@ Audio.prototype = Object.assign( Object.create( Object3D.prototype ), {
 		this.hasPlaybackControl = false;
 		this.sourceType = 'mediaNode';
 		this.source = this.context.createMediaElementSource( mediaElement );
-		this.connect();
-
-		return this;
-
-	},
-
-	setMediaStreamSource: function ( mediaStream ) {
-
-		this.hasPlaybackControl = false;
-		this.sourceType = 'mediaStreamNode';
-		this.source = this.context.createMediaStreamSource( mediaStream );
 		this.connect();
 
 		return this;
