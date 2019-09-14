@@ -41433,6 +41433,17 @@ Audio.prototype = Object.assign( Object.create( Object3D.prototype ), {
 
 	},
 
+	setMediaStreamSource: function ( mediaStream ) {
+
+		this.hasPlaybackControl = false;
+		this.sourceType = 'mediaStreamNode';
+		this.source = this.context.createMediaStreamSource( mediaStream );
+		this.connect();
+
+		return this;
+
+	},
+
 	setBuffer: function ( audioBuffer ) {
 
 		this.buffer = audioBuffer;
