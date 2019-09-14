@@ -13599,7 +13599,7 @@
 
 		Texture.call( this, null, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy, encoding );
 
-		this.image = { data: data || null, width: width || 1, height: height || 1 };
+		this.image = { data: data, width: width, height: height };
 
 		this.magFilter = magFilter !== undefined ? magFilter : NearestFilter;
 		this.minFilter = minFilter !== undefined ? minFilter : NearestFilter;
@@ -13607,8 +13607,6 @@
 		this.generateMipmaps = false;
 		this.flipY = false;
 		this.unpackAlignment = 1;
-
-		this.needsUpdate = true;
 
 	}
 
@@ -41440,17 +41438,6 @@
 			this.hasPlaybackControl = false;
 			this.sourceType = 'mediaNode';
 			this.source = this.context.createMediaElementSource( mediaElement );
-			this.connect();
-
-			return this;
-
-		},
-
-		setMediaStreamSource: function ( mediaStream ) {
-
-			this.hasPlaybackControl = false;
-			this.sourceType = 'mediaStreamNode';
-			this.source = this.context.createMediaStreamSource( mediaStream );
 			this.connect();
 
 			return this;

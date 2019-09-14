@@ -13585,7 +13585,7 @@ function DataTexture( data, width, height, format, type, mapping, wrapS, wrapT, 
 
 	Texture.call( this, null, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy, encoding );
 
-	this.image = { data: data || null, width: width || 1, height: height || 1 };
+	this.image = { data: data, width: width, height: height };
 
 	this.magFilter = magFilter !== undefined ? magFilter : NearestFilter;
 	this.minFilter = minFilter !== undefined ? minFilter : NearestFilter;
@@ -13593,8 +13593,6 @@ function DataTexture( data, width, height, format, type, mapping, wrapS, wrapT, 
 	this.generateMipmaps = false;
 	this.flipY = false;
 	this.unpackAlignment = 1;
-
-	this.needsUpdate = true;
 
 }
 
@@ -41429,17 +41427,6 @@ Audio.prototype = Object.assign( Object.create( Object3D.prototype ), {
 		this.hasPlaybackControl = false;
 		this.sourceType = 'mediaNode';
 		this.source = this.context.createMediaElementSource( mediaElement );
-		this.connect();
-
-		return this;
-
-	},
-
-	setMediaStreamSource: function ( mediaStream ) {
-
-		this.hasPlaybackControl = false;
-		this.sourceType = 'mediaStreamNode';
-		this.source = this.context.createMediaStreamSource( mediaStream );
 		this.connect();
 
 		return this;
