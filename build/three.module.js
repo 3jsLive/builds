@@ -41433,7 +41433,7 @@ Audio.prototype = Object.assign( Object.create( Object3D.prototype ), {
 
 	},
 
-	setMediaElementStreamSource: function ( mediaStream ) {
+	setMediaStreamSource: function ( mediaStream ) {
 
 		this.hasPlaybackControl = false;
 		this.sourceType = 'mediaStreamNode';

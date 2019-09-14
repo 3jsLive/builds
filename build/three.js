@@ -41444,7 +41444,7 @@
 
 		},
 
-		setMediaElementStreamSource: function ( mediaStream ) {
+		setMediaStreamSource: function ( mediaStream ) {
 
 			this.hasPlaybackControl = false;
 			this.sourceType = 'mediaStreamNode';
