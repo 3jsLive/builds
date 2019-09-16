@@ -9620,15 +9620,21 @@
 
 			}
 
-			this.attributes[ name ] = attribute;
-
-			return this;
+			return this.setAttribute( name, attribute );
 
 		},
 
 		getAttribute: function ( name ) {
 
 			return this.attributes[ name ];
+
+		},
+
+		setAttribute: function ( name, attribute ) {
+
+			this.attributes[ name ] = attribute;
+
+			return this;
 
 		},
 
@@ -48152,12 +48158,6 @@
 		},
 		setArray: function ( array ) {
 
-			if ( Array.isArray( array ) ) {
-
-				throw new TypeError( 'THREE.BufferAttribute: array should be a Typed Array.' );
-
-			}
-
 			console.warn( 'THREE.BufferAttribute: .setArray has been deprecated. Use BufferGeometry .setAttribute to replace/resize attribute buffers' );
 
 			this.count = array !== undefined ? array.length / this.itemSize : 0;
@@ -48231,12 +48231,6 @@
 	Object.assign( InterleavedBuffer.prototype, {
 
 		setArray: function ( array ) {
-
-			if ( Array.isArray( array ) ) {
-
-				throw new TypeError( 'THREE.BufferAttribute: array should be a Typed Array.' );
-
-			}
 
 			console.warn( 'THREE.InterleavedBuffer: .setArray has been deprecated. Use BufferGeometry .setAttribute to replace/resize attribute buffers' );
 
