@@ -8358,7 +8358,6 @@
 		this.alphaTest = 0;
 		this.premultipliedAlpha = false;
 
-		this.parallelCompile = false;
 		this.visible = true;
 
 		this.toneMapped = true;
@@ -17951,7 +17950,7 @@
 		this.pending = false;
 		this.numMultiviewViews = numMultiviewViews;
 
-		if ( parallelShaderExt !== null && material.parallelCompile ) {
+		if ( parallelShaderExt !== null && renderer.parallelCompile ) {
 
 			if ( currentParallel < maxParallel ) {
 
@@ -18010,14 +18009,6 @@
 		// free resource
 
 		this.destroy = function () {
-
-			if ( ! this.ready && ! this.pending ) {
-
-				// parallel compilation incomplete
-
-				currentParallel --;
-
-			}
 
 			gl.deleteProgram( program );
 			this.program = undefined;
@@ -18083,8 +18074,8 @@
 			if ( this.pending && currentParallel < maxParallel ) {
 
 				this.compileAndLink( renderer, material );
-				this.pending = false;
 				currentParallel ++;
+				this.pending = false;
 
 			}
 
@@ -18094,7 +18085,7 @@
 				this.ready = true;
 				currentParallel --;
 
-				console.log( 'THREE.WebGLProgram: parallel compile frame count', renderer.info.render.frame - this.startFrame );
+				console.log( 'done', this.startFrame, renderer.info.render.frame - this.startFrame );
 
 			}
 
