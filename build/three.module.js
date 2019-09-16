@@ -8352,8 +8352,8 @@ function Material() {
 	this.alphaTest = 0;
 	this.premultipliedAlpha = false;
 
-	this.parallelCompile = false;
 	this.visible = true;
+	this.parallelCompile = false;
 
 	this.toneMapped = true;
 
@@ -17940,7 +17940,7 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 	this.pending = false;
 	this.numMultiviewViews = numMultiviewViews;
 
-	if ( parallelShaderExt !== null && renderer.parallelCompile ) {
+	if ( parallelShaderExt !== null && material.parallelCompile ) {
 
 		if ( currentParallel < maxParallel ) {
 
@@ -18020,7 +18020,7 @@ Object.assign( WebGLProgram.prototype, {
 
 	compileAndLink: function ( renderer, material ) {
 
-		var gl = renderer.getContext();
+		var gl = renderer.context;
 
 		var program = this.program;
 		var vertexGlsl = this.prefixVertex + this.vertexShader;
@@ -18059,7 +18059,7 @@ Object.assign( WebGLProgram.prototype, {
 
 	isLinked: function ( renderer, material, sync ) {
 
-		var gl = renderer.getContext();
+		var gl = renderer.context;
 
 		if ( this.pending && currentParallel < maxParallel ) {
 
@@ -18087,7 +18087,7 @@ Object.assign( WebGLProgram.prototype, {
 
 		// check for link errors
 
-		var gl = renderer.getContext();
+		var gl = renderer.context;
 		var program = this.program;
 		var glVertexShader = this.vertexShader;
 		var glFragmentShader = this.fragmentShader;
