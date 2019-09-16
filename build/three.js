@@ -266,16 +266,6 @@
 	var GreaterEqualStencilFunc = 518;
 	var AlwaysStencilFunc = 519;
 
-	var StaticDrawUsage = 35044;
-	var DynamicDrawUsage = 35048;
-	var StreamDrawUsage = 35040;
-	var StaticReadUsage = 35045;
-	var DynamicReadUsage = 35049;
-	var StreamReadUsage = 35041;
-	var StaticCopyUsage = 35046;
-	var DynamicCopyUsage = 35050;
-	var StreamCopyUsage = 35042;
-
 	/**
 	 * https://github.com/mrdoob/eventdispatcher.js/
 	 */
@@ -8856,7 +8846,7 @@
 		this.count = array !== undefined ? array.length / itemSize : 0;
 		this.normalized = normalized === true;
 
-		this.usage = StaticDrawUsage;
+		this.dynamic = false;
 		this.updateRange = { offset: 0, count: - 1 };
 
 		this.version = 0;
@@ -8879,9 +8869,9 @@
 
 		onUploadCallback: function () {},
 
-		setUsage: function ( value ) {
+		setDynamic: function ( value ) {
 
-			this.usage = value;
+			this.dynamic = value;
 
 			return this;
 
@@ -8895,7 +8885,7 @@
 			this.count = source.count;
 			this.normalized = source.normalized;
 
-			this.usage = source.usage;
+			this.dynamic = source.dynamic;
 
 			return this;
 
@@ -14931,7 +14921,7 @@
 		function createBuffer( attribute, bufferType ) {
 
 			var array = attribute.array;
-			var usage = attribute.usage;
+			var usage = attribute.dynamic ? 35048 : 35044;
 
 			var buffer = gl.createBuffer();
 
@@ -14992,11 +14982,19 @@
 
 			gl.bindBuffer( bufferType, buffer );
 
-			if ( updateRange.count === - 1 ) {
+			if ( attribute.dynamic === false ) {
+
+				gl.bufferData( bufferType, array, 35044 );
+
+			} else if ( updateRange.count === - 1 ) {
 
 				// Not using update ranges
 
 				gl.bufferSubData( bufferType, 0, array );
+
+			} else if ( updateRange.count === 0 ) {
+
+				console.error( 'THREE.WebGLObjects.updateBuffer: dynamic THREE.BufferAttribute marked as needsUpdate but updateRange.count is 0, ensure you are using set methods or updating manually.' );
 
 			} else {
 
@@ -25963,7 +25961,7 @@
 		this.stride = stride;
 		this.count = array !== undefined ? array.length / stride : 0;
 
-		this.usage = StaticDrawUsage;
+		this.dynamic = false;
 		this.updateRange = { offset: 0, count: - 1 };
 
 		this.version = 0;
@@ -25986,9 +25984,9 @@
 
 		onUploadCallback: function () {},
 
-		setUsage: function ( value ) {
+		setDynamic: function ( value ) {
 
-			this.usage = value;
+			this.dynamic = value;
 
 			return this;
 
@@ -25999,7 +25997,7 @@
 			this.array = new source.array.constructor( source.array );
 			this.count = source.count;
 			this.stride = source.stride;
-			this.usage = source.usage;
+			this.dynamic = source.dynamic;
 
 			return this;
 
@@ -48147,32 +48145,12 @@
 				return this.array.length;
 
 			}
-		},
-		dynamic: {
-			get: function () {
-
-				console.warn( 'THREE.BufferAttribute: .dynamic has been deprecated. Use .usage instead.' );
-				return this.usage === DynamicDrawUsage;
-
-			},
-			set: function ( value ) {
-
-				console.warn( 'THREE.BufferAttribute: .dynamic has been deprecated. Use .usage instead.' );
-				this.setUsage( value );
-
-			}
 		}
 
 	} );
 
 	Object.assign( BufferAttribute.prototype, {
-		setDynamic: function ( value ) {
 
-			console.warn( 'THREE.BufferAttribute: .setDynamic() has been deprecated. Use .setUsage() instead.' );
-			this.setUsage( value === true ? DynamicDrawUsage : StaticDrawUsage );
-			return this;
-
-		},
 		copyIndicesArray: function ( /* indices */ ) {
 
 			console.error( 'THREE.BufferAttribute: .copyIndicesArray() has been removed.' );
@@ -48188,6 +48166,7 @@
 			return this;
 
 		}
+
 	} );
 
 	Object.assign( BufferGeometry.prototype, {
@@ -48249,33 +48228,8 @@
 
 	} );
 
-	Object.defineProperties( InterleavedBuffer.prototype, {
-
-		dynamic: {
-			get: function () {
-
-				console.warn( 'THREE.InterleavedBuffer: .length has been deprecated. Use .usage instead.' );
-				return this.usage === DynamicDrawUsage;
-
-			},
-			set: function ( value ) {
-
-				console.warn( 'THREE.InterleavedBuffer: .length has been deprecated. Use .usage instead.' );
-				this.setUsage( value );
-
-			}
-		}
-
-	} );
-
 	Object.assign( InterleavedBuffer.prototype, {
-		setDynamic: function ( value ) {
 
-			console.warn( 'THREE.InterleavedBuffer: .setDynamic() has been deprecated. Use .setUsage() instead.' );
-			this.setUsage( value === true ? DynamicDrawUsage : StaticDrawUsage );
-			return this;
-
-		},
 		setArray: function ( array ) {
 
 			console.warn( 'THREE.InterleavedBuffer: .setArray has been deprecated. Use BufferGeometry .setAttribute to replace/resize attribute buffers' );
@@ -48286,6 +48240,7 @@
 			return this;
 
 		}
+
 	} );
 
 	//
@@ -49140,9 +49095,6 @@
 	exports.DstAlphaFactor = DstAlphaFactor;
 	exports.DstColorFactor = DstColorFactor;
 	exports.DynamicBufferAttribute = DynamicBufferAttribute;
-	exports.DynamicCopyUsage = DynamicCopyUsage;
-	exports.DynamicDrawUsage = DynamicDrawUsage;
-	exports.DynamicReadUsage = DynamicReadUsage;
 	exports.EdgesGeometry = EdgesGeometry;
 	exports.EdgesHelper = EdgesHelper;
 	exports.EllipseCurve = EllipseCurve;
@@ -49413,13 +49365,7 @@
 	exports.SrcAlphaFactor = SrcAlphaFactor;
 	exports.SrcAlphaSaturateFactor = SrcAlphaSaturateFactor;
 	exports.SrcColorFactor = SrcColorFactor;
-	exports.StaticCopyUsage = StaticCopyUsage;
-	exports.StaticDrawUsage = StaticDrawUsage;
-	exports.StaticReadUsage = StaticReadUsage;
 	exports.StereoCamera = StereoCamera;
-	exports.StreamCopyUsage = StreamCopyUsage;
-	exports.StreamDrawUsage = StreamDrawUsage;
-	exports.StreamReadUsage = StreamReadUsage;
 	exports.StringKeyframeTrack = StringKeyframeTrack;
 	exports.SubtractEquation = SubtractEquation;
 	exports.SubtractiveBlending = SubtractiveBlending;
