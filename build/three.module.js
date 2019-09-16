@@ -8352,8 +8352,8 @@ function Material() {
 	this.alphaTest = 0;
 	this.premultipliedAlpha = false;
 
-	this.visible = true;
 	this.parallelCompile = false;
+	this.visible = true;
 
 	this.toneMapped = true;
 
@@ -17940,7 +17940,7 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 	this.pending = false;
 	this.numMultiviewViews = numMultiviewViews;
 
-	if ( parallelShaderExt !== null && renderer.parallelCompile ) {
+	if ( parallelShaderExt !== null && material.parallelCompile ) {
 
 		if ( currentParallel < maxParallel ) {
 
@@ -17999,6 +17999,14 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 	// free resource
 
 	this.destroy = function () {
+
+		if ( ! this.ready && ! this.pending ) {
+
+			// parallel compilation incomplete
+
+			currentParallel --;
+
+		}
 
 		gl.deleteProgram( program );
 		this.program = undefined;
@@ -18064,8 +18072,8 @@ Object.assign( WebGLProgram.prototype, {
 		if ( this.pending && currentParallel < maxParallel ) {
 
 			this.compileAndLink( renderer, material );
-			currentParallel ++;
 			this.pending = false;
+			currentParallel ++;
 
 		}
 
@@ -18075,7 +18083,7 @@ Object.assign( WebGLProgram.prototype, {
 			this.ready = true;
 			currentParallel --;
 
-			console.log( 'done', this.startFrame, renderer.info.render.frame - this.startFrame );
+			console.log( 'THREE.WebGLProgram: parallel compile frame count', renderer.info.render.frame - this.startFrame );
 
 		}
 
