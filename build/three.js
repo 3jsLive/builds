@@ -17951,7 +17951,7 @@
 		this.pending = false;
 		this.numMultiviewViews = numMultiviewViews;
 
-		if ( parallelShaderExt !== null && material.parallelCompile ) {
+		if ( parallelShaderExt !== null && renderer.parallelCompile ) {
 
 			if ( currentParallel < maxParallel ) {
 
@@ -18031,7 +18031,7 @@
 
 		compileAndLink: function ( renderer, material ) {
 
-			var gl = renderer.context;
+			var gl = renderer.getContext();
 
 			var program = this.program;
 			var vertexGlsl = this.prefixVertex + this.vertexShader;
@@ -18070,7 +18070,7 @@
 
 		isLinked: function ( renderer, material, sync ) {
 
-			var gl = renderer.context;
+			var gl = renderer.getContext();
 
 			if ( this.pending && currentParallel < maxParallel ) {
 
@@ -18098,7 +18098,7 @@
 
 			// check for link errors
 
-			var gl = renderer.context;
+			var gl = renderer.getContext();
 			var program = this.program;
 			var glVertexShader = this.vertexShader;
 			var glFragmentShader = this.fragmentShader;
