@@ -17493,29 +17493,14 @@ function unrollLoops( string ) {
 
 }
 
-function generatePrecision( parameters ) {
+function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities ) {
 
-	var precisionstring = "precision " + parameters.precision + " float;\nprecision " + parameters.precision + " int;";
+	var gl = renderer.getContext();
 
-	if ( parameters.precision === "highp" ) {
+	var defines = material.defines;
 
-		precisionstring += "\n#define HIGH_PRECISION;";
-
-	} else if ( parameters.precision === "mediump" ) {
-
-		precisionstring += "\n#define MEDIUM_PRECISION;";
-
-	} else if ( parameters.precision === "lowp" ) {
-
-		precisionstring += "\n#define LOW_PRECISION;";
-
-	}
-
-	return precisionstring;
-
-}
-
-function generateShadowMapTypeDefine( parameters ) {
+	var vertexShader = shader.vertexShader;
+	var fragmentShader = shader.fragmentShader;
 
 	var shadowMapTypeDefine = 'SHADOWMAP_TYPE_BASIC';
 
@@ -17533,13 +17518,9 @@ function generateShadowMapTypeDefine( parameters ) {
 
 	}
 
-	return shadowMapTypeDefine;
-
-}
-
-function generateEnvMapTypeDefine( parameters, material ) {
-
 	var envMapTypeDefine = 'ENVMAP_TYPE_CUBE';
+	var envMapModeDefine = 'ENVMAP_MODE_REFLECTION';
+	var envMapBlendingDefine = 'ENVMAP_BLENDING_MULTIPLY';
 
 	if ( parameters.envMap ) {
 
@@ -17566,18 +17547,6 @@ function generateEnvMapTypeDefine( parameters, material ) {
 
 		}
 
-	}
-
-	return envMapTypeDefine;
-
-}
-
-function generateEnvMapModeDefine( parameters, material ) {
-
-	var envMapModeDefine = 'ENVMAP_MODE_REFLECTION';
-
-	if ( parameters.envMap ) {
-
 		switch ( material.envMap.mapping ) {
 
 			case CubeRefractionMapping:
@@ -17586,18 +17555,6 @@ function generateEnvMapModeDefine( parameters, material ) {
 				break;
 
 		}
-
-	}
-
-	return envMapModeDefine;
-
-}
-
-function generateEnvMapBlendingDefine( parameters, material ) {
-
-	var envMapBlendingDefine = 'ENVMAP_BLENDING_MULTIPLY';
-
-	if ( parameters.envMap ) {
 
 		switch ( material.combine ) {
 
@@ -17617,29 +17574,17 @@ function generateEnvMapBlendingDefine( parameters, material ) {
 
 	}
 
-	return envMapBlendingDefine;
-
-}
-
-function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities ) {
-
-	var gl = renderer.getContext();
-
-	var defines = material.defines;
-
-	var vertexShader = shader.vertexShader;
-	var fragmentShader = shader.fragmentShader;
-	var shadowMapTypeDefine = generateShadowMapTypeDefine( parameters );
-	var envMapTypeDefine = generateEnvMapTypeDefine( parameters, material );
-	var envMapModeDefine = generateEnvMapModeDefine( parameters, material );
-	var envMapBlendingDefine = generateEnvMapBlendingDefine( parameters, material );
-
-
 	var gammaFactorDefine = ( renderer.gammaFactor > 0 ) ? renderer.gammaFactor : 1.0;
+
+	// console.log( 'building new program ' );
+
+	//
 
 	var customExtensions = capabilities.isWebGL2 ? '' : generateExtensions( material.extensions, parameters, extensions );
 
 	var customDefines = generateDefines( defines );
+
+	//
 
 	var program = gl.createProgram();
 
@@ -17679,7 +17624,10 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 
 		prefixVertex = [
 
-			generatePrecision( parameters ),
+			'precision ' + parameters.precision + ' float;',
+			'precision ' + parameters.precision + ' int;',
+
+			( parameters.precision === 'highp' ) ? '#define HIGH_PRECISION' : '',
 
 			'#define SHADER_NAME ' + shader.name,
 
@@ -17811,7 +17759,10 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters,
 
 			customExtensions,
 
-			generatePrecision( parameters ),
+			'precision ' + parameters.precision + ' float;',
+			'precision ' + parameters.precision + ' int;',
+
+			( parameters.precision === 'highp' ) ? '#define HIGH_PRECISION' : '',
 
 			'#define SHADER_NAME ' + shader.name,
 
@@ -44543,6 +44494,15 @@ AnimationMixer.prototype = Object.assign( Object.create( EventDispatcher.prototy
 
 		return this;
 
+	},
+
+	// Allows you to seek to a specific time in an animation.
+	setTime: function( timeInSeconds ) {
+		this.time=0; // Zero out time attribute for AnimationMixer object;
+    for(var i=0;i<this._actions.length;i++){
+      this._actions[i].time=0; // Zero out time attribute for all associated AnimationAction objects.
+    }
+    return this.update(timeInSeconds); // Update used to set exact time. Returns "this" AnimationMixer object.
 	},
 
 	// return this mixer's root target object
