@@ -8352,6 +8352,7 @@ function Material() {
 	this.alphaTest = 0;
 	this.premultipliedAlpha = false;
 
+	this.parallelCompile = false;
 	this.visible = true;
 
 	this.toneMapped = true;
