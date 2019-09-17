@@ -8358,7 +8358,7 @@
 		this.alphaTest = 0;
 		this.premultipliedAlpha = false;
 
-		this.parallelCompile = Material.DefaultParallelCompile;
+		this.parallelCompile = false;
 		this.visible = true;
 
 		this.toneMapped = true;
@@ -8368,8 +8368,6 @@
 		this.needsUpdate = true;
 
 	}
-
-	Material.DefaultParallelCompile = false;
 
 	Material.prototype = Object.assign( Object.create( EventDispatcher.prototype ), {
 
