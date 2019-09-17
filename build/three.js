@@ -8869,21 +8869,6 @@
 
 		onUploadCallback: function () {},
 
-		setArray: function ( array ) {
-
-			if ( Array.isArray( array ) ) {
-
-				throw new TypeError( 'THREE.BufferAttribute: array should be a Typed Array.' );
-
-			}
-
-			this.count = array !== undefined ? array.length / this.itemSize : 0;
-			this.array = array;
-
-			return this;
-
-		},
-
 		setDynamic: function ( value ) {
 
 			this.dynamic = value;
@@ -9635,15 +9620,21 @@
 
 			}
 
-			this.attributes[ name ] = attribute;
-
-			return this;
+			return this.setAttribute( name, attribute );
 
 		},
 
 		getAttribute: function ( name ) {
 
 			return this.attributes[ name ];
+
+		},
+
+		setAttribute: function ( name, attribute ) {
+
+			this.attributes[ name ] = attribute;
+
+			return this;
 
 		},
 
@@ -17515,14 +17506,29 @@
 
 	}
 
-	function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities ) {
+	function generatePrecision( parameters ) {
 
-		var gl = renderer.getContext();
+		var precisionstring = "precision " + parameters.precision + " float;\nprecision " + parameters.precision + " int;";
 
-		var defines = material.defines;
+		if ( parameters.precision === "highp" ) {
 
-		var vertexShader = shader.vertexShader;
-		var fragmentShader = shader.fragmentShader;
+			precisionstring += "\n#define HIGH_PRECISION;";
+
+		} else if ( parameters.precision === "mediump" ) {
+
+			precisionstring += "\n#define MEDIUM_PRECISION;";
+
+		} else if ( parameters.precision === "lowp" ) {
+
+			precisionstring += "\n#define LOW_PRECISION;";
+
+		}
+
+		return precisionstring;
+
+	}
+
+	function generateShadowMapTypeDefine( parameters ) {
 
 		var shadowMapTypeDefine = 'SHADOWMAP_TYPE_BASIC';
 
@@ -17540,9 +17546,13 @@
 
 		}
 
+		return shadowMapTypeDefine;
+
+	}
+
+	function generateEnvMapTypeDefine( parameters, material ) {
+
 		var envMapTypeDefine = 'ENVMAP_TYPE_CUBE';
-		var envMapModeDefine = 'ENVMAP_MODE_REFLECTION';
-		var envMapBlendingDefine = 'ENVMAP_BLENDING_MULTIPLY';
 
 		if ( parameters.envMap ) {
 
@@ -17569,6 +17579,18 @@
 
 			}
 
+		}
+
+		return envMapTypeDefine;
+
+	}
+
+	function generateEnvMapModeDefine( parameters, material ) {
+
+		var envMapModeDefine = 'ENVMAP_MODE_REFLECTION';
+
+		if ( parameters.envMap ) {
+
 			switch ( material.envMap.mapping ) {
 
 				case CubeRefractionMapping:
@@ -17577,6 +17599,18 @@
 					break;
 
 			}
+
+		}
+
+		return envMapModeDefine;
+
+	}
+
+	function generateEnvMapBlendingDefine( parameters, material ) {
+
+		var envMapBlendingDefine = 'ENVMAP_BLENDING_MULTIPLY';
+
+		if ( parameters.envMap ) {
 
 			switch ( material.combine ) {
 
@@ -17596,17 +17630,29 @@
 
 		}
 
+		return envMapBlendingDefine;
+
+	}
+
+	function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities ) {
+
+		var gl = renderer.getContext();
+
+		var defines = material.defines;
+
+		var vertexShader = shader.vertexShader;
+		var fragmentShader = shader.fragmentShader;
+		var shadowMapTypeDefine = generateShadowMapTypeDefine( parameters );
+		var envMapTypeDefine = generateEnvMapTypeDefine( parameters, material );
+		var envMapModeDefine = generateEnvMapModeDefine( parameters, material );
+		var envMapBlendingDefine = generateEnvMapBlendingDefine( parameters, material );
+
+
 		var gammaFactorDefine = ( renderer.gammaFactor > 0 ) ? renderer.gammaFactor : 1.0;
-
-		// console.log( 'building new program ' );
-
-		//
 
 		var customExtensions = capabilities.isWebGL2 ? '' : generateExtensions( material.extensions, parameters, extensions );
 
 		var customDefines = generateDefines( defines );
-
-		//
 
 		var program = gl.createProgram();
 
@@ -17646,10 +17692,7 @@
 
 			prefixVertex = [
 
-				'precision ' + parameters.precision + ' float;',
-				'precision ' + parameters.precision + ' int;',
-
-				( parameters.precision === 'highp' ) ? '#define HIGH_PRECISION' : '',
+				generatePrecision( parameters ),
 
 				'#define SHADER_NAME ' + shader.name,
 
@@ -17779,10 +17822,7 @@
 
 				customExtensions,
 
-				'precision ' + parameters.precision + ' float;',
-				'precision ' + parameters.precision + ' int;',
-
-				( parameters.precision === 'highp' ) ? '#define HIGH_PRECISION' : '',
+				generatePrecision( parameters ),
 
 				'#define SHADER_NAME ' + shader.name,
 
@@ -25992,21 +26032,6 @@
 		isInterleavedBuffer: true,
 
 		onUploadCallback: function () {},
-
-		setArray: function ( array ) {
-
-			if ( Array.isArray( array ) ) {
-
-				throw new TypeError( 'THREE.BufferAttribute: array should be a Typed Array.' );
-
-			}
-
-			this.count = array !== undefined ? array.length / this.stride : 0;
-			this.array = array;
-
-			return this;
-
-		},
 
 		setDynamic: function ( value ) {
 
@@ -44532,12 +44557,17 @@
 		},
 
 		// Allows you to seek to a specific time in an animation.
-		setTime: function( timeInSeconds ) {
-			this.time=0; // Zero out time attribute for AnimationMixer object;
-	    for(var i=0;i<this._actions.length;i++){
-	      this._actions[i].time=0; // Zero out time attribute for all associated AnimationAction objects.
-	    }
-	    return this.update(timeInSeconds); // Update used to set exact time. Returns "this" AnimationMixer object.
+		setTime: function ( timeInSeconds ) {
+
+			this.time = 0; // Zero out time attribute for AnimationMixer object;
+			for ( var i = 0; i < this._actions.length; i ++ ) {
+
+				this._actions[ i ].time = 0; // Zero out time attribute for all associated AnimationAction objects.
+
+			}
+
+			return this.update( timeInSeconds ); // Update used to set exact time. Returns "this" AnimationMixer object.
+
 		},
 
 		// return this mixer's root target object
@@ -48178,10 +48208,25 @@
 				return this.array.length;
 
 			}
-		},
+		}
+
+	} );
+
+	Object.assign( BufferAttribute.prototype, {
+
 		copyIndicesArray: function ( /* indices */ ) {
 
 			console.error( 'THREE.BufferAttribute: .copyIndicesArray() has been removed.' );
+
+		},
+		setArray: function ( array ) {
+
+			console.warn( 'THREE.BufferAttribute: .setArray has been deprecated. Use BufferGeometry .setAttribute to replace/resize attribute buffers' );
+
+			this.count = array !== undefined ? array.length / this.itemSize : 0;
+			this.array = array;
+
+			return this;
 
 		}
 
@@ -48242,6 +48287,21 @@
 				return this.groups;
 
 			}
+		}
+
+	} );
+
+	Object.assign( InterleavedBuffer.prototype, {
+
+		setArray: function ( array ) {
+
+			console.warn( 'THREE.InterleavedBuffer: .setArray has been deprecated. Use BufferGeometry .setAttribute to replace/resize attribute buffers' );
+
+			this.count = array !== undefined ? array.length / this.stride : 0;
+			this.array = array;
+
+			return this;
+
 		}
 
 	} );
