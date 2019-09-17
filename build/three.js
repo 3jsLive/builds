@@ -5198,8 +5198,18 @@
 		var quaternion = new Quaternion();
 		var scale = new Vector3( 1, 1, 1 );
 
-		rotation._quaternion = quaternion;
-		quaternion._rotation = rotation;
+		function onRotationChange() {
+
+			quaternion.setFromEuler( rotation, false );
+
+		}
+
+		function onQuaternionChange() {
+
+			rotation.setFromQuaternion( quaternion, undefined, false );
+
+		}
+
 		rotation._onChange( onRotationChange );
 		quaternion._onChange( onQuaternionChange );
 
@@ -5988,19 +5998,6 @@
 		}
 
 	} );
-
-
-	function onRotationChange() {
-
-		this._quaternion.setFromEuler( this, false );
-
-	}
-
-	function onQuaternionChange() {
-
-		this._rotation.setFromQuaternion( this, undefined, false );
-
-	}
 
 	/**
 	 * @author mrdoob / http://mrdoob.com/
