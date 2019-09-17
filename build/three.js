@@ -26990,11 +26990,11 @@
 
 		raycast: function () {},
 
-		setMatrixAt: function ( matrix, offset ) {
+		setMatrixAt: function ( index, matrix ) {
 
-			matrix.toArray( this.instanceMatrix.array, offset * 16 );
+			matrix.toArray( this.instanceMatrix.array, index * 16 );
 
-			_matrix3.getNormalMatrix( matrix ).toArray( this.instanceNormalMatrix.array, offset * 9 );
+			_matrix3.getNormalMatrix( matrix ).toArray( this.instanceNormalMatrix.array, index * 9 );
 
 		},
 
